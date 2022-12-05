@@ -1,0 +1,301 @@
+/*
+ * Copyright 2020-2021 Exactpro (Exactpro Systems Limited)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+ syntax = 'proto3';
+
+ import "google/protobuf/timestamp.proto";
+ import "google/protobuf/duration.proto";
+ import "google/protobuf/wrappers.proto";
+
+option go_package = "exactpro/th2/th2-common-go/proto";
+
+//--// Metadata structures //--//
+ 
+ message ConnectionID {
+   string session_alias = 1; // Session identifier depends on protocol, target / sender
+ }
+ 
+ enum Direction {
+   FIRST = 0; // Incoming message for connectivity
+   SECOND = 1; // Outgoing message for connectivity
+ }
+ 
+ message MessageID {
+   ConnectionID connection_id = 1;
+   Direction direction = 2; // Transport direction.
+   int64 sequence = 3; // Unique sequence number in session
+   repeated uint32 subsequence = 4; // List of nested sequences in addition to the main one
+ }
+ 
+ message MessageMetadata {
+   MessageID id = 1; // Message id should be unique in session
+   google.protobuf.Timestamp timestamp = 2; // Message creation timestamp
+   string message_type = 3; // Message type by dictionary
+   map<string, string> properties = 4; // Additional properties for the message
+   string protocol = 5; // Protocol to be used when encoding the message
+ }
+ 
+ message RawMessageMetadata {
+   MessageID id = 1; // Message id should be unique in session
+   google.protobuf.Timestamp timestamp = 2; // Message creation timestamp
+   map<string, string> properties = 3; // Additional properties for the raw message
+   string protocol = 4; // Protocol to be used when decoding the message
+ }
+ 
+ //--// Message body structure //--//
+ 
+ enum NullValue {
+   NULL_VALUE = 0;
+ }
+ 
+ message Value {
+   oneof kind {
+     NullValue null_value = 1;
+     string simple_value = 2;
+     Message message_value = 3;
+     ListValue list_value = 4;
+   }
+ }
+ 
+ message ListValue {
+   repeated Value values = 1;
+ }
+ 
+ //--// Message / Raw structures //--//
+ 
+ message Message {
+   EventID parent_event_id = 3; // It maybe used to store event related to message life cycle
+   MessageMetadata metadata = 1;
+   map<string, Value> fields = 2;
+ }
+ 
+ message RawMessage {
+   EventID parent_event_id = 3; // It maybe used to store event related to message life cycle
+   RawMessageMetadata metadata = 1;
+   bytes body = 2;
+ }
+ 
+ message AnyMessage {
+   oneof kind {
+     Message message = 1;
+     RawMessage raw_message = 2;
+   }
+ }
+ 
+ message MessageGroup {
+   repeated AnyMessage messages = 1;
+ }
+ 
+ //--// Message batch //--//
+ 
+ message MessageBatch {
+   repeated Message messages = 1;
+ }
+ 
+ message RawMessageBatch {
+   repeated RawMessage messages = 1;
+ }
+ 
+ message MessageGroupBatch {
+   repeated MessageGroup groups = 1;
+ }
+ 
+ //--// RPC call response //--//
+ 
+ message RequestStatus {
+   enum Status {
+     SUCCESS = 0;
+     ERROR = 1;
+   }
+   Status status = 1;
+   string message = 2;
+ }
+ 
+ //--// Settings //--//
+ enum FailUnexpected {
+   NO = 0; // comparison won't fail in case of unexpected fields or messages
+   FIELDS = 1; // comparison will fail in case of unexpected fields only
+   FIELDS_AND_MESSAGES = 2; // comparison will fail in case of unexpected fields or messages
+ }
+ 
+ message ComparisonSettings {
+   /*
+   * Values are not considered during the comparison. Please use RootComparisonSettings#ignore_fields instead.
+   * This field will be removed in future releases.
+   */
+   repeated string ignore_fields = 1 [deprecated = true];
+   FailUnexpected fail_unexpected = 2;
+ }
+ 
+ message RootComparisonSettings {
+   /*
+   * These fields will not be considered during comparison. It concerns fields with simple or collection types.
+   * Comparison result will have the NA status for them.
+   */
+   repeated string ignore_fields = 1;
+   /*
+   * Enables order verification in repeating groups according to defined filters.
+   */
+   bool check_repeating_group_order = 2;
+   /*
+   * Time precision format for comparing timestamps
+   */
+   google.protobuf.Duration time_precision = 3;
+   /*
+   * Decimal precision format for comparing numbers. E.g. 0.0001, 0.125, 125E-3 could be supported
+   */
+   string decimal_precision = 4;
+ }
+ 
+ //--// Message filter //--//
+ 
+ enum FilterOperation {
+   EQUAL = 0;
+   NOT_EQUAL = 1;
+   EMPTY = 2;
+   NOT_EMPTY = 3;
+   IN = 4;
+   NOT_IN = 5;
+   LIKE = 6;
+   NOT_LIKE = 7;
+   MORE = 8;
+   NOT_MORE = 9;
+   LESS = 10;
+   NOT_LESS = 11;
+   WILDCARD = 12;
+   NOT_WILDCARD = 13;
+   EQ_TIME_PRECISION = 14;
+   EQ_DECIMAL_PRECISION = 15;
+ }
+ 
+ message ValueFilter {
+   FilterOperation operation = 1;
+   bool key = 2;
+   oneof kind {
+     string simple_filter = 3;
+     MessageFilter message_filter = 4;
+     ListValueFilter list_filter = 5;
+     SimpleList simple_list = 6;
+   }
+ }
+ 
+ message ListValueFilter {
+   repeated ValueFilter values = 1;
+ }
+ 
+ message SimpleList {
+   repeated string simple_values = 1;
+ }
+ 
+ message MessageFilter {
+   // Is not used for filtering sub-messages. Will be removed in the future
+   string messageType = 1 [deprecated = true];
+ 
+   // Is not used for filtering sub-messages. Will be removed in the future
+   string direction = 2 [deprecated = true];
+   map<string, ValueFilter> fields = 3;
+   ComparisonSettings comparison_settings = 4;
+ }
+ 
+ message MetadataFilter {
+   message SimpleFilter {
+     FilterOperation operation = 1;
+     bool key = 2;
+     oneof filter_value {
+         string value = 3;
+         SimpleList simple_list = 4;
+     }
+   }
+ 
+   map<string, SimpleFilter> property_filters = 1;
+ }
+ 
+ message RootMessageFilter {
+   /*
+   * The message type to match
+   */
+   string messageType = 1;
+ 
+   /*
+   * The filter to match message's content
+   */
+   MessageFilter message_filter = 2;
+ 
+   /*
+   * The filter to match message's metadata content
+   */
+   MetadataFilter metadata_filter = 3;
+ 
+   /*
+   * Settings that will be used for comparing both filters (MessageFilter and MetadataFilter)
+   */
+   RootComparisonSettings comparison_settings = 4;
+ 
+   /*
+   * Description that may contain some information about the RootMessageFilter
+   */
+   google.protobuf.StringValue description = 5;
+ }
+ 
+ //--// Checkpoint //--//
+ 
+ message Checkpoint {
+   string id = 1;
+   map<string, DirectionCheckpoint> session_alias_to_direction_checkpoint = 2;
+ 
+   message CheckpointData {
+     int64 sequence = 1; // Message sequence number in session
+     google.protobuf.Timestamp timestamp = 2; // Message creation timestamp
+   }
+ 
+   message DirectionCheckpoint {
+     /*
+     * It should contain one of these two fields - direction_to_sequence or direction_to_checkpoint_data, preferably the second one.
+     * If you set both of them, in check1 will be generated an error.
+     * If direction_to_sequence is filled, it will be converted to direction_to_checkpoint_data.
+     * This field will be removed in future major releases. Please use direction_to_checkpoint_data instead.
+     */
+     map<int32, int64> direction_to_sequence = 1 [deprecated = true];
+     map<int32, CheckpointData> direction_to_checkpoint_data = 2;
+   }
+ }
+ 
+ //--// Event //--//
+ enum EventStatus {
+   SUCCESS = 0;
+   FAILED = 1;
+ }
+ 
+ message EventID {
+   string id = 1; // Unique event id in TH2 deploy
+ }
+ 
+ message Event {
+   EventID id = 1;
+   EventID parent_id = 2; // Event id of parent event. It is null for root event
+   google.protobuf.Timestamp start_timestamp = 3;
+   google.protobuf.Timestamp end_timestamp = 4;
+   EventStatus status = 5; // Aggregated status of current and children events which sync written.
+   string name = 6;
+   string type = 7;
+   bytes body = 8;
+   repeated MessageID attached_message_ids = 9;
+ }
+ 
+ message EventBatch {
+   EventID parent_event_id = 1;
+   repeated Event events = 2; // Events optional related to between themselves. No events outside this batch should refer to the events in this batch.
+ }
