@@ -3,10 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/google/go-cmp/cmp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"net"
+	"sort"
+	"strings"
 )
 
 type Address struct {
@@ -50,10 +51,22 @@ func (gc *GrpcConfig) validatePins() error {
 	return nil
 }
 
+// Checks for the inclusion of target attributes
 func (gc *GrpcConfig) findEndpointAddrViaAttributes(targetAttributes []string) (string, error) {
+	targetCopy := make([]string, len(targetAttributes))
+	copy(targetCopy, targetAttributes)
+	sort.Strings(targetCopy)
+	separator := ", "
+	sortedTargetAttrsStr := strings.Join(targetCopy, separator)
+
 	for _, service := range gc.ServicesMap {
 		for _, endpoint := range service.Endpoints {
-			if cmp.Equal(endpoint.Attributes, targetAttributes) {
+			endpointAttrs := endpoint.Attributes
+			endpointAttrsCopy := make([]string, len(endpointAttrs))
+			copy(endpointAttrsCopy, endpointAttrs)
+			sort.Strings(endpointAttrsCopy)
+			sortedEndpointAttrsStr := strings.Join(endpointAttrsCopy, separator)
+			if strings.Contains(sortedEndpointAttrsStr, sortedTargetAttrsStr) {
 				return endpoint.Address.getColonSeparatedAddr(), nil
 			}
 		}

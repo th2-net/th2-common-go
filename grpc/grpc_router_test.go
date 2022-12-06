@@ -41,9 +41,28 @@ func TestValidatePinsMultipleEndpoints(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestFindEndpointAddrViaAttributes(t *testing.T) {
+func TestFindEndpointAddrViaAttributesExactMatch(t *testing.T) {
+	gc, _ := getGrpcConfig(validGrpcFileName)
+	addr, err := gc.findEndpointAddrViaAttributes([]string{"actAttr", "otherAttr1", "otherAttr2"})
+	assertNilWithMsg(t, err)
+	assert.Equal(t, ":8080", addr, "Expected and actual addresses not equal")
+}
+
+func TestFindEndpointAddrViaAttributesPartlyMatch(t *testing.T) {
 	gc, _ := getGrpcConfig(validGrpcFileName)
 	addr, err := gc.findEndpointAddrViaAttributes([]string{"actAttr"})
 	assertNilWithMsg(t, err)
-	assert.Equal(t, ":8080", addr, "Addresses not equal")
+	assert.Equal(t, ":8080", addr, "Expected and actual addresses not equal")
+}
+
+func TestFindEndpointAddrViaAttributesNonExistingTarget(t *testing.T) {
+	gc, _ := getGrpcConfig(validGrpcFileName)
+	_, err := gc.findEndpointAddrViaAttributes([]string{"wrongAttr"})
+	assert.NotNil(t, err)
+}
+
+func TestFindEndpointAddrViaAttributesNotFullyInclusive(t *testing.T) {
+	gc, _ := getGrpcConfig(validGrpcFileName)
+	_, err := gc.findEndpointAddrViaAttributes([]string{"wrongAttr", "actAttr"})
+	assert.NotNil(t, err)
 }

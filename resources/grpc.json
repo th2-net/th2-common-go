@@ -8,7 +8,7 @@
     "act": {
       "endpoints": {
         "act-endpoint": {
-          "attributes": ["actAttr"],
+          "attributes": ["actAttr", "otherAttr1", "otherAttr2"],
           "host": null,
           "port": 8080
         }
