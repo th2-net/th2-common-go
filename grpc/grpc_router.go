@@ -15,7 +15,7 @@ type Address struct {
 	Port int    `json:"port"`
 }
 
-func (addr *Address) getColonSeparatedAddr() string {
+func (addr *Address) asColonSeparatedString() string {
 	return fmt.Sprint(addr.Host, ":", addr.Port)
 }
 
@@ -52,7 +52,7 @@ func (gc *GrpcConfig) validatePins() error {
 }
 
 // Checks for the inclusion of target attributes
-func (gc *GrpcConfig) findEndpointAddrViaAttributes(targetAttributes []string) (string, error) {
+func (gc *GrpcConfig) findEndpointAddrViaAttributes(targetAttributes []string) (Address, error) {
 	targetCopy := make([]string, len(targetAttributes))
 	copy(targetCopy, targetAttributes)
 	sort.Strings(targetCopy)
@@ -67,15 +67,15 @@ func (gc *GrpcConfig) findEndpointAddrViaAttributes(targetAttributes []string) (
 			sort.Strings(endpointAttrsCopy)
 			sortedEndpointAttrsStr := strings.Join(endpointAttrsCopy, separator)
 			if strings.Contains(sortedEndpointAttrsStr, sortedTargetAttrsStr) {
-				return endpoint.Address.getColonSeparatedAddr(), nil
+				return endpoint.Address, nil
 			}
 		}
 	}
-	return "", errors.New("endpoint with provided attributes does not exist")
+	return Address{}, errors.New("endpoint with provided attributes does not exist")
 }
 
 func (gc *GrpcConfig) getServerAddress() string {
-	return gc.ServerConfig.getColonSeparatedAddr()
+	return gc.ServerConfig.asColonSeparatedString()
 }
 
 type StopServer func()
@@ -109,42 +109,48 @@ func (gr *CommonGrpcRouter) StartServer(registrar func(grpc.ServiceRegistrar)) (
 	return s.Stop, nil
 }
 
+type connError struct {
+	specificErr error
+}
+
+func (ce connError) make() error {
+	return errors.New(
+		fmt.Sprint("could not create a connection to the given target: ", ce.specificErr.Error()))
+}
+
 func (gr *CommonGrpcRouter) GetConnection(attributes ...string) (grpc.ClientConnInterface, error) {
 	if gr.connCache == nil {
-		gr.connCache = initConnectionStringKeyCache()
-	}
-	if conn, exists := gr.findConnection(attributes); exists {
-		return conn, nil
-	}
-
-	return gr.newConnection(attributes)
-}
-
-func (gr *CommonGrpcRouter) findConnection(attributes []string) (grpc.ClientConnInterface, bool) {
-	return gr.connCache.get(attributes)
-}
-
-func (gr *CommonGrpcRouter) newConnection(attributes []string) (grpc.ClientConnInterface, error) {
-	makeErr := func(specificErr error) error {
-		return errors.New(
-			fmt.Sprint("could not create a connection to the given target: ", specificErr.Error()))
-	}
-
-	validationErr := gr.Config.validatePins()
-	if validationErr != nil {
-		return nil, makeErr(validationErr)
+		gr.connCache = initConnectionAddressKeyCache()
 	}
 
 	addr, findErr := gr.Config.findEndpointAddrViaAttributes(attributes)
 	if findErr != nil {
-		return nil, makeErr(findErr)
-	}
-	conn, dialErr := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if dialErr != nil {
-		return nil, makeErr(dialErr)
+		return nil, connError{specificErr: findErr}.make()
 	}
 
-	gr.connCache.put(attributes, conn)
+	if conn, exists := gr.findConnection(addr); exists {
+		return conn, nil
+	}
+
+	return gr.newConnection(addr)
+}
+
+func (gr *CommonGrpcRouter) findConnection(addr Address) (grpc.ClientConnInterface, bool) {
+	return gr.connCache.get(addr)
+}
+
+func (gr *CommonGrpcRouter) newConnection(addr Address) (grpc.ClientConnInterface, error) {
+	validationErr := gr.Config.validatePins()
+	if validationErr != nil {
+		return nil, connError{specificErr: validationErr}.make()
+	}
+
+	conn, dialErr := grpc.Dial(addr.asColonSeparatedString(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if dialErr != nil {
+		return nil, connError{specificErr: dialErr}.make()
+	}
+
+	gr.connCache.put(addr, conn)
 
 	return conn, nil
 

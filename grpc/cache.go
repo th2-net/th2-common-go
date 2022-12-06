@@ -2,7 +2,6 @@ package main
 
 import (
 	"google.golang.org/grpc"
-	"strings"
 )
 
 type ConnectionCacheMapData[T comparable] map[T]grpc.ClientConnInterface
@@ -21,29 +20,26 @@ func (cc *ConnectionCacheMapData[T]) get(key T) (grpc.ClientConnInterface, bool)
 	return conn, exists
 }
 
+//the following caching design offers the flexibility of having an internal cache of different type than Address,
+//and importantly, insert additional logic in put and get
+
 type ConnectionCache interface {
-	put(attributes []string, conn grpc.ClientConnInterface)
-	get(attributes []string) (grpc.ClientConnInterface, bool)
+	put(key Address, conn grpc.ClientConnInterface)
+	get(key Address) (grpc.ClientConnInterface, bool)
 }
 
-type ConnectionStringKeyCache struct {
-	internalCache ConnectionCacheMapData[string]
+type ConnectionAddressKeyCache struct {
+	internalCache ConnectionCacheMapData[Address]
 }
 
-func initConnectionStringKeyCache() ConnectionCache {
-	return &ConnectionStringKeyCache{internalCache: initConnectionCacheMapData[string]()}
+func initConnectionAddressKeyCache() ConnectionCache {
+	return &ConnectionAddressKeyCache{internalCache: initConnectionCacheMapData[Address]()}
 }
 
-func (sc *ConnectionStringKeyCache) put(attributes []string, conn grpc.ClientConnInterface) {
-	attrsCacheKey := sc.formatForCacheKey(attributes)
-	sc.internalCache.put(attrsCacheKey, conn)
+func (sc *ConnectionAddressKeyCache) put(key Address, conn grpc.ClientConnInterface) {
+	sc.internalCache.put(key, conn)
 }
 
-func (sc *ConnectionStringKeyCache) get(attributes []string) (grpc.ClientConnInterface, bool) {
-	attrsCacheKey := sc.formatForCacheKey(attributes)
-	return sc.internalCache.get(attrsCacheKey)
-}
-
-func (sc *ConnectionStringKeyCache) formatForCacheKey(attributes []string) string {
-	return strings.Join(attributes, ", ")
+func (sc *ConnectionAddressKeyCache) get(key Address) (grpc.ClientConnInterface, bool) {
+	return sc.internalCache.get(key)
 }
