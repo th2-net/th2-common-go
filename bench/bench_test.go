@@ -3,7 +3,7 @@ package th2_bench
 import (
 	"testing"
 
-	p_buff "exactpro/th2/th2-common-go/proto"
+	p_buff "github.com/th2-net/th2-common-go/proto"
 
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )

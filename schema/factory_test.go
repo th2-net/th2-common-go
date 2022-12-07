@@ -1,11 +1,11 @@
 package schema
 
 import (
-	factory "exactpro/th2/th2-common-go/schema/factory"
-	msg "exactpro/th2/th2-common-go/schema/message/configuration"
-	mq "exactpro/th2/th2-common-go/schema/message/impl/rabbitmq/configuration"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
+	factory "github.com/th2-net/th2-common-go/schema/factory"
+	msg "github.com/th2-net/th2-common-go/schema/message/configuration"
+	mq "github.com/th2-net/th2-common-go/schema/message/impl/rabbitmq/configuration"
 	"os"
 	"path/filepath"
 	"testing"

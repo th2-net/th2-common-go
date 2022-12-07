@@ -22,7 +22,7 @@
 package __
 
 import (
-	proto "exactpro/th2/th2-common-go/proto"
+	proto "github.com/th2-net/th2-common-go/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"

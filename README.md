@@ -4,7 +4,7 @@
 
 1. Import factory package
 ```
-factory "exactpro/th2/th2-common-go/schema/factory"
+factory "github.com/th2-net/th2-common-go/schema/factory"
 ```
 
 2. Create factory with configs from the default path (`/var/th2/config/*`):

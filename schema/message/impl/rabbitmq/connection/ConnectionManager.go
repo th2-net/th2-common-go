@@ -9,7 +9,7 @@ import (
 
 	amqp "github.com/streadway/amqp"
 
-	rmq_cfg "exactpro/th2/th2-common-go/schema/message/impl/rabbitmq/configuration"
+	rmq_cfg "github.com/th2-net/th2-common-go/schema/message/impl/rabbitmq/configuration"
 )
 
 type ConnectionManager struct {

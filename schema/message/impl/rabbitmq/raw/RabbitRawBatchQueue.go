@@ -5,9 +5,9 @@ import (
 
 	"github.com/rs/zerolog"
 
-	message "exactpro/th2/th2-common-go/schema/message"
-	cfg "exactpro/th2/th2-common-go/schema/message/configuration"
-	connection "exactpro/th2/th2-common-go/schema/message/impl/rabbitmq/connection"
+	message "github.com/th2-net/th2-common-go/schema/message"
+	cfg "github.com/th2-net/th2-common-go/schema/message/configuration"
+	connection "github.com/th2-net/th2-common-go/schema/message/impl/rabbitmq/connection"
 )
 
 type RabbitRawBatchQueue struct {

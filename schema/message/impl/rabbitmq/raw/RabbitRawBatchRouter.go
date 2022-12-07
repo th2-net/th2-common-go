@@ -5,10 +5,10 @@ import (
 
 	"github.com/rs/zerolog"
 
-	p_buff "exactpro/th2/th2-common-go/proto"
-	message "exactpro/th2/th2-common-go/schema/message"
-	cfg "exactpro/th2/th2-common-go/schema/message/configuration"
-	rmq_connection "exactpro/th2/th2-common-go/schema/message/impl/rabbitmq/connection"
+	p_buff "github.com/th2-net/th2-common-go/proto"
+	message "github.com/th2-net/th2-common-go/schema/message"
+	cfg "github.com/th2-net/th2-common-go/schema/message/configuration"
+	rmq_connection "github.com/th2-net/th2-common-go/schema/message/impl/rabbitmq/connection"
 )
 
 type AliasAndMessageToSend = map[string]*p_buff.RawMessageBatch

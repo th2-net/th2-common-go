@@ -20,7 +20,7 @@
  import "google/protobuf/duration.proto";
  import "google/protobuf/wrappers.proto";
 
-option go_package = "exactpro/th2/th2-common-go/proto";
+option go_package = "github.com/th2-net/th2-common-go/proto";
 
 //--// Metadata structures //--//
  

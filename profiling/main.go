@@ -11,9 +11,9 @@ import (
 
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
-	p_buff "exactpro/th2/th2-common-go/proto"
-	factory "exactpro/th2/th2-common-go/schema/factory"
-	cfg "exactpro/th2/th2-common-go/schema/message/configuration"
+	p_buff "github.com/th2-net/th2-common-go/proto"
+	factory "github.com/th2-net/th2-common-go/schema/factory"
+	cfg "github.com/th2-net/th2-common-go/schema/message/configuration"
 )
 
 func main() {

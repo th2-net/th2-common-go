@@ -4,16 +4,16 @@ import (
 	"flag"
 
 	"github.com/rs/zerolog"
-    "github.com/rs/zerolog/log"
+	"github.com/rs/zerolog/log"
 
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 
-	factory "exactpro/th2/th2-common-go/schema/factory"
-	cfg "exactpro/th2/th2-common-go/schema/message/configuration"
-	p_buff "exactpro/th2/th2-common-go/proto"
+	p_buff "github.com/th2-net/th2-common-go/proto"
+	factory "github.com/th2-net/th2-common-go/schema/factory"
+	cfg "github.com/th2-net/th2-common-go/schema/message/configuration"
 )
 
-//--rabbitConfiguration=cfg/rabbitMQ.json --messageRouterConfiguration=cfg/mq.json
+// --rabbitConfiguration=cfg/rabbitMQ.json --messageRouterConfiguration=cfg/mq.json
 func main() {
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -32,7 +32,7 @@ func main() {
 		cf, err = factory.NewCommonFactory()
 		if err != nil {
 			panic(err)
-		}		
+		}
 
 	} else {
 

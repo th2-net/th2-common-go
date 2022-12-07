@@ -1,7 +1,7 @@
 package th2
 
 import (
-	rmq_connection "exactpro/th2/th2-common-go/schema/message/impl/rabbitmq/connection"
+	rmq_connection "github.com/th2-net/th2-common-go/schema/message/impl/rabbitmq/connection"
 )
 
 type MessageSender interface {

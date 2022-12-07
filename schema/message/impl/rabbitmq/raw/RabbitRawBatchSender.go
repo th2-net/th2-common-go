@@ -7,8 +7,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	p_buff "exactpro/th2/th2-common-go/proto"
-	rmq_connection "exactpro/th2/th2-common-go/schema/message/impl/rabbitmq/connection"
+	p_buff "github.com/th2-net/th2-common-go/proto"
+	rmq_connection "github.com/th2-net/th2-common-go/schema/message/impl/rabbitmq/connection"
 )
 
 type RabbitRawBatchSender struct {

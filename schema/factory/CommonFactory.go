@@ -8,11 +8,11 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	message "exactpro/th2/th2-common-go/schema/message"
-	cfg "exactpro/th2/th2-common-go/schema/message/configuration"
-	rmq_cfg "exactpro/th2/th2-common-go/schema/message/impl/rabbitmq/configuration"
-	rmq_connection "exactpro/th2/th2-common-go/schema/message/impl/rabbitmq/connection"
-	rmq_raw "exactpro/th2/th2-common-go/schema/message/impl/rabbitmq/raw"
+	message "github.com/th2-net/th2-common-go/schema/message"
+	cfg "github.com/th2-net/th2-common-go/schema/message/configuration"
+	rmq_cfg "github.com/th2-net/th2-common-go/schema/message/impl/rabbitmq/configuration"
+	rmq_connection "github.com/th2-net/th2-common-go/schema/message/impl/rabbitmq/connection"
+	rmq_raw "github.com/th2-net/th2-common-go/schema/message/impl/rabbitmq/raw"
 )
 
 const (

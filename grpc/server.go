@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	ac "exactpro/th2/th2-common-go/grpc/proto"
-	cg "exactpro/th2/th2-common-go/proto" //common proto
+	ac "github.com/th2-net/th2-common-go/grpc/proto"
+	cg "github.com/th2-net/th2-common-go/proto" //common proto
 	"google.golang.org/grpc"
 	"log"
 )
@@ -24,9 +24,8 @@ func registerService(registrar grpc.ServiceRegistrar) {
 }
 
 func main() {
-
 	grpcRouter := CommonGrpcRouter{Config: GrpcConfig{}}
-	cp := &ConfigProviderFromFile{DirectoryPath: "../resources"}
+	cp := &ConfigProviderFromFile{DirectoryPath: "resources"}
 	cfgErr := cp.GetConfig(grpcJsonFileName, &grpcRouter.Config)
 	if cfgErr != nil {
 		log.Fatalf(cfgErr.Error())

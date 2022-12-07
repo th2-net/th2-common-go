@@ -1,8 +1,8 @@
 package th2
 
 import (
-	cfg "exactpro/th2/th2-common-go/schema/message/configuration"
-	rmq_connection "exactpro/th2/th2-common-go/schema/message/impl/rabbitmq/connection"
+	cfg "github.com/th2-net/th2-common-go/schema/message/configuration"
+	rmq_connection "github.com/th2-net/th2-common-go/schema/message/impl/rabbitmq/connection"
 )
 
 type MessageQueue interface {
