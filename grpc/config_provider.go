@@ -8,10 +8,6 @@ import (
 	"path/filepath"
 )
 
-const (
-	grpcJsonFileName = "grpc.json" //for client/server sample. will be moved out from here
-)
-
 type ConfigProvider interface {
 	GetConfig(resourceName string, target interface{}) error
 }

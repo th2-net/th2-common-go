@@ -1,11 +1,17 @@
-package grpc
+package main
 
 import (
 	"context"
+	commongrpc "github.com/th2-net/th2-common-go/grpc"
 	ac "github.com/th2-net/th2-common-go/grpc/proto"
 	cg "github.com/th2-net/th2-common-go/proto" //common proto
 	"google.golang.org/grpc"
 	"log"
+	"time"
+)
+
+const (
+	grpcJsonFileName = "grpc.json"
 )
 
 type server struct {
@@ -23,19 +29,22 @@ func registerService(registrar grpc.ServiceRegistrar) {
 	ac.RegisterActServer(registrar, &server{})
 }
 
+const lifetimeSec = 30
+
 func main() {
-	grpcRouter := CommonGrpcRouter{Config: GrpcConfig{}}
-	cp := &ConfigProviderFromFile{DirectoryPath: "resources"}
+	grpcRouter := commongrpc.CommonGrpcRouter{Config: commongrpc.GrpcConfig{}}
+	cp := &commongrpc.ConfigProviderFromFile{DirectoryPath: "../resources"}
 	cfgErr := cp.GetConfig(grpcJsonFileName, &grpcRouter.Config)
 	if cfgErr != nil {
 		log.Fatalf(cfgErr.Error())
 	}
-	stopServerFunc, err := grpcRouter.StartServer(registerService)
+	stopServerFunc, err := grpcRouter.StartServerAsync(registerService)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 
-	stopServerFunc() //seems to have no effect?..
+	time.Sleep(time.Second * lifetimeSec)
 
-	//time.Sleep(time.Second * 3)
+	stopServerFunc()
+
 }

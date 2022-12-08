@@ -1,18 +1,19 @@
-package grpc
+package main
 
 import (
 	"context"
 	"github.com/google/uuid"
+	"github.com/th2-net/th2-common-go/grpc"
 	ac "github.com/th2-net/th2-common-go/grpc/proto" //act proto
 	cg "github.com/th2-net/th2-common-go/proto"      //common proto
 	"log"
 	"time"
 )
 
-func _() {
-	grpcRouter := CommonGrpcRouter{Config: GrpcConfig{}}
-	cp := &ConfigProviderFromFile{DirectoryPath: "resources"}
-	cfgErr := cp.GetConfig(grpcJsonFileName, &grpcRouter.Config)
+func main() {
+	grpcRouter := grpc.CommonGrpcRouter{Config: grpc.GrpcConfig{}}
+	cp := &grpc.ConfigProviderFromFile{DirectoryPath: "../resources"}
+	cfgErr := cp.GetConfig("grpc.json", &grpcRouter.Config)
 	if cfgErr != nil {
 		log.Fatalf(cfgErr.Error())
 	}
