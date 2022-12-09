@@ -45,14 +45,14 @@ func TestFindEndpointAddrViaAttributesExactMatch(t *testing.T) {
 	gc, _ := getGrpcConfig(validGrpcFileName)
 	addr, err := gc.findEndpointAddrViaAttributes([]string{"actAttr", "otherAttr1", "otherAttr2"})
 	assertNilWithMsg(t, err)
-	assert.Equal(t, ":8080", addr.asColonSeparatedString(), "Expected and actual addresses not equal")
+	assert.Equal(t, ":8083", addr.asColonSeparatedString(), "Expected and actual addresses not equal")
 }
 
 func TestFindEndpointAddrViaAttributesPartlyMatch(t *testing.T) {
 	gc, _ := getGrpcConfig(validGrpcFileName)
 	addr, err := gc.findEndpointAddrViaAttributes([]string{"actAttr"})
 	assertNilWithMsg(t, err)
-	assert.Equal(t, ":8080", addr.asColonSeparatedString(), "Expected and actual addresses not equal")
+	assert.Equal(t, ":8083", addr.asColonSeparatedString(), "Expected and actual addresses not equal")
 }
 
 func TestFindEndpointAddrViaAttributesNonExistingTarget(t *testing.T) {
