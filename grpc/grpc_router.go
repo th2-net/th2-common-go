@@ -91,27 +91,7 @@ type CommonGrpcRouter struct {
 	connCache ConnectionCache
 }
 
-func (gr *CommonGrpcRouter) StartServer(registrar func(grpc.ServiceRegistrar)) error {
-
-	address := gr.Config.getServerAddress()
-
-	listener, netErr := net.Listen("tcp", address)
-	if netErr != nil {
-		return errors.New(
-			fmt.Sprintf("could not start listening to the network: %s", netErr.Error()))
-	}
-
-	s := grpc.NewServer()
-	registrar(s)
-	if serveErr := s.Serve(listener); serveErr != nil {
-		return errors.New(fmt.Sprintf("error reading gRPC requests: %s", serveErr.Error()))
-	}
-
-	return nil
-}
-
-func (gr *CommonGrpcRouter) StartServerAsync(registrar func(grpc.ServiceRegistrar)) (StopServer, error) {
-
+func (gr *CommonGrpcRouter) createListener() (net.Listener, error) {
 	address := gr.Config.getServerAddress()
 
 	listener, netErr := net.Listen("tcp", address)
@@ -120,8 +100,36 @@ func (gr *CommonGrpcRouter) StartServerAsync(registrar func(grpc.ServiceRegistra
 			fmt.Sprintf("could not start listening to the network: %s", netErr.Error()))
 	}
 
+	return listener, nil
+}
+
+func (gr *CommonGrpcRouter) createServerWithRegisteredService(registrar func(grpc.ServiceRegistrar)) *grpc.Server {
 	s := grpc.NewServer()
 	registrar(s)
+	return s
+}
+
+func (gr *CommonGrpcRouter) StartServer(registrar func(grpc.ServiceRegistrar)) error {
+	listener, netErr := gr.createListener()
+	if netErr != nil {
+		return netErr
+	}
+
+	s := gr.createServerWithRegisteredService(registrar)
+	if serveErr := s.Serve(listener); serveErr != nil {
+		return errors.New(fmt.Sprintf("error reading gRPC requests: %s", serveErr.Error()))
+	}
+
+	return nil
+}
+
+func (gr *CommonGrpcRouter) StartServerAsync(registrar func(grpc.ServiceRegistrar)) (StopServer, error) {
+	listener, netErr := gr.createListener()
+	if netErr != nil {
+		return nil, netErr
+	}
+
+	s := gr.createServerWithRegisteredService(registrar)
 
 	go func() {
 		if serveErr := s.Serve(listener); serveErr != nil {
