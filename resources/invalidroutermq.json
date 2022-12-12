@@ -1,0 +1,10 @@
+{
+  "queues": {
+    "test_queue": {
+      "INVALID_ROUTING": "routing_key",
+      "queue": "queue_name",
+      "exchange": "exchange",
+      "attributes": ["attr1", "attr2"]
+    }
+  }
+}

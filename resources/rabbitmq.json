@@ -1,0 +1,8 @@
+{
+  "host":"localhost",
+  "vHost": "new_host",
+  "port": "5672",
+  "username": "irving",
+  "password": "pass",
+  "exchangeName": "mq_exch"
+}
