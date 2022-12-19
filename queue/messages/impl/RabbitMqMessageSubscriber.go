@@ -22,7 +22,7 @@ func (cs *CommonMessageSubscriber) Start() error {
 	return nil
 	//use th2Pin for metrics
 }
-func (cs *CommonMessageSubscriber) StartConf() error {
+func (cs *CommonMessageSubscriber) StartWithConf() error {
 	err := cs.ConnManager.BasicConsumeManualAck(cs.qConfig.QueueName, cs.confirmationListener)
 	if err != nil {
 		return err
@@ -44,14 +44,15 @@ type SubscriberMonitor struct {
 }
 
 func (sub SubscriberMonitor) Unsubscribe() error {
+	//////////////////// Need to held
 	err := (*sub.subscriber.listener).OnClose()
 	if err != nil {
 		return err
 	}
-	fail := (*sub.subscriber.confirmationListener).OnClose()
-	if fail != nil {
-		return fail
-	}
+	//fail := (*sub.subscriber.confirmationListener).OnClose()
+	//if fail != nil {
+	//	return fail
+	//}
 	return nil
 }
 

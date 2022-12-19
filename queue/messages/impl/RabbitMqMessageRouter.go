@@ -143,7 +143,7 @@ func (cmr *CommonMessageRouter) subByAlias(listener *message.MessageListener, al
 func (cmr *CommonMessageRouter) subByAliasWithAck(listener *message.ConformationMessageListener, alias string) (SubscriberMonitor, error) {
 	subscriber := cmr.getSubscriber(alias)
 	subscriber.AddConfListener(listener)
-	err := subscriber.StartConf()
+	err := subscriber.StartWithConf()
 	if err != nil {
 		return SubscriberMonitor{}, err
 	}
@@ -160,8 +160,6 @@ func (cmr *CommonMessageRouter) getSubscriber(alias string) *CommonMessageSubscr
 		result = CommonMessageSubscriber{ConnManager: cmr.ConnManager, qConfig: queueConfig, th2Pin: alias}
 
 		cmr.Subscribers[alias] = result
-		log.Printf("cmr.subs[alias]s : %v \n", alias)
-
 		return &result
 	}
 }
@@ -178,7 +176,6 @@ func (cmr *CommonMessageRouter) getSender(alias string) *CommonMessageSender {
 			sendQueue: queueConfig.RoutingKey, th2Pin: alias}
 
 		cmr.Senders[alias] = result
-		log.Printf("cmr.senders[alias] : %v \n", cmr.Senders[alias])
 
 		return &result
 	}

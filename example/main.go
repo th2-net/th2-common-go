@@ -13,7 +13,7 @@ type confirmationListener struct {
 }
 
 func (cl confirmationListener) Handle(delivery *common.Delivery, batch *p_buff.MessageGroupBatch, confirm *common.Confirmation) error {
-	log.Println("Handelsss")
+	log.Println("Handling")
 	log.Println(batch)
 	err := (*confirm).Confirm()
 	if err != nil {
@@ -33,7 +33,7 @@ type listener struct {
 }
 
 func (l listener) Handle(delivery *common.Delivery, batch *p_buff.MessageGroupBatch) error {
-	log.Println("Handelsss")
+	log.Println("Handling")
 	log.Println(batch)
 	return nil
 
@@ -48,17 +48,16 @@ func main() {
 	MqRouter := config.CommonMessageRouter{ConnManager: manager.ConnectionManager{}, Senders: make(map[string]config.CommonMessageSender), Subscribers: make(map[string]config.CommonMessageSubscriber)}
 	MqRouter.ConnManager.Init("../resources/routermq.json", "../resources/rabbitmq.json")
 
-	//err := MqRouter.SendAll(&p_buff.MessageGroupBatch{}, "publish", "raw")
+	//err := MqRouter.SendAll(&p_buff.MessageGroupBatch{}, "group")
 	//if err != nil {
 	//	log.Fatalf("Cannt send, reason : ", err)
 	//}
-	//
-	//
-	mli := listener{}
-	var li message.MessageListener = mli
-	//cmli := confirmationListener{}
-	//var c message.ConformationMessageListener = cmli
-	monitor, _ := MqRouter.SubscribeAll(&li, "subscribe", "raw")
+
+	l := listener{}
+	var ml message.MessageListener = l
+	//cml := confirmationListener{}
+	//var c message.ConformationMessageListener = cml
+	monitor, _ := MqRouter.SubscribeAll(&ml, "group")
 	err := monitor.Unsubscribe()
 	if err != nil {
 		log.Println(err)

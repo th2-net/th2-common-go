@@ -133,7 +133,6 @@ func (manager *ConnectionManager) BasicConsumeManualAck(queueName string, listen
 		log.Println(err)
 		return err
 	}
-	var forever chan struct{}
 	go func() {
 		for d := range msgs {
 			log.Printf("in queue %v \n", queueName)
@@ -153,7 +152,6 @@ func (manager *ConnectionManager) BasicConsumeManualAck(queueName string, listen
 	}()
 
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-	<-forever
 	return nil
 }
 
@@ -172,6 +170,7 @@ func (manager *ConnectionManager) BasicConsume(queueName string, listener *messa
 		log.Println(err)
 		return err
 	}
+
 	go func() {
 		for d := range msgs {
 			log.Printf("in queue %v \n", queueName)
@@ -193,8 +192,6 @@ func (manager *ConnectionManager) BasicConsume(queueName string, listener *messa
 }
 
 func (manager *ConnectionManager) CloseConn() error {
-	log.Println("Closing")
-
 	err := manager.channel.Close()
 	if err != nil {
 		return err

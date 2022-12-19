@@ -2,8 +2,8 @@
   "queues": {
     "estore-pin": {
       "attributes": [
-        "publish",
-        "raw"
+        "group",
+        "publish"
       ],
       "exchange": "mq_ex",
       "filters": [],
@@ -13,7 +13,7 @@
     "e-pin": {
       "attributes": [
         "subscribe",
-        "raw"
+        "group"
       ],
       "exchange": "mq_ex",
       "filters": [],
@@ -22,8 +22,8 @@
     },
     "eio-pin": {
       "attributes": [
-        "subscribe",
-        "raw"
+        "group",
+        "subscribe"
       ],
       "exchange": "mq_ex",
       "filters": [],

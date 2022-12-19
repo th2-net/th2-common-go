@@ -7,7 +7,10 @@
     <list default="true" id="371af4b4-3ffc-496f-8ef5-9ca3707a193e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/example/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/example/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/messages/connection/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/queue/messages/connection/manager.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/queue/messages/impl/RabbitMqMessageRouter.go" beforeDir="false" afterPath="$PROJECT_DIR$/queue/messages/impl/RabbitMqMessageRouter.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/messages/impl/RabbitMqMessageSubscriber.go" beforeDir="false" afterPath="$PROJECT_DIR$/queue/messages/impl/RabbitMqMessageSubscriber.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/routermq.json" beforeDir="false" afterPath="$PROJECT_DIR$/resources/routermq.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
