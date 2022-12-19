@@ -3,7 +3,7 @@
     "estore-pin": {
       "attributes": [
         "publish",
-        "parsed"
+        "raw"
       ],
       "exchange": "mq_ex",
       "filters": [],
@@ -12,13 +12,23 @@
     },
     "e-pin": {
       "attributes": [
-        "publish",
+        "subscribe",
         "raw"
       ],
       "exchange": "mq_ex",
       "filters": [],
       "name": "mq_router2",
-      "queue": ""
+      "queue": "mq"
+    },
+    "eio-pin": {
+      "attributes": [
+        "subscribe",
+        "raw"
+      ],
+      "exchange": "mq_ex",
+      "filters": [],
+      "name": "",
+      "queue": "mq_2"
     }
   }
 }

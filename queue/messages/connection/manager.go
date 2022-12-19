@@ -2,8 +2,11 @@ package connection
 
 import (
 	"fmt"
+	"github.com/streadway/amqp"
 	p_buff "github.com/th2-net/th2-common-go/proto"
+	"github.com/th2-net/th2-common-go/queue/common"
 	mq "github.com/th2-net/th2-common-go/queue/configuration"
+	message "github.com/th2-net/th2-common-go/queue/messages"
 	q_conf "github.com/th2-net/th2-common-go/queue/queueConfiguration"
 	"github.com/wagslane/go-rabbitmq"
 	"google.golang.org/protobuf/proto"
@@ -15,6 +18,8 @@ type ConnectionManager struct {
 	QConfig      *q_conf.MessageRouterConfiguration
 	MqConnConfig *mq.RabbitMQConfiguration
 	url          string
+	conn         *amqp.Connection
+	channel      *amqp.Channel
 }
 
 func (manager *ConnectionManager) Init(queueConfig string, connConfig string) {
@@ -39,6 +44,7 @@ func (manager *ConnectionManager) Init(queueConfig string, connConfig string) {
 		manager.MqConnConfig.Host,
 		port,
 		manager.MqConnConfig.VHost)
+	manager.connect()
 }
 
 func failOnError(err error, msg string) {
@@ -73,6 +79,7 @@ func (manager *ConnectionManager) BasicPublish(message *p_buff.MessageGroupBatch
 	body, err := proto.Marshal(message)
 	if err != nil {
 		failOnError(err, "Error during marshaling message into proto message. ")
+		return err
 	}
 
 	err = publisher.Publish(
@@ -97,54 +104,126 @@ func (manager *ConnectionManager) BasicPublish(message *p_buff.MessageGroupBatch
 
 }
 
-//func (manager *MqManager) BasicConsume(queueName string, msgBatch *p_buff.MessageBatch) {
-//
-//	conn, err := amqp.Dial(manager.url)
-//	failOnError(err, "Failed to connect to RabbitMQ")
-//	defer conn.Close()
-//
-//	ch, err := conn.Channel()
-//	failOnError(err, "Failed to open a channel")
-//	defer ch.Close()
-//
-//	msgs, err := ch.Consume(
-//		queueName, // queue
-//		"",        // consumer
-//		false,     // auto-ack
-//		false,     // exclusive
-//		false,     // no-local
-//		false,     // no-wait
-//		nil,       // args
-//	)
-//	failOnError(err, "Failed to register a consumer")
-//
-//	var messages []*p_buff.Message
-//	var list []amqp.Delivery
-//	var forever chan struct{}
-//	go func() {
-//		for d := range msgs {
-//			list = append(list, d)
-//		}
-//	}()
-//
-//	go func() {
-//		for {
-//			time.Sleep(10 * time.Second)
-//			if len(list) > 0 {
-//				for _, v := range list {
-//					result := &p_buff.Message{}
-//					proto.Unmarshal(v.Body, result)
-//					log.Printf("consumed: %T", result)
-//					v.Ack(false)
-//					messages = append(messages, result)
-//				}
-//				list = list[:0]
-//				msgBatch.Messages = messages
-//			}
-//		}
-//	}()
-//
-//	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-//	<-forever
-//
-//}
+func (manager *ConnectionManager) connect() {
+	conn, err := amqp.Dial(manager.url)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	manager.conn = conn
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	manager.channel = ch
+}
+
+func (manager *ConnectionManager) BasicConsumeManualAck(queueName string, listener *message.ConformationMessageListener) error {
+
+	msgs, err := manager.channel.Consume(
+		queueName, // queue
+		"",        // consumer
+		false,     // auto-ack
+		false,     // exclusive
+		false,     // no-local
+		false,     // no-wait
+		nil,       // args
+	)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	var forever chan struct{}
+	go func() {
+		for d := range msgs {
+			log.Printf("in queue %v \n", queueName)
+			result := &p_buff.MessageGroupBatch{}
+			err := proto.Unmarshal(d.Body, result)
+			if err != nil {
+				log.Fatalf("Cann't unmarshal : %v \n", err)
+			}
+			delivery := common.Delivery{Redelivered: d.Redelivered}
+			deliveryConfirm := DeliveryConfirmation{delivery: &d}
+			var conf common.Confirmation = deliveryConfirm
+			fail := (*listener).Handle(&delivery, result, &conf)
+			if fail != nil {
+				log.Fatalf("Cann't Handle : %v \n", fail)
+			}
+		}
+	}()
+
+	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	<-forever
+	return nil
+}
+
+func (manager *ConnectionManager) BasicConsume(queueName string, listener *message.MessageListener) error {
+
+	msgs, err := manager.channel.Consume(
+		queueName, // queue
+		"",        // consumer
+		true,      // auto-ack
+		false,     // exclusive
+		false,     // no-local
+		false,     // no-wait
+		nil,       // args
+	)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	var forever chan struct{}
+	go func() {
+		for d := range msgs {
+			log.Printf("in queue %v \n", queueName)
+			result := &p_buff.MessageGroupBatch{}
+			err := proto.Unmarshal(d.Body, result)
+			if err != nil {
+				log.Fatalf("Cann't unmarshal : %v \n", err)
+			}
+			delivery := common.Delivery{Redelivered: d.Redelivered}
+			fail := (*listener).Handle(&delivery, result)
+			if fail != nil {
+				log.Fatalf("Cann't Handle : %v \n", fail)
+			}
+		}
+	}()
+
+	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	<-forever
+	return nil
+}
+
+func (manager *ConnectionManager) CloseConn() error {
+	log.Println("Closing")
+
+	err := manager.channel.Close()
+	if err != nil {
+		return err
+	}
+	fail := manager.conn.Close()
+	if fail != nil {
+		return err
+	}
+	log.Println("Closed gracefully")
+	return nil
+}
+
+type DeliveryConfirmation struct {
+	delivery *amqp.Delivery
+}
+
+func (dc DeliveryConfirmation) Confirm() error {
+	err := dc.delivery.Ack(false)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func (dc DeliveryConfirmation) Reject() error {
+	err := dc.delivery.Reject(false)
+	if err != nil {
+		return err
+	}
+	return nil
+}

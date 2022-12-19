@@ -2,6 +2,8 @@ package message
 
 import (
 	p_buff "github.com/th2-net/th2-common-go/proto"
+	c "github.com/th2-net/th2-common-go/queue/common"
+	message "github.com/th2-net/th2-common-go/queue/messages"
 	conn "github.com/th2-net/th2-common-go/queue/messages/connection"
 	q_config "github.com/th2-net/th2-common-go/queue/queueConfiguration"
 	"log"
@@ -10,12 +12,13 @@ import (
 
 type CommonMessageRouter struct {
 	ConnManager conn.ConnectionManager
+	Subscribers map[string]CommonMessageSubscriber
 
 	Senders map[string]CommonMessageSender
 }
 
 func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attributes ...string) error {
-	attrs := cmr.getSendAttributes(attributes)
+	attrs := cmr.getAttributes(attributes, "publish")
 	aliasesFoundByAttrs := cmr.ConnManager.QConfig.FindQueuesByAttr(attrs)
 	aliasAndMessageGroup := cmr.getMessageGroupWithAlias(aliasesFoundByAttrs, MsgBatch)
 	if len(aliasAndMessageGroup) != 0 {
@@ -35,15 +38,98 @@ func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attr
 
 }
 
-func (cmr *CommonMessageRouter) getSendAttributes(attrs []string) []string {
+func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener *message.ConformationMessageListener, attributes ...string) (c.Monitor, error) {
+	attrs := cmr.getAttributes(attributes, "subscribe") ////////////////////////
+	subscribers := []SubscriberMonitor{}
+	defer cmr.ConnManager.CloseConn()
+	aliasesFoundByAttrs := cmr.ConnManager.QConfig.FindQueuesByAttr(attrs)
+	for queueAlias, _ := range aliasesFoundByAttrs {
+		log.Println(queueAlias)
+		subscriber, err := cmr.subByAliasWithAck(listener, queueAlias)
+		if err != nil {
+			log.Fatalln(err)
+			return SubscriberMonitor{}, err
+		}
+		subscribers = append(subscribers, subscriber)
+	}
+	if len(subscribers) != 0 {
+
+		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
+	} else {
+		log.Fatalln("no subscriber ")
+	}
+	return SubscriberMonitor{}, nil
+}
+
+func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, attributes ...string) (c.Monitor, error) {
+	attrs := cmr.getAttributes(attributes, "subscribe")
+	subscribers := []SubscriberMonitor{}
+	defer cmr.ConnManager.CloseConn()
+	aliasesFoundByAttrs := cmr.ConnManager.QConfig.FindQueuesByAttr(attrs)
+	for queueAlias, _ := range aliasesFoundByAttrs {
+		log.Println(queueAlias)
+		subscriber, err := cmr.subByAlias(listener, queueAlias)
+		if err != nil {
+			log.Fatalln(err)
+			return SubscriberMonitor{}, err
+		}
+		subscribers = append(subscribers, subscriber)
+	}
+	if len(subscribers) != 0 {
+
+		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
+	} else {
+		log.Fatalln("no subscriber ")
+	}
+	return SubscriberMonitor{}, nil
+}
+
+// //////////////////////////change
+func (cmr *CommonMessageRouter) getAttributes(attrs []string, keyAttr string) []string {
 	for _, attr := range attrs {
-		if strings.ToLower(attr) == "publish" {
+		if strings.ToLower(attr) == keyAttr {
 			return attrs
 		}
 	}
-	log.Fatalf("not publish attribute in list")
+	log.Fatalf("not appropriate attribute in list")
 	return attrs[:0]
 
+}
+
+func (cmr *CommonMessageRouter) subByAlias(listener *message.MessageListener, alias string) (SubscriberMonitor, error) {
+	subscriber := cmr.getSubscriber(alias)
+	subscriber.AddListener(listener)
+	err := subscriber.Start()
+	if err != nil {
+		return SubscriberMonitor{}, err
+	}
+	return SubscriberMonitor{subscriber: subscriber}, nil
+}
+
+func (cmr *CommonMessageRouter) subByAliasWithAck(listener *message.ConformationMessageListener, alias string) (SubscriberMonitor, error) {
+	subscriber := cmr.getSubscriber(alias)
+	subscriber.AddConfListener(listener)
+	err := subscriber.StartConf()
+	if err != nil {
+		return SubscriberMonitor{}, err
+	}
+	return SubscriberMonitor{subscriber: subscriber}, nil
+}
+
+func (cmr *CommonMessageRouter) getSubscriber(alias string) *CommonMessageSubscriber {
+	queueConfig := cmr.ConnManager.QConfig.Queues[alias] // get queue by alias
+	var result CommonMessageSubscriber
+	if _, ok := cmr.Subscribers[alias]; ok {
+		result = cmr.Subscribers[alias]
+		return &result
+	} else {
+		result = CommonMessageSubscriber{ConnManager: cmr.ConnManager, qConfig: queueConfig, th2Pin: alias}
+
+		cmr.Subscribers[alias] = result
+		log.Printf("cmr.subs[alias]s : %v \n", alias)
+
+		return &result
+	}
 }
 
 func (cmr *CommonMessageRouter) getSender(alias string) *CommonMessageSender {
@@ -58,7 +144,7 @@ func (cmr *CommonMessageRouter) getSender(alias string) *CommonMessageSender {
 			sendQueue: queueConfig.RoutingKey, th2Pin: alias}
 
 		cmr.Senders[alias] = result
-		log.Printf("cmr.senders[alias]s : %v \n", cmr.Senders[alias])
+		log.Printf("cmr.senders[alias] : %v \n", cmr.Senders[alias])
 
 		return &result
 	}
