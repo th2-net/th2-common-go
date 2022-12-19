@@ -18,7 +18,7 @@ type CommonMessageRouter struct {
 }
 
 func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attributes ...string) error {
-	attrs := cmr.getAttributes(attributes, "publish")
+	attrs := cmr.getSendAttributes(attributes)
 	aliasesFoundByAttrs := cmr.ConnManager.QConfig.FindQueuesByAttr(attrs)
 	aliasAndMessageGroup := cmr.getMessageGroupWithAlias(aliasesFoundByAttrs, MsgBatch)
 	if len(aliasAndMessageGroup) != 0 {
@@ -38,8 +38,8 @@ func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attr
 
 }
 
-func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener *message.ConformationMessageListener, attributes ...string) (c.Monitor, error) {
-	attrs := cmr.getAttributes(attributes, "subscribe") ////////////////////////
+func (cmr *CommonMessageRouter) SubscribeWithManualAck(listener *message.ConformationMessageListener, attributes ...string) (c.Monitor, error) {
+	attrs := cmr.getSubscribeAttributes(attributes)
 	subscribers := []SubscriberMonitor{}
 	defer cmr.ConnManager.CloseConn()
 	aliasesFoundByAttrs := cmr.ConnManager.QConfig.FindQueuesByAttr(attrs)
@@ -62,7 +62,7 @@ func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener *message.Conf
 }
 
 func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, attributes ...string) (c.Monitor, error) {
-	attrs := cmr.getAttributes(attributes, "subscribe")
+	attrs := cmr.getSubscribeAttributes(attributes)
 	subscribers := []SubscriberMonitor{}
 	defer cmr.ConnManager.CloseConn()
 	aliasesFoundByAttrs := cmr.ConnManager.QConfig.FindQueuesByAttr(attrs)
@@ -84,16 +84,50 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, 
 	return SubscriberMonitor{}, nil
 }
 
-// //////////////////////////change
-func (cmr *CommonMessageRouter) getAttributes(attrs []string, keyAttr string) []string {
-	for _, attr := range attrs {
-		if strings.ToLower(attr) == keyAttr {
-			return attrs
-		}
-	}
-	log.Fatalf("not appropriate attribute in list")
-	return attrs[:0]
+//// //////////////////////////change
+//func (cmr *CommonMessageRouter) getAttributes(attrs []string, keyAttr string) []string {
+//	for _, attr := range attrs {
+//		if strings.ToLower(attr) == keyAttr {
+//			return attrs
+//		}
+//	}
+//	log.Fatalf("not appropriate attribute in list")
+//	return attrs[:0]
+//
+//}
 
+func (cmr *CommonMessageRouter) getSendAttributes(attrs []string) []string {
+	res := []string{}
+	if len(attrs) == 0 {
+		return res
+	} else {
+		attrMap := make(map[string]bool)
+		for _, attr := range attrs {
+			attrMap[strings.ToLower(attr)] = true
+		}
+		attrMap["publish"] = true
+		for k, _ := range attrMap {
+			res = append(res, k)
+		}
+		return res
+	}
+}
+
+func (cmr *CommonMessageRouter) getSubscribeAttributes(attrs []string) []string {
+	res := []string{}
+	if len(attrs) == 0 {
+		return res
+	} else {
+		attrMap := make(map[string]bool)
+		for _, attr := range attrs {
+			attrMap[strings.ToLower(attr)] = true
+		}
+		attrMap["subscribe"] = true
+		for k, _ := range attrMap {
+			res = append(res, k)
+		}
+		return res
+	}
 }
 
 func (cmr *CommonMessageRouter) subByAlias(listener *message.MessageListener, alias string) (SubscriberMonitor, error) {
