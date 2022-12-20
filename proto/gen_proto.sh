@@ -14,19 +14,16 @@
 
 #! /bin/bash
 
-
-# go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.27.1
-
-# TBD = 
-#protoc -I=./ --go_out=./ --go_opt=Mcommon.proto=exactpro.com/th2/th2-common-go ./common.proto
+# Changing GOPATH
+export GOPATH=$PWD/dependencies
 
 # Downloading common.proto from th2-grpc-common
-wget https://raw.githubusercontent.com/th2-net/th2-grpc-common/master/src/main/proto/th2_grpc_common/common.proto
+go get github.com/th2-net/th2-grpc-common
 
-# Adding option go_package = "github.com/th2-net/th2-common-go/proto" line to common.proto file instead of "option java_package = "com.exactpro.th2.common.grpc"
-sed -i '26 i option go_package = "github.com/th2-net/th2-common-go/proto";' common.proto
-sed -i '23d' common.proto
-sed -i '23d' common.proto
+# TEMPORARY - Adding option `go_package = "/proto"` line to common.proto file instead of `"option java_package = "com.exactpro.th2.common.grpc"`
+sed -i '26 i option go_package = "/proto";' dependencies/pkg/mod/github.com/th2-net/th2-grpc-common@v0.0.0-20221031111658-9bca8902d898/src/main/proto/th2_grpc_common/common.proto
+sed -i '23d' dependencies/pkg/mod/github.com/th2-net/th2-grpc-common@v0.0.0-20221031111658-9bca8902d898/src/main/proto/th2_grpc_common/common.proto
+sed -i '23d' dependencies/pkg/mod/github.com/th2-net/th2-grpc-common@v0.0.0-20221031111658-9bca8902d898/src/main/proto/th2_grpc_common/common.proto
 
 # Generating go code from common.proto
-protoc -I=./ --go_out=./ --go_opt=Mcommon.proto=./ ./common.proto
+protoc --go_out=. dependencies/pkg/mod/github.com/th2-net/**/src/main/proto/**/*.proto

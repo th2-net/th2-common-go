@@ -1,22 +1,8 @@
 #! /bin/bash
 
 
-# Generating code from proto in /proto
-cd proto
-
-# Removing common.proto from /proto if it exists there
-if [ -f common.proto ]; then
-   rm common.proto
-fi
-# Removing common.pb.go from /proto if it exists there
-if [ -f common.pb.go ]; then
-   rm common.pb.go
-fi
-
-# Getting common.proto from grpc-common and generating go code from it
-./gen_proto.sh
-
-cd ..
+# Generating proto code from .proto files
+./proto/gen_proto.sh
 
 # Running the test scripts
 go test ./schema ./grpc
