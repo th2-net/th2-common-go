@@ -19,4 +19,14 @@
 
 # TBD = 
 #protoc -I=./ --go_out=./ --go_opt=Mcommon.proto=exactpro.com/th2/th2-common-go ./common.proto
+
+# Downloading common.proto from th2-grpc-common
+wget https://raw.githubusercontent.com/th2-net/th2-grpc-common/master/src/main/proto/th2_grpc_common/common.proto
+
+# Adding option go_package = "github.com/th2-net/th2-common-go/proto" line to common.proto file instead of "option java_package = "com.exactpro.th2.common.grpc"
+sed -i '26 i option go_package = "github.com/th2-net/th2-common-go/proto";' common.proto
+sed -i '23d' common.proto
+sed -i '23d' common.proto
+
+# Generating go code from common.proto
 protoc -I=./ --go_out=./ --go_opt=Mcommon.proto=./ ./common.proto
