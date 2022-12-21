@@ -7,16 +7,16 @@ import (
 	"os"
 )
 
-type ConnectionManagerConfiguration struct {
-	subscriberName               string
-	ConnectionTimeout            int `json:"connectionTimeout"`
-	ConnectionCloseTimeout       int `json:"connectionCloseTimeout"`
-	MaxRecoveryAttempts          int `json:"maxRecoveryAttempts"`
-	MinConnectionRecoveryTimeout int `json:"minConnectionRecoveryTimeout"`
-	MaxConnectionRecoveryTimeout int `json:"maxConnectionRecoveryTimeout"`
-	PrefetchCount                int `json:"prefetchCount"`
-	MessageRecursionLimit        int `json:"messageRecursionLimit"`
-}
+//type ConnectionManagerConfiguration struct {
+//	subscriberName               string
+//	ConnectionTimeout            int `json:"connectionTimeout"`
+//	ConnectionCloseTimeout       int `json:"connectionCloseTimeout"`
+//	MaxRecoveryAttempts          int `json:"maxRecoveryAttempts"`
+//	MinConnectionRecoveryTimeout int `json:"minConnectionRecoveryTimeout"`
+//	MaxConnectionRecoveryTimeout int `json:"maxConnectionRecoveryTimeout"`
+//	PrefetchCount                int `json:"prefetchCount"`
+//	MessageRecursionLimit        int `json:"messageRecursionLimit"`
+//}
 
 type RabbitMQConfiguration struct {
 	Host                         string `json:"host"`

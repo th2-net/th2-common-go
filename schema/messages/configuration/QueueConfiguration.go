@@ -1,4 +1,4 @@
-package queueConfiguration
+package configuration
 
 import (
 	"encoding/json"

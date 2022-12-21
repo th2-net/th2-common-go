@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"github.com/streadway/amqp"
 	p_buff "github.com/th2-net/th2-common-go/proto"
-	"github.com/th2-net/th2-common-go/queue/common"
-	mq "github.com/th2-net/th2-common-go/queue/configuration"
-	message "github.com/th2-net/th2-common-go/queue/messages"
-	q_conf "github.com/th2-net/th2-common-go/queue/queueConfiguration"
+	"github.com/th2-net/th2-common-go/schema/common"
+	"github.com/th2-net/th2-common-go/schema/messages"
+	"github.com/th2-net/th2-common-go/schema/messages/configuration"
 	"github.com/wagslane/go-rabbitmq"
 	"google.golang.org/protobuf/proto"
 	"log"
@@ -15,8 +14,8 @@ import (
 )
 
 type ConnectionManager struct {
-	QConfig      *q_conf.MessageRouterConfiguration
-	MqConnConfig *mq.RabbitMQConfiguration
+	QConfig      *configuration.MessageRouterConfiguration
+	MqConnConfig *configuration.RabbitMQConfiguration
 	url          string
 	conn         *amqp.Connection
 	channel      *amqp.Channel
@@ -24,12 +23,12 @@ type ConnectionManager struct {
 
 func (manager *ConnectionManager) Init(queueConfig string, connConfig string) {
 
-	mqConnConfig := mq.RabbitMQConfiguration{}
+	mqConnConfig := configuration.RabbitMQConfiguration{}
 	err := mqConnConfig.Init(connConfig)
 	failOnError(err, "Initialization error")
 	manager.MqConnConfig = &mqConnConfig
 
-	MQConfig := q_conf.MessageRouterConfiguration{}
+	MQConfig := configuration.MessageRouterConfiguration{}
 	fail := MQConfig.Init(queueConfig)
 	failOnError(fail, "Initialization error")
 	manager.QConfig = &MQConfig

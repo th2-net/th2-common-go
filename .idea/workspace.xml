@@ -5,12 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="371af4b4-3ffc-496f-8ef5-9ca3707a193e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/schema/common/common.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/example/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/queue/messages/connection/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/queue/messages/connection/manager.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/queue/messages/impl/RabbitMqMessageRouter.go" beforeDir="false" afterPath="$PROJECT_DIR$/queue/messages/impl/RabbitMqMessageRouter.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/queue/messages/impl/RabbitMqMessageSubscriber.go" beforeDir="false" afterPath="$PROJECT_DIR$/queue/messages/impl/RabbitMqMessageSubscriber.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/routermq.json" beforeDir="false" afterPath="$PROJECT_DIR$/resources/routermq.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/example/main.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/common/common.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/configuration/MqConfiguration.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/messages/configuration/MqConfiguration.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/messages/MessageListener.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/messages/MessageListener.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/messages/MessageRouter.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/messages/MessageRouter.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/messages/MessageSender.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/messages/MessageSender.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/messages/MessageSubscriber.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/messages/MessageSubscriber.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/messages/RouterConfig.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/messages/RouterConfig.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/messages/connection/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/messages/connection/manager.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/messages/impl/RabbitMqMessageRouter.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/messages/impl/RabbitMqMessageRouter.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/messages/impl/RabbitMqMessageSender.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/messages/impl/RabbitMqMessageSender.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/messages/impl/RabbitMqMessageSubscriber.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/messages/impl/RabbitMqMessageSubscriber.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/queue/queueConfiguration/QueueConfiguration.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/messages/configuration/QueueConfiguration.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,23 +46,35 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.format.on.save.advertiser.fired&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.watchers.conflict.with.on.save.actions.check.performed&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
-    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Tekle/Desktop/th2-common-go&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.go.format.on.save.advertiser.fired": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "RunOnceActivity.go.watchers.conflict.with.on.save.actions.check.performed": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "C:/Users/Tekle/Desktop/th2-common-go/schema/factory",
+    "nodejs_package_manager_path": "npm"
   }
-}</component>
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Tekle\Desktop\th2-common-go\schema\factory" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Tekle\Desktop\th2-common-go\schema\messages" />
+      <recent name="C:\Users\Tekle\Desktop\th2-common-go\queue\configuration" />
+      <recent name="C:\Users\Tekle\Desktop\th2-common-go\queue\queueConfiguration" />
+      <recent name="C:\Users\Tekle\Desktop\th2-common-go\example" />
+      <recent name="C:\Users\Tekle\Desktop\th2-common-go\schema" />
+    </key>
+  </component>
   <component name="RunManager">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="th2-common-go" />

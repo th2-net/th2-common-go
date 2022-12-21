@@ -2,7 +2,7 @@ package message
 
 import (
 	p_buff "github.com/th2-net/th2-common-go/proto"
-	c "github.com/th2-net/th2-common-go/queue/common"
+	c "github.com/th2-net/th2-common-go/schema/common"
 )
 
 type MessageRouter interface {

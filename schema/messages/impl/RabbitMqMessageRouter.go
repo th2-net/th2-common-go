@@ -2,10 +2,10 @@ package message
 
 import (
 	p_buff "github.com/th2-net/th2-common-go/proto"
-	c "github.com/th2-net/th2-common-go/queue/common"
-	message "github.com/th2-net/th2-common-go/queue/messages"
-	conn "github.com/th2-net/th2-common-go/queue/messages/connection"
-	q_config "github.com/th2-net/th2-common-go/queue/queueConfiguration"
+	c "github.com/th2-net/th2-common-go/schema/common"
+	"github.com/th2-net/th2-common-go/schema/messages"
+	q_config "github.com/th2-net/th2-common-go/schema/messages/configuration"
+	conn "github.com/th2-net/th2-common-go/schema/messages/connection"
 	"log"
 	"strings"
 )
@@ -13,8 +13,7 @@ import (
 type CommonMessageRouter struct {
 	ConnManager conn.ConnectionManager
 	Subscribers map[string]CommonMessageSubscriber
-
-	Senders map[string]CommonMessageSender
+	Senders     map[string]CommonMessageSender
 }
 
 func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attributes ...string) error {
