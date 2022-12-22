@@ -2,7 +2,7 @@ package message
 
 import (
 	p_buff "github.com/th2-net/th2-common-go/proto"
-	conn "github.com/th2-net/th2-common-go/schema/messages/connection"
+	conn "github.com/th2-net/th2-common-go/schema/queue/messages/connection"
 	"log"
 )
 

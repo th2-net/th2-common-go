@@ -1,15 +1,15 @@
 package message
 
 import (
-	"github.com/th2-net/th2-common-go/schema/messages"
-	"github.com/th2-net/th2-common-go/schema/messages/configuration"
-	conn "github.com/th2-net/th2-common-go/schema/messages/connection"
+	"github.com/th2-net/th2-common-go/schema/queue/messages"
+	"github.com/th2-net/th2-common-go/schema/queue/messages/configuration"
+	conn "github.com/th2-net/th2-common-go/schema/queue/messages/connection"
 )
 
 type CommonMessageSubscriber struct {
 	ConnManager          conn.ConnectionManager
 	qConfig              configuration.QueueConfig
-	listener             *message.MessageListener
+	listener             *message.message
 	confirmationListener *message.ConformationMessageListener
 	th2Pin               string
 }

@@ -3,22 +3,22 @@ package message
 import (
 	p_buff "github.com/th2-net/th2-common-go/proto"
 	c "github.com/th2-net/th2-common-go/schema/common"
-	"github.com/th2-net/th2-common-go/schema/messages"
-	q_config "github.com/th2-net/th2-common-go/schema/messages/configuration"
-	conn "github.com/th2-net/th2-common-go/schema/messages/connection"
+	"github.com/th2-net/th2-common-go/schema/queue/messages"
+	q_config "github.com/th2-net/th2-common-go/schema/queue/messages/configuration"
+	conn "github.com/th2-net/th2-common-go/schema/queue/messages/connection"
 	"log"
 	"strings"
 )
 
 type CommonMessageRouter struct {
-	ConnManager conn.ConnectionManager
-	Subscribers map[string]CommonMessageSubscriber
-	Senders     map[string]CommonMessageSender
+	connManager conn.ConnectionManager
+	subscribers map[string]CommonMessageSubscriber
+	senders     map[string]CommonMessageSender
 }
 
 func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attributes ...string) error {
 	attrs := cmr.getSendAttributes(attributes)
-	aliasesFoundByAttrs := cmr.ConnManager.QConfig.FindQueuesByAttr(attrs)
+	aliasesFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	aliasAndMessageGroup := cmr.getMessageGroupWithAlias(aliasesFoundByAttrs, MsgBatch)
 	if len(aliasAndMessageGroup) != 0 {
 		for alias, messageGroup := range aliasAndMessageGroup {
@@ -40,8 +40,8 @@ func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attr
 func (cmr *CommonMessageRouter) SubscribeWithManualAck(listener *message.ConformationMessageListener, attributes ...string) (c.Monitor, error) {
 	attrs := cmr.getSubscribeAttributes(attributes)
 	subscribers := []SubscriberMonitor{}
-	defer cmr.ConnManager.CloseConn()
-	aliasesFoundByAttrs := cmr.ConnManager.QConfig.FindQueuesByAttr(attrs)
+	defer cmr.connManager.CloseConn()
+	aliasesFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	for queueAlias, _ := range aliasesFoundByAttrs {
 		log.Println(queueAlias)
 		subscriber, err := cmr.subByAliasWithAck(listener, queueAlias)
@@ -63,8 +63,8 @@ func (cmr *CommonMessageRouter) SubscribeWithManualAck(listener *message.Conform
 func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, attributes ...string) (c.Monitor, error) {
 	attrs := cmr.getSubscribeAttributes(attributes)
 	subscribers := []SubscriberMonitor{}
-	defer cmr.ConnManager.CloseConn()
-	aliasesFoundByAttrs := cmr.ConnManager.QConfig.FindQueuesByAttr(attrs)
+	defer cmr.connManager.CloseConn()
+	aliasesFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	for queueAlias, _ := range aliasesFoundByAttrs {
 		log.Println(queueAlias)
 		subscriber, err := cmr.subByAlias(listener, queueAlias)
@@ -150,31 +150,31 @@ func (cmr *CommonMessageRouter) subByAliasWithAck(listener *message.Conformation
 }
 
 func (cmr *CommonMessageRouter) getSubscriber(alias string) *CommonMessageSubscriber {
-	queueConfig := cmr.ConnManager.QConfig.Queues[alias] // get queue by alias
+	queueConfig := cmr.connManager.QConfig.Queues[alias] // get queue by alias
 	var result CommonMessageSubscriber
-	if _, ok := cmr.Subscribers[alias]; ok {
-		result = cmr.Subscribers[alias]
+	if _, ok := cmr.subscribers[alias]; ok {
+		result = cmr.subscribers[alias]
 		return &result
 	} else {
-		result = CommonMessageSubscriber{ConnManager: cmr.ConnManager, qConfig: queueConfig, th2Pin: alias}
+		result = CommonMessageSubscriber{ConnManager: cmr.connManager, qConfig: queueConfig, th2Pin: alias}
 
-		cmr.Subscribers[alias] = result
+		cmr.subscribers[alias] = result
 		return &result
 	}
 }
 
 func (cmr *CommonMessageRouter) getSender(alias string) *CommonMessageSender {
-	queueConfig := cmr.ConnManager.QConfig.Queues[alias] // get queue by alias
+	queueConfig := cmr.connManager.QConfig.Queues[alias] // get queue by alias
 	log.Printf("queue by alias : %v \n", queueConfig)
 	var result CommonMessageSender
-	if _, ok := cmr.Senders[alias]; ok {
-		result = cmr.Senders[alias]
+	if _, ok := cmr.senders[alias]; ok {
+		result = cmr.senders[alias]
 		return &result
 	} else {
-		result = CommonMessageSender{ConnManager: cmr.ConnManager, exchangeName: queueConfig.Exchange,
+		result = CommonMessageSender{ConnManager: cmr.connManager, exchangeName: queueConfig.Exchange,
 			sendQueue: queueConfig.RoutingKey, th2Pin: alias}
 
-		cmr.Senders[alias] = result
+		cmr.senders[alias] = result
 
 		return &result
 	}
