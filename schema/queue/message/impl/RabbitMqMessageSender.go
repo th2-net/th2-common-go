@@ -2,7 +2,7 @@ package message
 
 import (
 	p_buff "github.com/th2-net/th2-common-go/proto"
-	conn "github.com/th2-net/th2-common-go/schema/queue/messages/connection"
+	conn "github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"log"
 )
 
@@ -18,7 +18,7 @@ func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 	if batch == nil {
 		log.Fatalln("Value for send can not be null")
 	}
-	err := sender.ConnManager.BasicPublish(batch, sender.sendQueue, sender.exchangeName)
+	err := sender.ConnManager.MessageGroupPublish(batch, sender.sendQueue, sender.exchangeName)
 	if err != nil {
 		return err
 	}

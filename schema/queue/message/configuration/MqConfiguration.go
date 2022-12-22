@@ -7,17 +7,6 @@ import (
 	"os"
 )
 
-//type ConnectionManagerConfiguration struct {
-//	subscriberName               string
-//	ConnectionTimeout            int `json:"connectionTimeout"`
-//	ConnectionCloseTimeout       int `json:"connectionCloseTimeout"`
-//	MaxRecoveryAttempts          int `json:"maxRecoveryAttempts"`
-//	MinConnectionRecoveryTimeout int `json:"minConnectionRecoveryTimeout"`
-//	MaxConnectionRecoveryTimeout int `json:"maxConnectionRecoveryTimeout"`
-//	PrefetchCount                int `json:"prefetchCount"`
-//	MessageRecursionLimit        int `json:"messageRecursionLimit"`
-//}
-
 type RabbitMQConfiguration struct {
 	Host                         string `json:"host"`
 	VHost                        string `json:"VHost"`
@@ -25,13 +14,13 @@ type RabbitMQConfiguration struct {
 	Username                     string `json:"username"`
 	Password                     string `json:"password"`
 	ExchangeName                 string `json:"exchangeName"`
-	ConnectionTimeout            int    `json:"connectionTimeout"`
-	ConnectionCloseTimeout       int    `json:"connectionCloseTimeout"`
-	MaxRecoveryAttempts          int    `json:"maxRecoveryAttempts"`
-	MinConnectionRecoveryTimeout int    `json:"minConnectionRecoveryTimeout"`
-	MaxConnectionRecoveryTimeout int    `json:"maxConnectionRecoveryTimeout"`
-	PrefetchCount                int    `json:"prefetchCount"`
-	MessageRecursionLimit        int    `json:"messageRecursionLimit"`
+	ConnectionTimeout            int    `json:"connectionTimeout,omitempty"`
+	ConnectionCloseTimeout       int    `json:"connectionCloseTimeout,omitempty"`
+	MaxRecoveryAttempts          int    `json:"maxRecoveryAttempts,omitempty"`
+	MinConnectionRecoveryTimeout int    `json:"minConnectionRecoveryTimeout,omitempty"`
+	MaxConnectionRecoveryTimeout int    `json:"maxConnectionRecoveryTimeout,omitempty"`
+	PrefetchCount                int    `json:"prefetchCount,omitempty"`
+	MessageRecursionLimit        int    `json:"messageRecursionLimit,omitempty"`
 
 	Logger zerolog.Logger
 }

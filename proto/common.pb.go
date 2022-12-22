@@ -131,9 +131,9 @@ func (NullValue) EnumDescriptor() ([]byte, []int) {
 type FailUnexpected int32
 
 const (
-	FailUnexpected_NO                  FailUnexpected = 0 // comparison won't fail in case of unexpected fields or messages
+	FailUnexpected_NO                  FailUnexpected = 0 // comparison won't fail in case of unexpected fields or message
 	FailUnexpected_FIELDS              FailUnexpected = 1 // comparison will fail in case of unexpected fields only
-	FailUnexpected_FIELDS_AND_MESSAGES FailUnexpected = 2 // comparison will fail in case of unexpected fields or messages
+	FailUnexpected_FIELDS_AND_MESSAGES FailUnexpected = 2 // comparison will fail in case of unexpected fields or message
 )
 
 // Enum value maps for FailUnexpected.
@@ -992,7 +992,7 @@ type MessageGroup struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Messages []*AnyMessage `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
+	Messages []*AnyMessage `protobuf:"bytes,1,rep,name=message,proto3" json:"message,omitempty"`
 }
 
 func (x *MessageGroup) Reset() {
@@ -1039,7 +1039,7 @@ type MessageBatch struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Messages []*Message `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
+	Messages []*Message `protobuf:"bytes,1,rep,name=message,proto3" json:"message,omitempty"`
 }
 
 func (x *MessageBatch) Reset() {
@@ -1086,7 +1086,7 @@ type RawMessageBatch struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Messages []*RawMessage `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
+	Messages []*RawMessage `protobuf:"bytes,1,rep,name=message,proto3" json:"message,omitempty"`
 }
 
 func (x *RawMessageBatch) Reset() {
@@ -1594,11 +1594,11 @@ type MessageFilter struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Is not used for filtering sub-messages. Will be removed in the future
+	// Is not used for filtering sub-message. Will be removed in the future
 	//
 	// Deprecated: Do not use.
 	MessageType string `protobuf:"bytes,1,opt,name=messageType,proto3" json:"messageType,omitempty"`
-	// Is not used for filtering sub-messages. Will be removed in the future
+	// Is not used for filtering sub-message. Will be removed in the future
 	//
 	// Deprecated: Do not use.
 	Direction          string                  `protobuf:"bytes,2,opt,name=direction,proto3" json:"direction,omitempty"`
@@ -2714,9 +2714,9 @@ var file_common_proto_depIdxs = []int32{
 	9,  // 16: RawMessage.metadata:type_name -> RawMessageMetadata
 	12, // 17: AnyMessage.message:type_name -> Message
 	13, // 18: AnyMessage.raw_message:type_name -> RawMessage
-	14, // 19: MessageGroup.messages:type_name -> AnyMessage
-	12, // 20: MessageBatch.messages:type_name -> Message
-	13, // 21: RawMessageBatch.messages:type_name -> RawMessage
+	14, // 19: MessageGroup.message:type_name -> AnyMessage
+	12, // 20: MessageBatch.message:type_name -> Message
+	13, // 21: RawMessageBatch.message:type_name -> RawMessage
 	15, // 22: MessageGroupBatch.groups:type_name -> MessageGroup
 	5,  // 23: RequestStatus.status:type_name -> RequestStatus.Status
 	2,  // 24: ComparisonSettings.fail_unexpected:type_name -> FailUnexpected

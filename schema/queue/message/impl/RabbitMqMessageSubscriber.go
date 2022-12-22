@@ -1,21 +1,21 @@
 package message
 
 import (
-	"github.com/th2-net/th2-common-go/schema/queue/messages"
-	"github.com/th2-net/th2-common-go/schema/queue/messages/configuration"
-	conn "github.com/th2-net/th2-common-go/schema/queue/messages/connection"
+	conn "github.com/th2-net/th2-common-go/schema/queue/MQcommon"
+	"github.com/th2-net/th2-common-go/schema/queue/message"
+	"github.com/th2-net/th2-common-go/schema/queue/message/configuration"
 )
 
 type CommonMessageSubscriber struct {
 	ConnManager          conn.ConnectionManager
 	qConfig              configuration.QueueConfig
-	listener             *message.message
+	listener             *message.MessageListener
 	confirmationListener *message.ConformationMessageListener
 	th2Pin               string
 }
 
 func (cs *CommonMessageSubscriber) Start() error {
-	err := cs.ConnManager.BasicConsume(cs.qConfig.QueueName, cs.listener)
+	err := cs.ConnManager.MessageGroupConsume(cs.qConfig.QueueName, cs.listener)
 	if err != nil {
 		return err
 	}
@@ -23,7 +23,7 @@ func (cs *CommonMessageSubscriber) Start() error {
 	//use th2Pin for metrics
 }
 func (cs *CommonMessageSubscriber) StartWithConf() error {
-	err := cs.ConnManager.BasicConsumeManualAck(cs.qConfig.QueueName, cs.confirmationListener)
+	err := cs.ConnManager.MessageGroupConsumeManualAck(cs.qConfig.QueueName, cs.confirmationListener)
 	if err != nil {
 		return err
 	}

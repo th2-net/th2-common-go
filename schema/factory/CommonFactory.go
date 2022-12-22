@@ -16,12 +16,12 @@ type CommonFactory struct {
 	cfgProvider ConfigProvider
 }
 
-func NewProvider(args []string) ConfigProvider {
-	return &ConfigProviderFromFile{directoryPath: sourceDirectory, files: args}
+func newProvider(args []string) ConfigProvider {
+	return &ConfigProviderFromFile{configurationPath: sourceDirectory, files: args}
 }
 
 func NewFactory(args []string) *CommonFactory {
-	provider := NewProvider(args[1:])
+	provider := newProvider(args[1:])
 	return &CommonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
 		cfgProvider: provider,

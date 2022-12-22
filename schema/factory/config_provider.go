@@ -17,13 +17,13 @@ type ConfigProvider interface {
 // ConfigProviderFromFile must be without the trailing slash
 // example: "dir/subdir"
 type ConfigProviderFromFile struct {
-	directoryPath string
-	files         []string
+	configurationPath string
+	files             []string
 }
 
 func (cfd *ConfigProviderFromFile) getPath(resourceName string) string {
 	if len(cfd.files) == 0 {
-		path, err := filepath.Abs(fmt.Sprint(cfd.directoryPath, "/", resourceName))
+		path, err := filepath.Abs(fmt.Sprint(cfd.configurationPath, "/", resourceName, ".json"))
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -33,7 +33,7 @@ func (cfd *ConfigProviderFromFile) getPath(resourceName string) string {
 			if strings.Contains(filePath, "/") {
 				fileSlice := strings.Split(filePath, "/")
 				if fileSlice[len(fileSlice)-1] == resourceName {
-					path, err := filepath.Abs(fmt.Sprint(filePath))
+					path, err := filepath.Abs(fmt.Sprint(filePath, ".json"))
 					if err != nil {
 						log.Fatalln(err)
 
@@ -42,7 +42,7 @@ func (cfd *ConfigProviderFromFile) getPath(resourceName string) string {
 				}
 			} else {
 				if filePath == resourceName {
-					path, err := filepath.Abs(fmt.Sprint(cfd.directoryPath, "/", resourceName))
+					path, err := filepath.Abs(fmt.Sprint(cfd.configurationPath, "/", resourceName, ".json"))
 					if err != nil {
 						log.Fatalln(err)
 					}
