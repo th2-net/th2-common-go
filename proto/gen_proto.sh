@@ -15,7 +15,7 @@
 #! /bin/bash
 
 # Changing GOPATH
-export TEMP_PATH=$GOPATH
+TEMP_PATH=$GOPATH
 export GOPATH=$PWD/dependencies
 
 # Downloading common.proto from th2-grpc-common
@@ -31,4 +31,3 @@ protoc --go_out=. dependencies/pkg/mod/github.com/th2-net/**/src/main/proto/**/*
 
 # Changing the GOPATH back
 export GOPATH=TEMP_PATH
-unset TEMP_PATH

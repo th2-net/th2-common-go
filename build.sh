@@ -5,10 +5,10 @@
 ./proto/gen_proto.sh
 
 # Running the test scripts
-go test ./schema ./grpc
+go test ./...
 
 # Running the bench test
-go test -bench=/bench -benchmem bench/bench_test.go
+go test -bench=/bench -benchmem bench/*.go
 
 # Building the code
 # go build .
