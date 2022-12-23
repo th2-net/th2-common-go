@@ -5,16 +5,27 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="371af4b4-3ffc-496f-8ef5-9ca3707a193e" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/example/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/example/main.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/proto/common.pb.go" beforeDir="false" afterPath="$PROJECT_DIR$/proto/common.pb.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/common.proto" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/proto/gen_proto.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/resources/routermq.json" beforeDir="false" afterPath="$PROJECT_DIR$/resources/routermq.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/schema/common/common.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/common/common.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/schema/factory/CommonFactory.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/factory/CommonFactory.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/schema/factory/config_provider.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/factory/config_provider.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/schema/modules/RabbitMQModule.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/modules/RabbitMQModule.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/schema/queue/MQcommon/CommonInterface.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/MQcommon/CommonInterface.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/schema/queue/MQcommon/ConnectionManager.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/MQcommon/ConnectionManager.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/schema/queue/events/MqEventRouter.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/event/MqEventRouter.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/schema/queue/message/MessageListener.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/message/MessageListener.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/schema/queue/message/MessageRouter.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/message/MessageRouter.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/schema/queue/message/MessageSender.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/message/MessageSender.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/schema/queue/message/MessageSubscriber.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/message/MessageSubscriber.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/schema/queue/message/RouterConfig.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/schema/queue/message/configuration/MqConfiguration.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/message/configuration/MqConfiguration.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/schema/queue/message/configuration/QueueConfiguration.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/message/configuration/QueueConfiguration.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/schema/queue/message/impl/RabbitMqMessageRouter.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/message/impl/RabbitMqMessageRouter.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/schema/queue/message/impl/RabbitMqMessageSender.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/message/impl/RabbitMqMessageSender.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/schema/queue/message/impl/RabbitMqMessageSubscriber.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/message/impl/RabbitMqMessageSubscriber.go" afterDir="false" />
@@ -73,7 +84,34 @@
       <recent name="C:\Users\Tekle\Desktop\th2-common-go\queue\queueConfiguration" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Go Build.go build ed.go">
+    <configuration name="go build ed.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="th2-common-go" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="FILE" />
+      <package value="github.com/th2-net/th2-common-go" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/ed.go" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go build github.com/th2-net/th2-common-go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="th2-common-go" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/th2-net/th2-common-go" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/ed.go" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go build nello.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="th2-common-go" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="FILE" />
+      <package value="github.com/th2-net/th2-common-go" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/nello.go" />
+      <method v="2" />
+    </configuration>
     <configuration name="go build try.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="th2-common-go" />
       <working_directory value="$PROJECT_DIR$" />
@@ -84,6 +122,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Build.go build ed.go" />
+        <item itemvalue="Go Build.go build github.com/th2-net/th2-common-go" />
+        <item itemvalue="Go Build.go build nello.go" />
         <item itemvalue="Go Build.go build try.go" />
       </list>
     </recent_temporary>

@@ -10,6 +10,16 @@
       "name": "mq_router",
       "queue": ""
     },
+    "estor-pin": {
+      "attributes": [
+        "group",
+        "publish"
+      ],
+      "exchange": "mq_ex",
+      "filters": [],
+      "name": "mq_router",
+      "queue": ""
+    },
     "e-pin": {
       "attributes": [
         "subscribe",

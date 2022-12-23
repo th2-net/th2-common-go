@@ -13,11 +13,7 @@
  *  limitations under the License.
  */
 
-package message
+package event
 
-import p_buff "github.com/th2-net/th2-common-go/proto"
-
-type MessageGroupBatchSender interface {
-	Send(batch *p_buff.MessageGroupBatch) error
-	//close()
+type CommonEventRouter struct {
 }

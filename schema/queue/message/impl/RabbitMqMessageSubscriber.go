@@ -1,41 +1,97 @@
+/*
+* Copyright 2022 Exactpro (Exactpro Systems Limited)
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+ */
+
 package message
 
 import (
-	conn "github.com/th2-net/th2-common-go/schema/queue/MQcommon"
+	"github.com/streadway/amqp"
+	p_buff "github.com/th2-net/th2-common-go/proto"
+	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
 	"github.com/th2-net/th2-common-go/schema/queue/message/configuration"
+	"google.golang.org/protobuf/proto"
+	"log"
 )
 
 type CommonMessageSubscriber struct {
-	ConnManager          conn.ConnectionManager
-	qConfig              configuration.QueueConfig
+	connManager          *MQcommon.ConnectionManager
+	qConfig              *configuration.QueueConfig
 	listener             *message.MessageListener
 	confirmationListener *message.ConformationMessageListener
 	th2Pin               string
 }
 
+func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
+	result := &p_buff.MessageGroupBatch{}
+	err := proto.Unmarshal(msgDelivery.Body, result)
+	if err != nil {
+		log.Fatalf("Cann't unmarshal : %v \n", err)
+	}
+	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
+
+	fail := (*cs.listener).Handle(&delivery, result)
+	if fail != nil {
+		log.Fatalf("Cann't Handle : %v \n", fail)
+	}
+}
+
+func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) {
+	result := &p_buff.MessageGroupBatch{}
+	err := proto.Unmarshal(msgDelivery.Body, result)
+	if err != nil {
+		log.Fatalf("Cann't unmarshal : %v \n", err)
+	}
+
+	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
+	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery}
+	var confirmation MQcommon.Confirmation = deliveryConfirm
+
+	fail := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
+	if fail != nil {
+		log.Fatalf("Cann't Handle : %v \n", fail)
+	}
+}
+
 func (cs *CommonMessageSubscriber) Start() error {
-	err := cs.ConnManager.MessageGroupConsume(cs.qConfig.QueueName, cs.listener)
+	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.Handler)
 	if err != nil {
 		return err
 	}
 	return nil
 	//use th2Pin for metrics
 }
-func (cs *CommonMessageSubscriber) StartWithConf() error {
-	err := cs.ConnManager.MessageGroupConsumeManualAck(cs.qConfig.QueueName, cs.confirmationListener)
+
+func (cs *CommonMessageSubscriber) ConfirmationStart() error {
+	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.ConfirmationHandler)
 	if err != nil {
 		return err
 	}
 	return nil
 	//use th2Pin for metrics
+}
+
+func (cs *CommonMessageSubscriber) RemoveListener() {
+	cs.listener = nil
+	cs.confirmationListener = nil
 }
 
 func (cs *CommonMessageSubscriber) AddListener(listener *message.MessageListener) {
 	cs.listener = listener
 }
 
-func (cs *CommonMessageSubscriber) AddConfListener(listener *message.ConformationMessageListener) {
+func (cs *CommonMessageSubscriber) AddConfirmationListener(listener *message.ConformationMessageListener) {
 	cs.confirmationListener = listener
 }
 
@@ -44,15 +100,21 @@ type SubscriberMonitor struct {
 }
 
 func (sub SubscriberMonitor) Unsubscribe() error {
-	//////////////////// Need to held
-	err := (*sub.subscriber.listener).OnClose()
-	if err != nil {
-		return err
+	if sub.subscriber.listener != nil {
+		err := (*sub.subscriber.listener).OnClose()
+		if err != nil {
+			return err
+		}
+		sub.subscriber.RemoveListener()
 	}
-	//fail := (*sub.subscriber.confirmationListener).OnClose()
-	//if fail != nil {
-	//	return fail
-	//}
+
+	if sub.subscriber.confirmationListener != nil {
+		err := (*sub.subscriber.confirmationListener).OnClose()
+		if err != nil {
+			return err
+		}
+		sub.subscriber.RemoveListener()
+	}
 	return nil
 }
 

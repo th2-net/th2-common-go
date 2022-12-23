@@ -13,11 +13,40 @@
  *  limitations under the License.
  */
 
-package message
+package MQcommon
 
-import p_buff "github.com/th2-net/th2-common-go/proto"
+import (
+	"github.com/streadway/amqp"
+	"log"
+)
 
-type MessageGroupBatchSender interface {
-	Send(batch *p_buff.MessageGroupBatch) error
-	//close()
+type Publisher struct {
+	url  string
+	conn *amqp.Connection
+}
+
+func (pb *Publisher) connect() {
+	conn, err := amqp.Dial(pb.url)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	pb.conn = conn
+
+}
+
+func (pb *Publisher) Publish(body []byte, routingKey string, exchange string) error {
+	ch, err := pb.conn.Channel()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	defer ch.Close()
+	fail := ch.Publish(exchange, routingKey, false, false, amqp.Publishing{Body: body})
+	if fail != nil {
+		log.Println(err)
+		return err
+	}
+	log.Printf(" [x] Sent %s", body)
+
+	return nil
 }
