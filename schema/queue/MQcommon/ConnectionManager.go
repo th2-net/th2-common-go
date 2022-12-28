@@ -33,7 +33,7 @@ func (manager *ConnectionManager) Construct() {
 	manager.Publisher = Publisher{url: manager.Url}
 	manager.Publisher.connect()
 
-	manager.Consumer = Consumer{url: manager.Url}
+	manager.Consumer = Consumer{url: manager.Url, channels: make(map[string]*amqp.Channel)}
 	manager.Consumer.connect()
 }
 
@@ -48,6 +48,12 @@ func (manager *ConnectionManager) Close() error {
 		return fail
 	}
 
+	if len(manager.Consumer.channels) != 0 {
+		for _, ch := range manager.Consumer.channels {
+			ch.Close()
+		}
+	}
+
 	log.Println("Connection Closed gracefully")
 	return nil
 }
@@ -58,7 +64,9 @@ type DeliveryConfirmation struct {
 
 func (dc DeliveryConfirmation) Confirm() error {
 	err := dc.Delivery.Ack(false)
+	log.Println("Acknowledged")
 	if err != nil {
+		log.Fatalf("error during confirmation: %v \n", err)
 		return err
 	}
 	return nil

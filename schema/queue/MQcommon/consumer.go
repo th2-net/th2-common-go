@@ -21,8 +21,9 @@ import (
 )
 
 type Consumer struct {
-	url  string
-	conn *amqp.Connection
+	url      string
+	conn     *amqp.Connection
+	channels map[string]*amqp.Channel
 }
 
 func (manager *Consumer) connect() {
@@ -38,7 +39,7 @@ func (manager *Consumer) Consume(queueName string, handler func(delivery amqp.De
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer ch.Close()
+	manager.channels[queueName] = ch
 
 	msgs, err := ch.Consume(
 		queueName, // queue
@@ -55,13 +56,12 @@ func (manager *Consumer) Consume(queueName string, handler func(delivery amqp.De
 	}
 
 	go func() {
+		log.Printf("in queue %v \n", queueName)
 		for d := range msgs {
-			log.Printf("in queue %v \n", queueName)
 			handler(d)
 		}
 	}()
 
-	log.Printf(" [*] Consumed message")
 	return nil
 }
 
@@ -70,7 +70,7 @@ func (manager *Consumer) ConsumeWithManualAck(queueName string, handler func(msg
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer ch.Close()
+	manager.channels[queueName] = ch
 	msgs, err := ch.Consume(
 		queueName, // queue
 		"",        // consumer
@@ -85,8 +85,8 @@ func (manager *Consumer) ConsumeWithManualAck(queueName string, handler func(msg
 		return err
 	}
 	go func() {
+		log.Printf("in queue %v \n", queueName)
 		for d := range msgs {
-			log.Printf("in queue %v \n", queueName)
 			handler(d)
 		}
 	}()

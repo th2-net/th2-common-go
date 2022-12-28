@@ -1,0 +1,82 @@
+{
+   "metadata": {
+      "id": {
+         "connectionId": {
+            "sessionAlias": "ws_firstr_test1"
+         },
+         "direction": "FIRST",
+         "sequence": "1667829288625607535",
+         "subsequence": []
+      },
+      "messageType": "Incoming",
+      "protocol": "json"
+   },
+   "fields": {
+      "type": {
+         "simpleValue": "external_transaction_added"
+      },
+      "ch": {
+         "simpleValue": "transactions"
+      },
+      "payload": {
+         "messageValue": {
+            "fields": {
+               "transaction_id": {
+                  "simpleValue": "dba5d75b-9982-424f-a712-9701c0f0b223"
+               },
+               "external_transaction_reference": {
+                  "simpleValue": "166809850630001"
+               },
+               "investment_product_id": {
+                  "simpleValue": "cash"
+               },
+               "primary_transaction_type": {
+                  "simpleValue": "Contribution"
+               },
+               "sub_transaction_type": {
+                  "simpleValue": "Lump sum"
+               },
+               "type": {
+                  "simpleValue": "archived"
+               },
+               "sub_type": {
+                  "simpleValue": "settled"
+               },
+               "currency": {
+                  "simpleValue": "GBP"
+               },
+               "direction": {
+                  "simpleValue": "in"
+               },
+               "created_at": {
+                  "simpleValue": "2022-11-10T17:13:13.359Z"
+               },
+               "updated_at": {
+                  "simpleValue": "2022-11-10T17:13:13.359Z"
+               },
+               "trade_date": {
+                  "simpleValue": "2022-11-10"
+               },
+               "settlement_date": {
+                  "simpleValue": "2022-11-10"
+               },
+               "transaction_value": {
+                  "simpleValue": "104302.2"
+               },
+               "origin": {
+                  "simpleValue": "admin_ui"
+               },
+               "pot_id": {
+                  "simpleValue": "pt-81b0561b-fa75-4bcb-8423-6071028cc504"
+               }
+            }
+         }
+      },
+      "id": {
+         "simpleValue": "f8d33af1-7158-4007-a4e4-e4597fb7f75f"
+      },
+      "ts": {
+         "simpleValue": "number(1668100394029)"
+      }
+   }
+}

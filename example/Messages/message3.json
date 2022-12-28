@@ -1,0 +1,117 @@
+{
+   "metadata": {
+      "id": {
+         "connectionId": {
+            "sessionAlias": "http_firstr_test"
+         },
+         "direction": "SECOND",
+         "sequence": "1667829211656470016",
+         "subsequence": [
+            1,
+            2
+         ]
+      },
+      "timestamp": {
+         "seconds": "1668081626",
+         "nanos": "704367000"
+      },
+      "messageType": "Request/Outgoing",
+      "properties": {
+         "http_id": "a71f1e79-164d-4cd4-b1e1-d8c07f7f41c0",
+         "uri": "http://firstr-test.test.wealthos.cloud:443/admin/utility/v1/update_operational_day/execute",
+         "method": "POST",
+         "header-Authorization": "eyJraWQiOiJoeUpzbmxMS090dnpxUkhlXC80VFlvelZuMFJWUitac3JqXC9POTBSaUw5bTg9IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiIwMTRlNGNlNC00ZjkzLTQ1MmQtODIyNy03ZGY1MDBiYjUzZjgiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0yLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMl95YjU5TmdIS1EiLCJjb2duaXRvOnVzZXJuYW1lIjoidy1zbmVyaGoiLCJvcmlnaW5fanRpIjoiZTUwNzQ0MjUtNjlhNC00MWQ2LTg4YzktN2ZiY2U2Mjg3NGVhIiwiYXVkIjoiN29kbTVnZmtqYW8wYjM2OWJlYW1tdTUydGYiLCJjdXN0b206b3JnX25hbWUiOiJmaXJzdHIiLCJldmVudF9pZCI6IjkyYTRkM2IwLTM0YzQtNGMyZi1hYzkyLTAzMDVmNDY5YmJjMiIsInRva2VuX3VzZSI6ImlkIiwiYXV0aF90aW1lIjoxNjY4MDgxNjA2LCJuYW1lIjoiVyBTIiwiY3VzdG9tOnRlbmFudCI6ImZpcnN0ciIsImV4cCI6MTY2ODA4NTIwNiwiaWF0IjoxNjY4MDgxNjA2LCJqdGkiOiJiNjg5OTcxNC1kMGRkLTQxNzQtYjhhYS0xNGU1YzlkY2QzMGMiLCJlbWFpbCI6IndlYWx0aG9zQGV4YWN0cHJvc3lzdGVtcy5jb20ifQ.DsQxP3ULHBo9xYO2cwm_qkS-tguNrqX-YYxXUXz40hlbnO4jEkpjmOmXviogRLmYaYHvnNbbaMn1-iIvImPaN1O2l_FbBsxA98Ml0yR_3_mySertaqjmTHUWx8h_0UaZ7JHfmV0DHYxkHKAkh7n9CHEZy87AOVpqTzYxfg5PL1SidYqxq874sV-Ja4SLz-KzmN3v5_Gwawn0TppoyRbBHEhjfR70zBUgOQszFx0rsDIdGv-y0bscVMIqK5OvPnCtern22k8GuwNqVRt9Nprw8HK9C6WC2GXvc7EY7Bs3dETxGM-WchhYr2saqgbibMNgYyavoh1DemNnfcI_LoDH5w",
+         "contentType": "application/json"
+      },
+      "protocol": "json"
+   },
+   "fields": {
+      "Request": {
+         "messageValue": {
+            "fields": {
+               "method": {
+                  "simpleValue": "POST"
+               },
+               "uri": {
+                  "simpleValue": "http://firstr-test.test.wealthos.cloud:443/admin/utility/v1/update_operational_day/execute"
+               },
+               "headers": {
+                  "listValue": {
+                     "values": [
+                        {
+                           "messageValue": {
+                              "fields": {
+                                 "name": {
+                                    "simpleValue": "Content-Type"
+                                 },
+                                 "value": {
+                                    "simpleValue": "application/json"
+                                 }
+                              }
+                           }
+                        },
+                        {
+                           "messageValue": {
+                              "fields": {
+                                 "name": {
+                                    "simpleValue": "Content-Length"
+                                 },
+                                 "value": {
+                                    "simpleValue": "32"
+                                 }
+                              }
+                           }
+                        },
+                        {
+                           "messageValue": {
+                              "fields": {
+                                 "name": {
+                                    "simpleValue": "Authorization"
+                                 },
+                                 "value": {
+                                    "simpleValue": "eyJraWQiOiJoeUpzbmxMS090dnpxUkhlXC80VFlvelZuMFJWUitac3JqXC9POTBSaUw5bTg9IiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiIwMTRlNGNlNC00ZjkzLTQ1MmQtODIyNy03ZGY1MDBiYjUzZjgiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAudXMtZWFzdC0yLmFtYXpvbmF3cy5jb21cL3VzLWVhc3QtMl95YjU5TmdIS1EiLCJjb2duaXRvOnVzZXJuYW1lIjoidy1zbmVyaGoiLCJvcmlnaW5fanRpIjoiZTUwNzQ0MjUtNjlhNC00MWQ2LTg4YzktN2ZiY2U2Mjg3NGVhIiwiYXVkIjoiN29kbTVnZmtqYW8wYjM2OWJlYW1tdTUydGYiLCJjdXN0b206b3JnX25hbWUiOiJmaXJzdHIiLCJldmVudF9pZCI6IjkyYTRkM2IwLTM0YzQtNGMyZi1hYzkyLTAzMDVmNDY5YmJjMiIsInRva2VuX3VzZSI6ImlkIiwiYXV0aF90aW1lIjoxNjY4MDgxNjA2LCJuYW1lIjoiVyBTIiwiY3VzdG9tOnRlbmFudCI6ImZpcnN0ciIsImV4cCI6MTY2ODA4NTIwNiwiaWF0IjoxNjY4MDgxNjA2LCJqdGkiOiJiNjg5OTcxNC1kMGRkLTQxNzQtYjhhYS0xNGU1YzlkY2QzMGMiLCJlbWFpbCI6IndlYWx0aG9zQGV4YWN0cHJvc3lzdGVtcy5jb20ifQ.DsQxP3ULHBo9xYO2cwm_qkS-tguNrqX-YYxXUXz40hlbnO4jEkpjmOmXviogRLmYaYHvnNbbaMn1-iIvImPaN1O2l_FbBsxA98Ml0yR_3_mySertaqjmTHUWx8h_0UaZ7JHfmV0DHYxkHKAkh7n9CHEZy87AOVpqTzYxfg5PL1SidYqxq874sV-Ja4SLz-KzmN3v5_Gwawn0TppoyRbBHEhjfR70zBUgOQszFx0rsDIdGv-y0bscVMIqK5OvPnCtern22k8GuwNqVRt9Nprw8HK9C6WC2GXvc7EY7Bs3dETxGM-WchhYr2saqgbibMNgYyavoh1DemNnfcI_LoDH5w"
+                                 }
+                              }
+                           }
+                        },
+                        {
+                           "messageValue": {
+                              "fields": {
+                                 "name": {
+                                    "simpleValue": "Host"
+                                 },
+                                 "value": {
+                                    "simpleValue": "firstr-test.test.wealthos.cloud:443"
+                                 }
+                              }
+                           }
+                        },
+                        {
+                           "messageValue": {
+                              "fields": {
+                                 "name": {
+                                    "simpleValue": "x-api-key"
+                                 },
+                                 "value": {
+                                    "simpleValue": "6Y86FLzegL2vhC7wx7Hjw9QxfKmi8wmP6rbdfibP"
+                                 }
+                              }
+                           }
+                        }
+                     ]
+                  }
+               }
+            }
+         }
+      },
+      "Outgoing": {
+         "messageValue": {
+            "fields": {
+               "operational_day": {
+                  "simpleValue": "2022-11-10"
+               }
+            }
+         }
+      }
+   }
+}

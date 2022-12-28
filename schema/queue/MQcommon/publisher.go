@@ -37,16 +37,14 @@ func (pb *Publisher) connect() {
 func (pb *Publisher) Publish(body []byte, routingKey string, exchange string) error {
 	ch, err := pb.conn.Channel()
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 	defer ch.Close()
 	fail := ch.Publish(exchange, routingKey, false, false, amqp.Publishing{Body: body})
 	if fail != nil {
-		log.Println(err)
 		return err
 	}
-	log.Printf(" [x] Sent %s", body)
+	log.Printf(" [x] Sent ")
 
 	return nil
 }

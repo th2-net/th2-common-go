@@ -85,6 +85,7 @@ func (cs *CommonMessageSubscriber) ConfirmationStart() error {
 func (cs *CommonMessageSubscriber) RemoveListener() {
 	cs.listener = nil
 	cs.confirmationListener = nil
+	log.Println("Removing listeners ******** ")
 }
 
 func (cs *CommonMessageSubscriber) AddListener(listener *message.MessageListener) {

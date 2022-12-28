@@ -22,6 +22,7 @@ import (
 	"github.com/th2-net/th2-common-go/schema/queue/message/configuration"
 	"log"
 	"strings"
+	"sync"
 )
 
 type CommonMessageRouter struct {
@@ -73,7 +74,18 @@ func (cmr *CommonMessageRouter) SubscribeWithManualAck(listener *message.Conform
 		}
 		subscribers = append(subscribers, subscriber)
 	}
+	var m sync.Mutex
+
 	if len(subscribers) != 0 {
+		for _, s := range subscribers {
+			m.Lock()
+			err := s.subscriber.ConfirmationStart()
+			if err != nil {
+				log.Printf("CONSUMING ERROR : %v \n", err)
+				return SubscriberMonitor{}, err
+			}
+			m.Unlock()
+		}
 
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
@@ -95,7 +107,17 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, 
 		}
 		subscribers = append(subscribers, subscriber)
 	}
+	var m sync.Mutex
 	if len(subscribers) != 0 {
+		for _, s := range subscribers {
+			m.Lock()
+			err := s.subscriber.Start()
+			if err != nil {
+				log.Printf("CONSUMING ERROR : %v \n", err)
+				return SubscriberMonitor{}, err
+			}
+			m.Unlock()
+		}
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
 		log.Fatalln("no subscriber ")
@@ -140,25 +162,19 @@ func (cmr *CommonMessageRouter) getSubscribeAttributes(attrs []string) []string 
 func (cmr *CommonMessageRouter) subByPin(listener *message.MessageListener, pin string) (SubscriberMonitor, error) {
 	subscriber := cmr.getSubscriber(pin)
 	subscriber.AddListener(listener)
-	err := subscriber.Start()
-	if err != nil {
-		return SubscriberMonitor{}, err
-	}
+
 	return SubscriberMonitor{subscriber: subscriber}, nil
 }
 
 func (cmr *CommonMessageRouter) subByPinWithAck(listener *message.ConformationMessageListener, alias string) (SubscriberMonitor, error) {
 	subscriber := cmr.getSubscriber(alias)
 	subscriber.AddConfirmationListener(listener)
-	err := subscriber.ConfirmationStart()
-	if err != nil {
-		return SubscriberMonitor{}, err
-	}
+
 	return SubscriberMonitor{subscriber: subscriber}, nil
 }
 
 func (cmr *CommonMessageRouter) getSubscriber(pin string) *CommonMessageSubscriber {
-	queueConfig := cmr.connManager.QConfig.Queues[pin] // get queue by alias
+	queueConfig := cmr.connManager.QConfig.Queues[pin] // get queue by pin
 	var result CommonMessageSubscriber
 	if _, ok := cmr.subscribers[pin]; ok {
 		result = cmr.subscribers[pin]
