@@ -15,13 +15,9 @@
 
 package event
 
-import (
-	p_buff "github.com/th2-net/th2-common-go/proto"
-	c "github.com/th2-net/th2-common-go/schema/queue/MQcommon"
-)
+import p_buff "github.com/th2-net/th2-common-go/proto"
 
-type EventRouter interface {
-	SendAll(batch *p_buff.EventBatch, attributes ...string) error
-	SubscribeAll(listener *EventListener, attributes ...string) (c.Monitor, error)
-	SubscribeWithManualAck(listener ConformationEventListener, attributes ...string) (c.Monitor, error)
+type EventBatchSender interface {
+	Send(batch *p_buff.EventBatch) error
+	//close()
 }

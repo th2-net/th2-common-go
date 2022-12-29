@@ -1,54 +1,60 @@
-/*
-* Copyright 2022 Exactpro (Exactpro Systems Limited)
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-*  Unless required by applicable law or agreed to in writing, software
-*  distributed under the License is distributed on an "AS IS" BASIS,
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-*  See the License for the specific language governing permissions and
-*  limitations under the License.
- */
-
-package message
+package event
 
 import (
 	"github.com/streadway/amqp"
 	p_buff "github.com/th2-net/th2-common-go/proto"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
-	"github.com/th2-net/th2-common-go/schema/queue/message"
+	"github.com/th2-net/th2-common-go/schema/queue/event"
 	"google.golang.org/protobuf/proto"
 	"log"
 )
 
-type CommonMessageSubscriber struct {
+type CommonEventSubscriber struct {
 	connManager          *MQcommon.ConnectionManager
 	qConfig              *configuration.QueueConfig
-	listener             *message.MessageListener
-	confirmationListener *message.ConformationMessageListener
+	listener             *event.EventListener
+	confirmationListener *event.ConformationEventListener
 	th2Pin               string
 }
 
-func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
-	result := &p_buff.MessageGroupBatch{}
+func (cs *CommonEventSubscriber) Start() error {
+	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.Handler)
+	if err != nil {
+		return err
+	}
+	return nil
+	//use th2Pin for metrics
+}
+
+func (cs *CommonEventSubscriber) ConfirmationStart() error {
+	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.ConfirmationHandler)
+	if err != nil {
+		return err
+	}
+	return nil
+	//use th2Pin for metrics
+}
+
+func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) {
+	result := &p_buff.EventBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
 		log.Fatalf("Cann't unmarshal : %v \n", err)
 	}
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
+	if cs.listener == nil {
+		log.Fatalf("No Listener to Handle : %v \n", cs.listener)
 
+	}
 	fail := (*cs.listener).Handle(&delivery, result)
 	if fail != nil {
 		log.Fatalf("Cann't Handle : %v \n", fail)
 	}
 }
 
-func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) {
-	result := &p_buff.MessageGroupBatch{}
+func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) {
+	result := &p_buff.EventBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
 		log.Fatalf("Cann't unmarshal : %v \n", err)
@@ -58,46 +64,32 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
 
+	if cs.confirmationListener == nil {
+		log.Fatalf("No ConfirmationListener to Handle : %v \n", cs.confirmationListener)
+
+	}
 	fail := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
 	if fail != nil {
 		log.Fatalf("Cann't Handle : %v \n", fail)
 	}
 }
 
-func (cs *CommonMessageSubscriber) Start() error {
-	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.Handler)
-	if err != nil {
-		return err
-	}
-	return nil
-	//use th2Pin for metrics
-}
-
-func (cs *CommonMessageSubscriber) ConfirmationStart() error {
-	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.ConfirmationHandler)
-	if err != nil {
-		return err
-	}
-	return nil
-	//use th2Pin for metrics
-}
-
-func (cs *CommonMessageSubscriber) RemoveListener() {
+func (cs *CommonEventSubscriber) RemoveListener() {
 	cs.listener = nil
 	cs.confirmationListener = nil
 	log.Println("Removing listeners ******** ")
 }
 
-func (cs *CommonMessageSubscriber) AddListener(listener *message.MessageListener) {
+func (cs *CommonEventSubscriber) AddListener(listener *event.EventListener) {
 	cs.listener = listener
 }
 
-func (cs *CommonMessageSubscriber) AddConfirmationListener(listener *message.ConformationMessageListener) {
-	cs.confirmationListener = listener
+type SubscriberMonitor struct {
+	subscriber *CommonEventSubscriber
 }
 
-type SubscriberMonitor struct {
-	subscriber *CommonMessageSubscriber
+func (cs *CommonEventSubscriber) AddConfirmationListener(listener *event.ConformationEventListener) {
+	cs.confirmationListener = listener
 }
 
 func (sub SubscriberMonitor) Unsubscribe() error {

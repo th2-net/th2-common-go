@@ -17,13 +17,13 @@ package MQcommon
 
 import (
 	"github.com/streadway/amqp"
-	"github.com/th2-net/th2-common-go/schema/queue/message/configuration"
+	configuration2 "github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"log"
 )
 
 type ConnectionManager struct {
-	QConfig      *configuration.MessageRouterConfiguration
-	MqConnConfig *configuration.RabbitMQConfiguration
+	QConfig      *configuration2.MessageRouterConfiguration
+	MqConnConfig *configuration2.RabbitMQConfiguration
 	Url          string
 	Publisher    Publisher
 	Consumer     Consumer

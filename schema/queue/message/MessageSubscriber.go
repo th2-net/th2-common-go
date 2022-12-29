@@ -17,6 +17,6 @@ package message
 
 type MessageGroupBatchSubscriber interface {
 	AddListener(listener *MessageListener)
-	//RemoveListener()
+	RemoveListener()
 	//close()
 }

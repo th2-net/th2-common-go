@@ -18,10 +18,9 @@ package message
 import (
 	p_buff "github.com/th2-net/th2-common-go/proto"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
+	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
-	"github.com/th2-net/th2-common-go/schema/queue/message/configuration"
 	"log"
-	"strings"
 	"sync"
 )
 
@@ -42,7 +41,7 @@ func (cmr *CommonMessageRouter) Close() {
 }
 
 func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attributes ...string) error {
-	attrs := cmr.getSendAttributes(attributes)
+	attrs := MQcommon.GetSendAttributes(attributes)
 	pinsFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	pinsAndMessageGroup := cmr.getMessageGroupWithPins(pinsFoundByAttrs, MsgBatch)
 	if len(pinsAndMessageGroup) != 0 {
@@ -62,7 +61,7 @@ func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attr
 }
 
 func (cmr *CommonMessageRouter) SubscribeWithManualAck(listener *message.ConformationMessageListener, attributes ...string) (MQcommon.Monitor, error) {
-	attrs := cmr.getSubscribeAttributes(attributes)
+	attrs := MQcommon.GetSubscribeAttributes(attributes)
 	subscribers := []SubscriberMonitor{}
 	pinFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	for queuePin, _ := range pinFoundByAttrs {
@@ -95,7 +94,7 @@ func (cmr *CommonMessageRouter) SubscribeWithManualAck(listener *message.Conform
 }
 
 func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, attributes ...string) (MQcommon.Monitor, error) {
-	attrs := cmr.getSubscribeAttributes(attributes)
+	attrs := MQcommon.GetSubscribeAttributes(attributes)
 	subscribers := []SubscriberMonitor{}
 	pinsFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	for queuePin, _ := range pinsFoundByAttrs {
@@ -125,51 +124,15 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, 
 	return nil, nil
 }
 
-func (cmr *CommonMessageRouter) getSendAttributes(attrs []string) []string {
-	res := []string{}
-	if len(attrs) == 0 {
-		return res
-	} else {
-		attrMap := make(map[string]bool)
-		for _, attr := range attrs {
-			attrMap[strings.ToLower(attr)] = true
-		}
-		attrMap["publish"] = true
-		for k, _ := range attrMap {
-			res = append(res, k)
-		}
-		return res
-	}
-}
-
-func (cmr *CommonMessageRouter) getSubscribeAttributes(attrs []string) []string {
-	res := []string{}
-	if len(attrs) == 0 {
-		return res
-	} else {
-		attrMap := make(map[string]bool)
-		for _, attr := range attrs {
-			attrMap[strings.ToLower(attr)] = true
-		}
-		attrMap["subscribe"] = true
-		for k, _ := range attrMap {
-			res = append(res, k)
-		}
-		return res
-	}
-}
-
 func (cmr *CommonMessageRouter) subByPin(listener *message.MessageListener, pin string) (SubscriberMonitor, error) {
 	subscriber := cmr.getSubscriber(pin)
 	subscriber.AddListener(listener)
-
 	return SubscriberMonitor{subscriber: subscriber}, nil
 }
 
 func (cmr *CommonMessageRouter) subByPinWithAck(listener *message.ConformationMessageListener, alias string) (SubscriberMonitor, error) {
 	subscriber := cmr.getSubscriber(alias)
 	subscriber.AddConfirmationListener(listener)
-
 	return SubscriberMonitor{subscriber: subscriber}, nil
 }
 

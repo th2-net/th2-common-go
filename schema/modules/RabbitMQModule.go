@@ -20,7 +20,8 @@ import (
 	"github.com/th2-net/th2-common-go/schema/common"
 	"github.com/th2-net/th2-common-go/schema/factory"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
-	"github.com/th2-net/th2-common-go/schema/queue/message/configuration"
+	configuration "github.com/th2-net/th2-common-go/schema/queue/configuration"
+	event "github.com/th2-net/th2-common-go/schema/queue/event/impl"
 	"github.com/th2-net/th2-common-go/schema/queue/message/impl"
 	"log"
 	"reflect"
@@ -30,7 +31,7 @@ import (
 type RabbitMQModule struct {
 	MqMessageRouter message.CommonMessageRouter
 	connManager     MQcommon.ConnectionManager
-	// event router
+	MqEventRouter   event.CommonEventRouter
 }
 
 func (m *RabbitMQModule) GetKey() common.ModuleKey {
@@ -38,11 +39,12 @@ func (m *RabbitMQModule) GetKey() common.ModuleKey {
 }
 func (m *RabbitMQModule) Close() {
 	m.MqMessageRouter.Close()
-	//same for event Router
+	m.MqEventRouter.Close()
 }
 
 var queueModuleKey = common.ModuleKey("queue")
 
+// /////TODO make it simpler (separate function for configs)
 func NewRabbitMQModule(provider factory.ConfigProvider) common.Module {
 
 	queueConfiguration := configuration.MessageRouterConfiguration{}
@@ -71,8 +73,11 @@ func NewRabbitMQModule(provider factory.ConfigProvider) common.Module {
 	messageRouter := message.CommonMessageRouter{}
 	messageRouter.Construct(&connectionManager)
 
+	eventRouter := event.CommonEventRouter{}
+	eventRouter.Construct(&connectionManager)
+
 	return &RabbitMQModule{connManager: connectionManager,
-		MqMessageRouter: messageRouter}
+		MqMessageRouter: messageRouter, MqEventRouter: eventRouter}
 }
 
 type Identity struct{}

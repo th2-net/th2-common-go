@@ -9,46 +9,6 @@
       "filters": [],
       "name": "mq_router",
       "queue": ""
-    },
-    "1-pin": {
-      "attributes": [
-        "subscribe",
-        "group"
-      ],
-      "exchange": "mq_ex",
-      "filters": [],
-      "name": "mq_router2",
-      "queue": "mq_3"
-    },
-    "2-pin": {
-      "attributes": [
-        "subscribe",
-        "group"
-      ],
-      "exchange": "mq_ex",
-      "filters": [],
-      "name": "mq_router2",
-      "queue": "mq_4"
-    },
-    "3-pin": {
-      "attributes": [
-        "subscribe",
-        "group"
-      ],
-      "exchange": "mq_ex",
-      "filters": [],
-      "name": "mq_router2",
-      "queue": "mq_5"
-    },
-    "4-pin": {
-      "attributes": [
-        "subscribe",
-        "group"
-      ],
-      "exchange": "mq_ex",
-      "filters": [],
-      "name": "mq_router2",
-      "queue": "mq_2"
     }
   }
 }

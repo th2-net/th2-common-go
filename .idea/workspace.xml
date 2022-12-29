@@ -6,13 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="a8e8d9e7-bce0-46e5-95bb-d27fddf732ae" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/example/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/resources/routermq.json" beforeDir="false" afterPath="$PROJECT_DIR$/resources/routermq.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/schema/modules/RabbitMQModule.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/modules/RabbitMQModule.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/schema/queue/MQcommon/ConnectionManager.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/MQcommon/ConnectionManager.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/schema/queue/MQcommon/consumer.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/MQcommon/consumer.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/schema/queue/MQcommon/publisher.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/MQcommon/publisher.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/schema/queue/event/EventRouter.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/event/EventRouter.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/schema/queue/message/MessageSubscriber.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/message/MessageSubscriber.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/schema/queue/message/impl/RabbitMqMessageRouter.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/message/impl/RabbitMqMessageRouter.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/schema/queue/message/impl/RabbitMqMessageSubscriber.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/queue/message/impl/RabbitMqMessageSubscriber.go" afterDir="false" />
     </list>
@@ -53,12 +50,16 @@
     "WebServerToolWindowFactoryState": "false",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "C:/Users/Tekle/Desktop/WORK/th2-common-go"
+    "last_opened_file_path": "C:/Users/Tekle/Desktop/WORK/th2-common-go/schema/queue/event"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Tekle\Desktop\WORK\th2-common-go\schema\queue\event" />
       <recent name="C:\Users\Tekle\Desktop\WORK\th2-common-go" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Tekle\Desktop\WORK\th2-common-go\schema\queue" />
     </key>
   </component>
   <component name="RunManager">
