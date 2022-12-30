@@ -1,6 +1,7 @@
-package grpc
+package impl
 
 import (
+	"github.com/th2-net/th2-common-go/schema/grpc/config"
 	"google.golang.org/grpc"
 )
 
@@ -24,22 +25,22 @@ func (cc *ConnectionCacheMapData[T]) get(key T) (grpc.ClientConnInterface, bool)
 //and importantly, insert additional logic in put and get
 
 type ConnectionCache interface {
-	put(key Address, conn grpc.ClientConnInterface)
-	get(key Address) (grpc.ClientConnInterface, bool)
+	put(key config.Address, conn grpc.ClientConnInterface)
+	get(key config.Address) (grpc.ClientConnInterface, bool)
 }
 
 type ConnectionAddressKeyCache struct {
-	internalCache ConnectionCacheMapData[Address]
+	internalCache ConnectionCacheMapData[config.Address]
 }
 
-func initConnectionAddressKeyCache() ConnectionCache {
-	return &ConnectionAddressKeyCache{internalCache: initConnectionCacheMapData[Address]()}
+func InitConnectionAddressKeyCache() ConnectionCache {
+	return &ConnectionAddressKeyCache{internalCache: initConnectionCacheMapData[config.Address]()}
 }
 
-func (sc *ConnectionAddressKeyCache) put(key Address, conn grpc.ClientConnInterface) {
+func (sc *ConnectionAddressKeyCache) put(key config.Address, conn grpc.ClientConnInterface) {
 	sc.internalCache.put(key, conn)
 }
 
-func (sc *ConnectionAddressKeyCache) get(key Address) (grpc.ClientConnInterface, bool) {
+func (sc *ConnectionAddressKeyCache) get(key config.Address) (grpc.ClientConnInterface, bool) {
 	return sc.internalCache.get(key)
 }

@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
-	commongrpc "github.com/th2-net/th2-common-go/grpc"
-	ac "github.com/th2-net/th2-common-go/grpc/proto"
+	ac "exactpro/th2/example/proto"
+	"fmt"
 	cg "github.com/th2-net/th2-common-go/proto" //common proto
+	"github.com/th2-net/th2-common-go/schema/factory"
+	"github.com/th2-net/th2-common-go/schema/modules/grpcModule"
 	"google.golang.org/grpc"
 	"log"
+	"os"
+	"reflect"
 	"time"
 )
 
@@ -32,12 +36,19 @@ func registerService(registrar grpc.ServiceRegistrar) {
 const lifetimeSec = 30
 
 func main() {
-	grpcRouter := commongrpc.CommonGrpcRouter{Config: commongrpc.GrpcConfig{}}
-	cp := &commongrpc.ConfigProviderFromFile{DirectoryPath: "../resources"}
-	cfgErr := cp.GetConfig(grpcJsonFileName, &grpcRouter.Config)
-	if cfgErr != nil {
-		log.Fatalf(cfgErr.Error())
+	newFactory := factory.NewFactory(os.Args)
+	if err := newFactory.Register(grpcModule.NewGrpcModule); err != nil {
+		panic(err)
 	}
+
+	module, err := grpcModule.ModuleID.GetModule(newFactory)
+	if err != nil {
+		panic("no module")
+	} else {
+		fmt.Println("module found", reflect.TypeOf(module))
+	}
+
+	grpcRouter := module.GrpcRouter
 	stopServerFunc, err := grpcRouter.StartServerAsync(registerService)
 	if err != nil {
 		log.Fatalf(err.Error())

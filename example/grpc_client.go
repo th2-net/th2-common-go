@@ -2,21 +2,32 @@ package main
 
 import (
 	"context"
+	ac "exactpro/th2/example/proto" //act proto
+	"fmt"
 	"github.com/google/uuid"
-	"github.com/th2-net/th2-common-go/grpc"
-	ac "github.com/th2-net/th2-common-go/grpc/proto" //act proto
-	cg "github.com/th2-net/th2-common-go/proto"      //common proto
+	cg "github.com/th2-net/th2-common-go/proto" //common proto
+	"github.com/th2-net/th2-common-go/schema/factory"
+	"github.com/th2-net/th2-common-go/schema/modules/grpcModule"
 	"log"
+	"os"
+	"reflect"
 	"time"
 )
 
 func main() {
-	grpcRouter := grpc.CommonGrpcRouter{Config: grpc.GrpcConfig{}}
-	cp := &grpc.ConfigProviderFromFile{DirectoryPath: "../resources"}
-	cfgErr := cp.GetConfig("grpc.json", &grpcRouter.Config)
-	if cfgErr != nil {
-		log.Fatalf(cfgErr.Error())
+	newFactory := factory.NewFactory(os.Args)
+	if err := newFactory.Register(grpcModule.NewGrpcModule); err != nil {
+		panic(err)
 	}
+
+	module, err := grpcModule.ModuleID.GetModule(newFactory)
+	if err != nil {
+		panic("no module")
+	} else {
+		fmt.Println("module found", reflect.TypeOf(module))
+	}
+
+	grpcRouter := module.GrpcRouter
 	con, conErr := grpcRouter.GetConnection("actAttr")
 	if conErr != nil {
 		log.Fatalf(conErr.Error())

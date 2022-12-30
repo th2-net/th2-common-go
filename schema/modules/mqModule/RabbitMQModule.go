@@ -13,7 +13,7 @@
  *  limitations under the License.
  */
 
-package modules
+package mqModule
 
 import (
 	"fmt"
@@ -44,7 +44,7 @@ func (m *RabbitMQModule) Close() {
 
 var queueModuleKey = common.ModuleKey("queue")
 
-// /////TODO make it simpler (separate function for configs)
+// /////TODO make it simpler (separate function for configs or..)
 func NewRabbitMQModule(provider factory.ConfigProvider) common.Module {
 
 	queueConfiguration := configuration.MessageRouterConfiguration{}

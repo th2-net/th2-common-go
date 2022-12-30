@@ -1,7 +1,8 @@
-package grpc
+package impl
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/th2-net/th2-common-go/schema/grpc/config"
 	"testing"
 )
 
@@ -16,8 +17,8 @@ func assertNilWithMsg(t *testing.T, err error) {
 	}
 }
 
-func getGrpcConfig(fileName string) (GrpcConfig, error) {
-	gr := CommonGrpcRouter{Config: GrpcConfig{}}
+func getGrpcConfig(fileName string) (config.GrpcConfig, error) {
+	gr := CommonGrpcRouter{Config: config.GrpcConfig{}}
 	cp := ConfigProviderFromFile{DirectoryPath: path}
 	err := cp.GetConfig(fileName, &gr.Config)
 
@@ -31,38 +32,38 @@ func TestGetConfig(t *testing.T) {
 
 func TestValidatePinsSingleEndpoint(t *testing.T) {
 	gc, _ := getGrpcConfig(validGrpcFileName)
-	err := gc.validatePins()
+	err := gc.ValidatePins()
 	assertNilWithMsg(t, err)
 }
 
 func TestValidatePinsMultipleEndpoints(t *testing.T) {
 	gc, _ := getGrpcConfig("grpc_invalid1.json")
-	err := gc.validatePins()
+	err := gc.ValidatePins()
 	assert.NotNil(t, err)
 }
 
 func TestFindEndpointAddrViaAttributesExactMatch(t *testing.T) {
 	gc, _ := getGrpcConfig(validGrpcFileName)
-	addr, err := gc.findEndpointAddrViaAttributes([]string{"actAttr", "otherAttr1", "otherAttr2"})
+	addr, err := gc.FindEndpointAddrViaAttributes([]string{"actAttr", "otherAttr1", "otherAttr2"})
 	assertNilWithMsg(t, err)
-	assert.Equal(t, ":8083", addr.asColonSeparatedString(), "Expected and actual addresses not equal")
+	assert.Equal(t, ":8083", addr.AsColonSeparatedString(), "Expected and actual addresses not equal")
 }
 
 func TestFindEndpointAddrViaAttributesPartlyMatch(t *testing.T) {
 	gc, _ := getGrpcConfig(validGrpcFileName)
-	addr, err := gc.findEndpointAddrViaAttributes([]string{"actAttr"})
+	addr, err := gc.FindEndpointAddrViaAttributes([]string{"actAttr"})
 	assertNilWithMsg(t, err)
-	assert.Equal(t, ":8083", addr.asColonSeparatedString(), "Expected and actual addresses not equal")
+	assert.Equal(t, ":8083", addr.AsColonSeparatedString(), "Expected and actual addresses not equal")
 }
 
 func TestFindEndpointAddrViaAttributesNonExistingTarget(t *testing.T) {
 	gc, _ := getGrpcConfig(validGrpcFileName)
-	_, err := gc.findEndpointAddrViaAttributes([]string{"wrongAttr"})
+	_, err := gc.FindEndpointAddrViaAttributes([]string{"wrongAttr"})
 	assert.NotNil(t, err)
 }
 
 func TestFindEndpointAddrViaAttributesNotEnoughInclusive(t *testing.T) {
 	gc, _ := getGrpcConfig(validGrpcFileName)
-	_, err := gc.findEndpointAddrViaAttributes([]string{"wrongAttr", "actAttr"})
+	_, err := gc.FindEndpointAddrViaAttributes([]string{"wrongAttr", "actAttr"})
 	assert.NotNil(t, err)
 }
