@@ -1,8 +1,0 @@
-{
-  "queues": {
-    "test_queue": {
-      "exchange": "exchange",
-      "attributes": ["attr1", "attr2"]
-    }
-  }
-}
