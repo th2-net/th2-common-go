@@ -32,7 +32,7 @@ type CommonMessageSender struct {
 func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 
 	if batch == nil {
-		log.Fatalln("Value for send can not be null")
+		log.Fatalln("Value for send cann't be null")
 	}
 	body, err := proto.Marshal(batch)
 	if err != nil {

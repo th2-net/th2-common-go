@@ -36,8 +36,8 @@ func newProvider(args []string) ConfigProvider {
 	return &ConfigProviderFromFile{configurationPath: sourceDirectory, fileExtension: jsonExtension, files: args}
 }
 
-func NewFactory(args []string) *CommonFactory {
-	provider := newProvider(args[1:])
+func NewFactory(args ...string) *CommonFactory {
+	provider := newProvider(args)
 	return &CommonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
 		cfgProvider: provider,

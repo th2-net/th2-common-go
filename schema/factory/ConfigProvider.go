@@ -51,7 +51,6 @@ func (cfd *ConfigProviderFromFile) getPath(resourceName string) string {
 					path, err := filepath.Abs(fmt.Sprint(filePath, cfd.fileExtension))
 					if err != nil {
 						log.Fatalln(err)
-
 					}
 					return path
 				}
