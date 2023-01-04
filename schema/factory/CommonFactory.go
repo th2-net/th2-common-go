@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	sourceDirectory = "../resources"
+	sourceDirectory = "/var/th2/config/"
 	jsonExtension   = ".json"
 )
 
