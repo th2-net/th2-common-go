@@ -19,12 +19,7 @@ TEMP_PATH=$GOPATH
 export GOPATH=$PWD/dependencies
 
 # Downloading common.proto from th2-grpc-common
-go get github.com/th2-net/th2-grpc-common
-
-# TEMPORARY - Adding option `go_package = "/proto"` line to common.proto file instead of `"option java_package = "com.exactpro.th2.common.grpc"`
-sed -i '26 i option go_package = "/proto";' dependencies/pkg/mod/github.com/th2-net/th2-grpc-common@v0.0.0-20221031111658-9bca8902d898/src/main/proto/th2_grpc_common/common.proto
-sed -i '23d' dependencies/pkg/mod/github.com/th2-net/th2-grpc-common@v0.0.0-20221031111658-9bca8902d898/src/main/proto/th2_grpc_common/common.proto
-sed -i '23d' dependencies/pkg/mod/github.com/th2-net/th2-grpc-common@v0.0.0-20221031111658-9bca8902d898/src/main/proto/th2_grpc_common/common.proto
+go get github.com/th2-net/th2-grpc-common@go-package
 
 # Generating go code from common.proto
 protoc --go_out=. dependencies/pkg/mod/github.com/th2-net/**/src/main/proto/**/*.proto
