@@ -18,8 +18,9 @@ package factory
 import (
 	"errors"
 	"fmt"
-	"github.com/th2-net/th2-common-go/schema/common"
 	"reflect"
+
+	"github.com/th2-net/th2-common-go/schema/common"
 )
 
 const (
@@ -61,4 +62,9 @@ func (cf *CommonFactory) Get(key common.ModuleKey) (common.Module, error) {
 	} else {
 		return module, nil
 	}
+}
+
+func (cf *CommonFactory) GetCustomConfiguration(any interface{}) error {
+	err := cf.cfgProvider.GetConfig("custom", any)
+	return err
 }
