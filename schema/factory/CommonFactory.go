@@ -17,14 +17,15 @@ package factory
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/th2-net/th2-common-go/schema/common"
 	"reflect"
 )
 
 const (
-	sourceDirectory = "/var/th2/config/"
-	jsonExtension   = ".json"
+	configurationPath = "var/th2/config/"
+	jsonExtension     = ".json"
 )
 
 type CommonFactory struct {
@@ -32,12 +33,15 @@ type CommonFactory struct {
 	cfgProvider ConfigProvider
 }
 
-func newProvider(dirPath string, args []string) ConfigProvider {
-	return &ConfigProviderFromFile{configurationPath: sourceDirectory, fileExtension: jsonExtension, files: args}
+func newProvider(configPath string, extension string, args []string) ConfigProvider {
+	return &ConfigProviderFromFile{configurationPath: configPath, fileExtension: extension, files: args}
 }
 
-func NewFactory(dirPath string, args ...string) *CommonFactory {
-	provider := newProvider(dirPath, args)
+func NewFactory(args ...string) *CommonFactory {
+	configPath := flag.String("config-file-path", configurationPath, "pass path tp=o config file")
+	extension := flag.String("config-file-extension", jsonExtension, "file extension")
+	flag.Parse()
+	provider := newProvider(*configPath, *extension, args)
 	return &CommonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
 		cfgProvider: provider,
