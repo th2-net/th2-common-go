@@ -1,4 +1,0 @@
-go 1.19
-
-use ./th2-grpc-common
-use .
