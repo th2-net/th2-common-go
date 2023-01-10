@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023 Exactpro (Exactpro Systems Limited)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,16 +13,10 @@
  *  limitations under the License.
  */
 
-package message
+package factory
 
-import (
-	p_buff "th2-grpc-common/th2_grpc_common"
+import "testing"
 
-	c "github.com/th2-net/th2-common-go/schema/queue/MQcommon"
-)
+func NewFactory_test(t *testing.T) {
 
-type MessageRouter interface {
-	SendAll(batch *p_buff.MessageGroupBatch, attributes ...string) error
-	SubscribeAll(listener *MessageListener, attributes ...string) (c.Monitor, error)
-	SubscribeAllWithManualAck(listener *ConformationMessageListener, attributes ...string) (c.Monitor, error)
 }

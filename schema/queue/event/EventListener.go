@@ -16,7 +16,8 @@
 package event
 
 import (
-	p_buff "github.com/th2-net/th2-common-go/proto"
+	p_buff "th2-grpc-common/th2_grpc_common"
+
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 )
 

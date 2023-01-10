@@ -1,13 +1,14 @@
 package event
 
 import (
+	"log"
+	p_buff "th2-grpc-common/th2_grpc_common"
+
 	"github.com/streadway/amqp"
-	p_buff "github.com/th2-net/th2-common-go/proto"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/event"
 	"google.golang.org/protobuf/proto"
-	"log"
 )
 
 type CommonEventSubscriber struct {
