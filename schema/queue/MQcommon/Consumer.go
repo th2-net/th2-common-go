@@ -91,6 +91,5 @@ func (manager *Consumer) ConsumeWithManualAck(queueName string, handler func(msg
 		}
 	}()
 
-	log.Printf(" [*] Consumed message")
 	return nil
 }

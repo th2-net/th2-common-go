@@ -74,3 +74,8 @@ func (cf *CommonFactory) Close() {
 		log.Printf("Module %v closed. \n", moduleKey)
 	}
 }
+
+func (cf *CommonFactory) GetCustomConfiguration(any interface{}) error {
+	err := cf.cfgProvider.GetConfig("custom", any)
+	return err
+}
