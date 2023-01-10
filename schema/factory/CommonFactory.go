@@ -19,6 +19,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"github.com/th2-net/th2-common-go/schema/common"
 	"reflect"
 )
@@ -64,5 +65,12 @@ func (cf *CommonFactory) Get(key common.ModuleKey) (common.Module, error) {
 		return nil, errors.New("module " + string(key) + " does not exist")
 	} else {
 		return module, nil
+	}
+}
+
+func (cf *CommonFactory) Close() {
+	for moduleKey, module := range cf.modules {
+		module.Close()
+		log.Printf("Module %v closed. \n", moduleKey)
 	}
 }

@@ -17,6 +17,7 @@ package common
 
 type Module interface {
 	GetKey() ModuleKey
+	Close()
 }
 
 type ModuleKey string
