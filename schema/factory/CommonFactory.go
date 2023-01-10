@@ -26,6 +26,7 @@ import (
 const (
 	sourceDirectory = "/var/th2/config/"
 	jsonExtension   = ".json"
+	customConfig    = "custom"
 )
 
 type CommonFactory struct {
@@ -65,6 +66,6 @@ func (cf *CommonFactory) Get(key common.ModuleKey) (common.Module, error) {
 }
 
 func (cf *CommonFactory) GetCustomConfiguration(any interface{}) error {
-	err := cf.cfgProvider.GetConfig("custom", any)
+	err := cf.cfgProvider.GetConfig(customConfig, any)
 	return err
 }
