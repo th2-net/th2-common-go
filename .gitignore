@@ -17,4 +17,7 @@
 .idea
 .DS_Store
 
-th2-grpc-common
+# golang
+th2-grpc
+bin
+go.work

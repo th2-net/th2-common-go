@@ -50,6 +50,10 @@ github.com/th2-net/th2-grpc-common v0.0.0-20230110110938-413f3565c352 h1:tLDjGYw
 github.com/th2-net/th2-grpc-common v0.0.0-20230110110938-413f3565c352/go.mod h1:WiSMBNNRWvTHgcRQCyW2tm0cw8RYtqhI88BOvnhfp/0=
 github.com/th2-net/th2-grpc-common v0.0.0-20230110120433-659edb38c8b5 h1:GUZRUO+QzQvsiOzh9XGpMiuN9rz2O8quFmgrAe+YPtI=
 github.com/th2-net/th2-grpc-common v0.0.0-20230110120433-659edb38c8b5/go.mod h1:WiSMBNNRWvTHgcRQCyW2tm0cw8RYtqhI88BOvnhfp/0=
+github.com/th2-net/th2-grpc-common v0.0.0-20230110130643-9f6831d02f0c h1:QRIbB16sL+rjflWNmhTUqO/o74UzT7WOsS+DjzIzQ5A=
+github.com/th2-net/th2-grpc-common v0.0.0-20230110130643-9f6831d02f0c/go.mod h1:WiSMBNNRWvTHgcRQCyW2tm0cw8RYtqhI88BOvnhfp/0=
+github.com/th2-net/th2-grpc-common v0.0.0-20230110163630-4dc14fed2739 h1:zzeTKKkO7CEHMZe66XgpGWyNTI7Gvv6+hRaNVIC1nss=
+github.com/th2-net/th2-grpc-common v0.0.0-20230110163630-4dc14fed2739/go.mod h1:WiSMBNNRWvTHgcRQCyW2tm0cw8RYtqhI88BOvnhfp/0=
 github.com/wagslane/go-rabbitmq v0.11.0/go.mod h1:u6xM1V7OO4D0szUy/F6Bya/9r0lLae/2FXBijkAQmn0=
 github.com/yuin/goldmark v1.4.0/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 go.uber.org/atomic v1.10.0/go.mod h1:LUxbIzbOniOlMKjJjyPfpl4v+PKK2cNJn91OQbhoJI0=

@@ -15,7 +15,7 @@
 
 package event
 
-import p_buff "th2-grpc-common/th2_grpc_common"
+import p_buff "th2-grpc/th2_grpc_common"
 
 type EventBatchSender interface {
 	Send(batch *p_buff.EventBatch) error
