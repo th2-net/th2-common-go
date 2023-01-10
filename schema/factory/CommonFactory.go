@@ -19,8 +19,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"github.com/th2-net/th2-common-go/schema/common"
+	"log"
 	"reflect"
 )
 

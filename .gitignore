@@ -16,3 +16,8 @@
 # vendor/
 .idea
 .DS_Store
+
+# golang
+th2-grpc
+bin
+go.work

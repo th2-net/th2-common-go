@@ -16,12 +16,13 @@
 package message
 
 import (
-	p_buff "github.com/th2-net/th2-common-go/proto"
+	"log"
+	"sync"
+	p_buff "th2-grpc/th2_grpc_common"
+
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
-	"log"
-	"sync"
 )
 
 type CommonMessageRouter struct {
