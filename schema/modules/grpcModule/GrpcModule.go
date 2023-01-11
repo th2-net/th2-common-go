@@ -33,9 +33,9 @@ func (m *GrpcModule) GetKey() common.ModuleKey {
 	return grpcModuleKey
 }
 
-//func (m *GrpcModule) Close() {
-//	//close router
-//}
+func (m *GrpcModule) Close() {
+	m.GrpcRouter.Close()
+}
 
 var grpcModuleKey = common.ModuleKey("grpc")
 

@@ -22,6 +22,7 @@ import (
 	"github.com/th2-net/th2-common-go/schema/grpc/config"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"log"
 	"net"
 )
 
@@ -51,6 +52,11 @@ func (gr *CommonGrpcRouter) createServerWithRegisteredService(registrar func(grp
 	s := grpc.NewServer()
 	registrar(s)
 	return s
+}
+
+func (gr *CommonGrpcRouter) Close() {
+	//gr.connCache.get(gr.Config.GetServerAddress()).Close()
+	log.Println("closing grpc router")
 }
 
 func (gr *CommonGrpcRouter) StartServer(registrar func(grpc.ServiceRegistrar)) error {
