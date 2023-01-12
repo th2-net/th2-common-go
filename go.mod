@@ -17,7 +17,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rabbitmq/amqp091-go v1.3.4 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
-	github.com/th2-net/th2-grpc-common v0.0.0-20230110163630-4dc14fed2739 // indirect
+	github.com/th2-net/th2-grpc-common v0.0.0-20230110172250-f653e1acb2db // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect

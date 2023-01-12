@@ -2,22 +2,40 @@
   "server": {
     "attributes": null,
     "host": null,
-    "port": 8080
+    "port": 8080,
+    "workers": 5
   },
   "services": {
-    "act": {
+    "to_act": {
       "endpoints": {
-        "act-endpoint": {
-          "attributes": ["actAttr", "otherAttr1", "otherAttr2"],
-          "host": null,
-          "port": 8080
+        "10.119.0.9-endpoint": {
+          "attributes": [],
+          "host": "10.119.0.9",
+          "port" : 31349
         }
       },
       "filters": [],
-      "service-class": "com.exactpro.th2.check1.grpc.actService",
+      "service-class": "com.exactpro.th2.act.grpc.ActService",
       "strategy": {
         "endpoints": [
-          "act-endpoint"
+          "10.119.0.9-endpoint"
+        ],
+        "name": "robin"
+      }
+    },
+    "to_check1": {
+      "endpoints": {
+        "10.119.0.9-endpoint": {
+          "attributes": [],
+          "host": "10.119.0.9",
+          "port" : 31538
+        }
+      },
+      "filters": [],
+      "service-class": "com.exactpro.th2.check1.grpc.Check1Service",
+      "strategy": {
+        "endpoints": [
+          "10.119.0.9-endpoint"
         ],
         "name": "robin"
       }
