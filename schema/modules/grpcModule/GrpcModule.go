@@ -21,6 +21,7 @@ import (
 	"github.com/th2-net/th2-common-go/schema/factory"
 	"github.com/th2-net/th2-common-go/schema/grpc/config"
 	"github.com/th2-net/th2-common-go/schema/grpc/impl"
+	"github.com/th2-net/th2-common-go/schema/logger"
 	"log"
 	"reflect"
 )
@@ -41,12 +42,12 @@ var grpcModuleKey = common.ModuleKey("grpc")
 
 func NewGrpcModule(provider factory.ConfigProvider) common.Module {
 
-	grpcConfiguration := config.GrpcConfig{}
+	grpcConfiguration := config.GrpcConfig{ZLogger: logger.GetLogger()}
 	err := provider.GetConfig("grpc", &grpcConfiguration)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	router := impl.CommonGrpcRouter{Config: grpcConfiguration}
+	router := impl.CommonGrpcRouter{Config: grpcConfiguration, ZLogger: logger.GetLogger()}
 	return &GrpcModule{GrpcRouter: router}
 }
 

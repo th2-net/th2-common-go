@@ -19,8 +19,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/schema/common"
-	"log"
+	"github.com/th2-net/th2-common-go/schema/logger"
 	"reflect"
 )
 
@@ -32,10 +33,12 @@ const (
 type CommonFactory struct {
 	modules     map[common.ModuleKey]common.Module
 	cfgProvider ConfigProvider
+	zLogger     zerolog.Logger
 }
 
 func newProvider(configPath string, extension string, args []string) ConfigProvider {
-	return &ConfigProviderFromFile{configurationPath: configPath, fileExtension: extension, files: args}
+	return &ConfigProviderFromFile{configurationPath: configPath, fileExtension: extension,
+		files: args, zLogger: logger.GetLogger()}
 }
 
 func NewFactory(args ...string) *CommonFactory {
@@ -46,6 +49,7 @@ func NewFactory(args ...string) *CommonFactory {
 	return &CommonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
 		cfgProvider: provider,
+		zLogger:     logger.GetLogger(),
 	}
 }
 
@@ -56,6 +60,7 @@ func (cf *CommonFactory) Register(factories ...func(ConfigProvider) common.Modul
 			return fmt.Errorf("module %s with key %s already registered", reflect.TypeOf(oldModule), module.GetKey())
 		}
 		cf.modules[module.GetKey()] = module
+		cf.zLogger.Info().Msgf("Registered new %v module", module.GetKey())
 	}
 	return nil
 }
@@ -71,7 +76,7 @@ func (cf *CommonFactory) Get(key common.ModuleKey) (common.Module, error) {
 func (cf *CommonFactory) Close() {
 	for moduleKey, module := range cf.modules {
 		module.Close()
-		log.Printf("Module %v closed. \n", moduleKey)
+		cf.zLogger.Info().Msgf("Module %v closed. \n", moduleKey)
 	}
 }
 
