@@ -16,9 +16,10 @@
 package MQcommon
 
 import (
+	"github.com/rs/zerolog"
 	"github.com/streadway/amqp"
+	"github.com/th2-net/th2-common-go/schema/logger"
 	configuration2 "github.com/th2-net/th2-common-go/schema/queue/configuration"
-	"log"
 )
 
 type ConnectionManager struct {
@@ -27,24 +28,28 @@ type ConnectionManager struct {
 	Url          string
 	Publisher    Publisher
 	Consumer     Consumer
+
+	Logger zerolog.Logger
 }
 
 func (manager *ConnectionManager) Construct() {
-	manager.Publisher = Publisher{url: manager.Url}
+	manager.Publisher = Publisher{url: manager.Url, Logger: logger.GetLogger()}
 	manager.Publisher.connect()
 
-	manager.Consumer = Consumer{url: manager.Url, channels: make(map[string]*amqp.Channel)}
+	manager.Consumer = Consumer{url: manager.Url, channels: make(map[string]*amqp.Channel), Logger: logger.GetLogger()}
 	manager.Consumer.connect()
 }
 
 func (manager *ConnectionManager) Close() error {
 	err := manager.Publisher.conn.Close()
 	if err != nil {
+		manager.Logger.Error().Err(err).Send()
 		return err
 	}
 
 	fail := manager.Consumer.conn.Close()
 	if fail != nil {
+		manager.Logger.Error().Err(err).Send()
 		return fail
 	}
 
@@ -52,29 +57,34 @@ func (manager *ConnectionManager) Close() error {
 		for _, ch := range manager.Consumer.channels {
 			ch.Close()
 		}
-	}
+		manager.Logger.Debug().Msg("Channels Closed")
 
-	log.Println("Connection Closed gracefully")
+	}
+	manager.Logger.Info().Msg("Connection Closed gracefully")
 	return nil
 }
 
 type DeliveryConfirmation struct {
 	Delivery *amqp.Delivery
+
+	Logger zerolog.Logger
 }
 
 func (dc DeliveryConfirmation) Confirm() error {
 	err := dc.Delivery.Ack(false)
-	log.Println("Acknowledged")
 	if err != nil {
-		log.Fatalf("error during confirmation: %v \n", err)
+		dc.Logger.Fatal().Err(err).Msg("Error during Acknowledgment")
 		return err
 	}
+	dc.Logger.Info().Msg("Acknowledged")
 	return nil
 }
 func (dc DeliveryConfirmation) Reject() error {
 	err := dc.Delivery.Reject(false)
 	if err != nil {
+		dc.Logger.Fatal().Err(err).Msg("Error during Rejection")
 		return err
 	}
+	dc.Logger.Info().Msg("Rejected")
 	return nil
 }

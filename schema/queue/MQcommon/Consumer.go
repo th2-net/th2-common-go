@@ -16,32 +16,34 @@
 package MQcommon
 
 import (
+	"github.com/rs/zerolog"
 	"github.com/streadway/amqp"
-	"log"
 )
 
 type Consumer struct {
 	url      string
 	conn     *amqp.Connection
 	channels map[string]*amqp.Channel
+	Logger   zerolog.Logger
 }
 
-func (manager *Consumer) connect() {
-	conn, err := amqp.Dial(manager.url)
+func (cns *Consumer) connect() {
+	conn, err := amqp.Dial(cns.url)
 	if err != nil {
-		log.Fatalln(err)
+		cns.Logger.Fatal().Err(err).Send()
 	}
-	manager.conn = conn
+	cns.conn = conn
+	cns.Logger.Debug().Msg("Consumer connected")
 }
 
-func (manager *Consumer) Consume(queueName string, handler func(delivery amqp.Delivery)) error {
-	ch, err := manager.conn.Channel()
+func (cns *Consumer) Consume(queueName string, handler func(delivery amqp.Delivery)) error {
+	ch, err := cns.conn.Channel()
 	if err != nil {
-		log.Fatalln(err)
+		cns.Logger.Fatal().Err(err).Send()
 	}
-	manager.channels[queueName] = ch
+	cns.channels[queueName] = ch
 
-	msgs, err := ch.Consume(
+	msgs, consErr := ch.Consume(
 		queueName, // queue
 		"",        // consumer
 		true,      // auto-ack
@@ -50,13 +52,13 @@ func (manager *Consumer) Consume(queueName string, handler func(delivery amqp.De
 		false,     // no-wait
 		nil,       // args
 	)
-	if err != nil {
-		log.Println(err)
-		return err
+	if consErr != nil {
+		cns.Logger.Error().Err(err).Msg("Consuming error")
+		return consErr
 	}
 
 	go func() {
-		log.Printf("in queue %v \n", queueName)
+		cns.Logger.Debug().Msgf("Consumed messages will handled from queue %s", queueName)
 		for d := range msgs {
 			handler(d)
 		}
@@ -65,13 +67,13 @@ func (manager *Consumer) Consume(queueName string, handler func(delivery amqp.De
 	return nil
 }
 
-func (manager *Consumer) ConsumeWithManualAck(queueName string, handler func(msgDelivery amqp.Delivery)) error {
-	ch, err := manager.conn.Channel()
+func (cns *Consumer) ConsumeWithManualAck(queueName string, handler func(msgDelivery amqp.Delivery)) error {
+	ch, err := cns.conn.Channel()
 	if err != nil {
-		log.Fatalln(err)
+		cns.Logger.Fatal().Err(err).Send()
 	}
-	manager.channels[queueName] = ch
-	msgs, err := ch.Consume(
+	cns.channels[queueName] = ch
+	msgs, consErr := ch.Consume(
 		queueName, // queue
 		"",        // consumer
 		false,     // auto-ack
@@ -80,12 +82,12 @@ func (manager *Consumer) ConsumeWithManualAck(queueName string, handler func(msg
 		false,     // no-wait
 		nil,       // args
 	)
-	if err != nil {
-		log.Println(err)
-		return err
+	if consErr != nil {
+		cns.Logger.Error().Err(err).Msg("Consuming error")
+		return consErr
 	}
 	go func() {
-		log.Printf("in queue %v \n", queueName)
+		cns.Logger.Debug().Msgf("Consumed messages will handled from queue %s", queueName)
 		for d := range msgs {
 			handler(d)
 		}

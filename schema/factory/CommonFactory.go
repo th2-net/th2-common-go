@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	configurationPath = "var/th2/config/"
+	configurationPath = "/var/th2/config/"
 	jsonExtension     = ".json"
 )
 

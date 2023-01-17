@@ -22,8 +22,12 @@ import (
 	"github.com/th2-net/th2-common-go/schema/grpc/config"
 	"github.com/th2-net/th2-common-go/schema/grpc/impl"
 	"github.com/th2-net/th2-common-go/schema/logger"
-	"log"
 	"reflect"
+)
+
+const (
+	GRPC_CONFIG_FILENAME = "grpc"
+	GRPC_MODULE_KEY      = "grpc"
 )
 
 type GrpcModule struct {
@@ -38,14 +42,14 @@ func (m *GrpcModule) Close() {
 	m.GrpcRouter.Close()
 }
 
-var grpcModuleKey = common.ModuleKey("grpc")
+var grpcModuleKey = common.ModuleKey(GRPC_MODULE_KEY)
 
 func NewGrpcModule(provider factory.ConfigProvider) common.Module {
 
 	grpcConfiguration := config.GrpcConfig{ZLogger: logger.GetLogger()}
-	err := provider.GetConfig("grpc", &grpcConfiguration)
+	err := provider.GetConfig(GRPC_CONFIG_FILENAME, &grpcConfiguration)
 	if err != nil {
-		log.Fatalln(err)
+		grpcConfiguration.ZLogger.Fatal().Err(err).Send()
 	}
 	router := impl.CommonGrpcRouter{Config: grpcConfiguration, ZLogger: logger.GetLogger()}
 	return &GrpcModule{GrpcRouter: router}

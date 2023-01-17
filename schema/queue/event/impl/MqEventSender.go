@@ -1,7 +1,7 @@
 package event
 
 import (
-	"log"
+	"github.com/rs/zerolog"
 	p_buff "th2-grpc/th2_grpc_common"
 
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
@@ -13,17 +13,19 @@ type CommonEventSender struct {
 	exchangeName string
 	sendQueue    string
 	th2Pin       string
+
+	Logger zerolog.Logger
 }
 
 func (sender *CommonEventSender) Send(batch *p_buff.EventBatch) error {
 
 	if batch == nil {
-		log.Fatalln("Value for send can not be null")
+		sender.Logger.Fatal().Msg("Value for send can't be null")
 	}
 	body, err := proto.Marshal(batch)
 	if err != nil {
 		if err != nil {
-			log.Panicf("Error during marshaling message into proto message. : %s", err)
+			sender.Logger.Panic().Err(err).Msg("Error during marshaling message into proto event")
 		}
 		return err
 	}

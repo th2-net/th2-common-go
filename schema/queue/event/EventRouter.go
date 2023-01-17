@@ -16,13 +16,12 @@
 package event
 
 import (
+	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	p_buff "th2-grpc/th2_grpc_common"
-
-	c "github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 )
 
 type EventRouter interface {
 	SendAll(batch *p_buff.EventBatch, attributes ...string) error
-	SubscribeAll(listener *EventListener, attributes ...string) (c.Monitor, error)
-	SubscribeWithManualAck(listener ConformationEventListener, attributes ...string) (c.Monitor, error)
+	SubscribeAll(listener *EventListener, attributes ...string) (MQcommon.Monitor, error)
+	SubscribeAllWithManualAck(listener *ConformationEventListener, attributes ...string) (MQcommon.Monitor, error)
 }
