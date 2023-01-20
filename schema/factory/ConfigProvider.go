@@ -76,7 +76,7 @@ func (cfd *ConfigProviderFromFile) GetConfig(resourceName string, target interfa
 		return fileReadErr
 	}
 
-	content := os.Expand(string(fileContentBytes), func(str string) string { return os.Getenv(str) })
+	content := os.ExpandEnv(string(fileContentBytes))
 
 	err := json.Unmarshal([]byte(content), target)
 
