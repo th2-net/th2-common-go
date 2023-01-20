@@ -18,10 +18,12 @@ package factory
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/mitchellh/mapstructure"
+	"github.com/rs/zerolog"
 )
 
 type ConfigProvider interface {
@@ -75,12 +77,18 @@ func (cfd *ConfigProviderFromFile) GetConfig(resourceName string, target interfa
 		return fileReadErr
 	}
 
-	err := json.Unmarshal(fileContentBytes, target)
-
+	var config map[string]interface{}
+	err := json.Unmarshal(fileContentBytes, &config)
 	if err != nil {
 		cfd.zLogger.Error().Err(err).Msg("Deserialization error")
 		return err
 	}
+	for key, value := range config {
+		if value == nil || value == "" {
+			config[key] = os.Getenv(key)
+		}
+	}
+	mapstructure.Decode(config, target)
 
 	return nil
 }
