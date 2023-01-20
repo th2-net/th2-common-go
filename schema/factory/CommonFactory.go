@@ -82,11 +82,12 @@ func NewFactory(args ...string) *CommonFactory {
 	var cfg ZerologConfig
 	p, pErr := properties.LoadFile(filepath.Join(*configPath, "zerolog.properties"), properties.UTF8)
 	if pErr != nil {
-		log.Info().Err(pErr).Msg("Can't get properties for zerolog")
+		log.Error().Err(pErr).Msg("Can't get properties for zerolog")
 	} else {
 		if err := p.Decode(&cfg); err != nil {
-			log.Info().Err(pErr).Msg("Can't decode properties into zerolog configuration structure")
+			log.Error().Err(pErr).Msg("Can't decode properties into zerolog configuration structure")
 		}
+		log.Info().Msg("Loggers will be configured via zerolog.properties file")
 
 		configureZerolog(&cfg)
 	}
