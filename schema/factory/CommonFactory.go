@@ -41,13 +41,13 @@ type CommonFactory struct {
 }
 
 type ZerologConfig struct {
-	Level      string `properties:"logger.th2.global_level,default=info"`
-	Sampling   bool   `properties:"logger.th2.disable_sampling,default=false"`
-	TimeField  string `properties:"logger.th2.time_field,default=time"`
-	TimeFormat string `properties:"logger.th2.time_format"`
-	LevelField string `properties:"logger.th2.level_field, default=level"`
-	MsgField   string `properties:"logger.th2.message_field, default=message"`
-	ErrorField string `properties:"logger.th2.error_field, default=error"`
+	Level      string `properties:"global_level,default=info"`
+	Sampling   bool   `properties:"disable_sampling,default=false"`
+	TimeField  string `properties:"time_field,default=time"`
+	TimeFormat string `properties:"time_format"`
+	LevelField string `properties:"level_field, default=level"`
+	MsgField   string `properties:"message_field, default=message"`
+	ErrorField string `properties:"error_field, default=error"`
 }
 
 func configureZerolog(cfg *ZerologConfig) {
