@@ -79,16 +79,18 @@ func NewFactory(args ...string) *CommonFactory {
 	configPath := flag.String("config-file-path", configurationPath, "pass path tp=o config file")
 	extension := flag.String("config-file-extension", jsonExtension, "file extension")
 	flag.Parse()
+	var cfg ZerologConfig
 	p, pErr := properties.LoadFile(filepath.Join(*configPath, "zerolog.properties"), properties.UTF8)
 	if pErr != nil {
 		log.Info().Err(pErr).Msg("Can't get properties for zerolog")
-	}
-	var cfg ZerologConfig
-	if err := p.Decode(&cfg); err != nil {
-		log.Info().Err(pErr).Msg("Can't decode properties into zerolog configuration structure")
+	} else {
+		if err := p.Decode(&cfg); err != nil {
+			log.Info().Err(pErr).Msg("Can't decode properties into zerolog configuration structure")
+		}
+
+		configureZerolog(&cfg)
 	}
 
-	configureZerolog(&cfg)
 	provider := newProvider(*configPath, *extension, args)
 	return &CommonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
