@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/rs/zerolog"
 )
 
@@ -77,18 +76,14 @@ func (cfd *ConfigProviderFromFile) GetConfig(resourceName string, target interfa
 		return fileReadErr
 	}
 
-	var config map[string]interface{}
-	err := json.Unmarshal(fileContentBytes, &config)
+	content := os.Expand(string(fileContentBytes), func(str string) string { return os.Getenv(str) })
+
+	err := json.Unmarshal([]byte(content), target)
+
 	if err != nil {
 		cfd.zLogger.Error().Err(err).Msg("Deserialization error")
 		return err
 	}
-	for key, value := range config {
-		if value == nil || value == "" {
-			config[key] = os.Getenv(key)
-		}
-	}
-	mapstructure.Decode(config, target)
 
 	return nil
 }
