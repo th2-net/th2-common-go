@@ -2,10 +2,10 @@ package event
 
 import (
 	"github.com/rs/zerolog"
-	"github.com/th2-net/th2-common-go/schema/logger"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/event"
 	"log"
+	"os"
 	"sync"
 	p_buff "th2-grpc/th2_grpc_common"
 )
@@ -135,7 +135,7 @@ func (cer *CommonEventRouter) getSubscriber(pin string) *CommonEventSubscriber {
 		return &result
 	} else {
 		result = CommonEventSubscriber{connManager: cer.connManager, qConfig: &queueConfig,
-			listener: nil, confirmationListener: nil, th2Pin: pin, Logger: logger.GetLogger()}
+			listener: nil, confirmationListener: nil, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 		cer.subscribers[pin] = result
 		cer.Logger.Debug().Msgf("Created subscriber for pin %s", pin)
 		return &result
@@ -151,7 +151,7 @@ func (cer *CommonEventRouter) getSender(pin string) *CommonEventSender {
 		return &result
 	} else {
 		result = CommonEventSender{ConnManager: cer.connManager, exchangeName: queueConfig.Exchange,
-			sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: logger.GetLogger()}
+			sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 		cer.senders[pin] = result
 		cer.Logger.Debug().Msgf("Created sender for pin %s", pin)
 		return &result

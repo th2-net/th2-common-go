@@ -137,7 +137,7 @@ func (gr *CommonGrpcRouter) newConnection(addr config.Address) (grpc.ClientConnI
 	}
 
 	gr.connCache.put(addr, conn)
-	gr.ZLogger.Debug().Msgf("created nec connection for address : %v", addr)
+	gr.ZLogger.Debug().Msgf("Created new connection for address : %v", addr)
 
 	return conn, nil
 

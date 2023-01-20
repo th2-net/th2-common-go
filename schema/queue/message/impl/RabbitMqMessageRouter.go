@@ -17,10 +17,10 @@ package message
 
 import (
 	"github.com/rs/zerolog"
+	"os"
 	"sync"
 	p_buff "th2-grpc/th2_grpc_common"
 
-	"github.com/th2-net/th2-common-go/schema/logger"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
@@ -150,7 +150,7 @@ func (cmr *CommonMessageRouter) getSubscriber(pin string) *CommonMessageSubscrib
 		return &result
 	} else {
 		result = CommonMessageSubscriber{connManager: cmr.connManager, qConfig: &queueConfig,
-			listener: nil, confirmationListener: nil, th2Pin: pin, Logger: logger.GetLogger()}
+			listener: nil, confirmationListener: nil, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 		cmr.subscribers[pin] = result
 		cmr.Logger.Debug().Msgf("Created subscriber for pin %s", pin)
 		return &result
@@ -166,7 +166,7 @@ func (cmr *CommonMessageRouter) getSender(pin string) *CommonMessageSender {
 		return &result
 	} else {
 		result = CommonMessageSender{ConnManager: cmr.connManager, exchangeName: queueConfig.Exchange,
-			sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: logger.GetLogger()}
+			sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 		cmr.senders[pin] = result
 		cmr.Logger.Debug().Msgf("Created sender for pin %s", pin)
 		return &result

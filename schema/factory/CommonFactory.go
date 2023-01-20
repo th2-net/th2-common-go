@@ -19,10 +19,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/magiconair/properties"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/th2-net/th2-common-go/schema/common"
-	"github.com/th2-net/th2-common-go/schema/logger"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 )
 
 const (
@@ -36,20 +40,60 @@ type CommonFactory struct {
 	zLogger     zerolog.Logger
 }
 
+type ZerologConfig struct {
+	Level      string `properties:"logger.th2.global_level,default=info"`
+	Sampling   bool   `properties:"logger.th2.disable_sampling,default=false"`
+	TimeField  string `properties:"logger.th2.time_field,default=time"`
+	TimeFormat string `properties:"logger.th2.time_format"`
+	LevelField string `properties:"logger.th2.level_field, default=level"`
+	MsgField   string `properties:"logger.th2.message_field, default=message"`
+	ErrorField string `properties:"logger.th2.error_field, default=error"`
+}
+
+func configureZerolog(cfg *ZerologConfig) {
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if strings.ToLower(cfg.Level) == "debug" {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	} else if strings.ToLower(cfg.Level) == "warn" {
+		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+	} else if strings.ToLower(cfg.Level) == "error" {
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	} else if strings.ToLower(cfg.Level) == "fatal" {
+		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+	}
+	zerolog.TimeFieldFormat = cfg.TimeFormat
+	zerolog.TimestampFieldName = cfg.TimeField
+	zerolog.LevelFieldName = cfg.LevelField
+	zerolog.MessageFieldName = cfg.MsgField
+	zerolog.ErrorFieldName = cfg.ErrorField
+	zerolog.DisableSampling(cfg.Sampling)
+
+}
+
 func newProvider(configPath string, extension string, args []string) ConfigProvider {
 	return &ConfigProviderFromFile{configurationPath: configPath, fileExtension: extension,
-		files: args, zLogger: logger.GetLogger()}
+		files: args, zLogger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 }
 
 func NewFactory(args ...string) *CommonFactory {
 	configPath := flag.String("config-file-path", configurationPath, "pass path tp=o config file")
 	extension := flag.String("config-file-extension", jsonExtension, "file extension")
 	flag.Parse()
+	p, pErr := properties.LoadFile(filepath.Join(*configPath, "zerolog.properties"), properties.UTF8)
+	if pErr != nil {
+		log.Info().Err(pErr).Msg("Can't get properties for zerolog")
+	}
+	var cfg ZerologConfig
+	if err := p.Decode(&cfg); err != nil {
+		log.Info().Err(pErr).Msg("Can't decode properties into zerolog configuration structure")
+	}
+
+	configureZerolog(&cfg)
 	provider := newProvider(*configPath, *extension, args)
 	return &CommonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
 		cfgProvider: provider,
-		zLogger:     logger.GetLogger(),
+		zLogger:     zerolog.New(os.Stdout).With().Timestamp().Logger(),
 	}
 }
 

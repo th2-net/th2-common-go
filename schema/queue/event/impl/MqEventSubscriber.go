@@ -2,10 +2,10 @@ package event
 
 import (
 	"github.com/rs/zerolog"
+	"os"
 	p_buff "th2-grpc/th2_grpc_common"
 
 	"github.com/streadway/amqp"
-	"github.com/th2-net/th2-common-go/schema/logger"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/event"
@@ -65,7 +65,7 @@ func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) 
 	}
 
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
-	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: logger.GetLogger()}
+	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
 
 	if cs.confirmationListener == nil {
