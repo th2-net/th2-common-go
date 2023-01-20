@@ -76,8 +76,9 @@ func (cfd *ConfigProviderFromFile) GetConfig(resourceName string, target interfa
 		return fileReadErr
 	}
 
-	content := os.ExpandEnv(string(fileContentBytes))
-
+	content := string(fileContentBytes)
+	cfd.zLogger.Info().Msg(content)
+	content = os.ExpandEnv(string(fileContentBytes))
 	err := json.Unmarshal([]byte(content), target)
 
 	if err != nil {
