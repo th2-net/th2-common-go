@@ -52,7 +52,9 @@ func (mrc *MessageRouterConfiguration) Init(path string) error {
 }
 func contains(s []string, str string) bool {
 	for _, v := range s {
-		return v == str
+		if v == str {
+			return true
+		}
 	}
 	return false
 
