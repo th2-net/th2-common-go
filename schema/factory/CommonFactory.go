@@ -44,7 +44,7 @@ type ZerologConfig struct {
 	Level      string `properties:"global_level,default=info"`
 	Sampling   bool   `properties:"disable_sampling,default=false"`
 	TimeField  string `properties:"time_field,default=time"`
-	TimeFormat string `properties:"time_format"`
+	TimeFormat string `properties:"time_format, default=2006-01-02 15:04:05.000"`
 	LevelField string `properties:"level_field, default=level"`
 	MsgField   string `properties:"message_field, default=message"`
 	ErrorField string `properties:"error_field, default=error"`

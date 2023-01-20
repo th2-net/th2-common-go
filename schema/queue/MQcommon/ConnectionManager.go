@@ -18,8 +18,8 @@ package MQcommon
 import (
 	"github.com/rs/zerolog"
 	"github.com/streadway/amqp"
-	"github.com/th2-net/th2-common-go/schema/logger"
 	configuration2 "github.com/th2-net/th2-common-go/schema/queue/configuration"
+	"os"
 )
 
 type ConnectionManager struct {
@@ -33,10 +33,11 @@ type ConnectionManager struct {
 }
 
 func (manager *ConnectionManager) Construct() {
-	manager.Publisher = Publisher{url: manager.Url, Logger: logger.GetLogger()}
+	manager.Publisher = Publisher{url: manager.Url, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	manager.Publisher.connect()
 
-	manager.Consumer = Consumer{url: manager.Url, channels: make(map[string]*amqp.Channel), Logger: logger.GetLogger()}
+	manager.Consumer = Consumer{url: manager.Url, channels: make(map[string]*amqp.Channel),
+		Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	manager.Consumer.connect()
 }
 

@@ -52,7 +52,8 @@ func NewGrpcModule(provider factory.ConfigProvider) common.Module {
 	if err != nil {
 		grpcConfiguration.ZLogger.Fatal().Err(err).Send()
 	}
-	router := impl.CommonGrpcRouter{Config: grpcConfiguration, ZLogger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	router := impl.CommonGrpcRouter{Config: grpcConfiguration,
+		ZLogger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	return &GrpcModule{GrpcRouter: router}
 }
 
