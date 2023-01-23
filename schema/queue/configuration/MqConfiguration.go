@@ -42,12 +42,12 @@ type RabbitMQConfiguration struct {
 func (mq *RabbitMQConfiguration) Init(path string) error {
 	content, err := os.ReadFile(path) // Read json file
 	if err != nil {
-		mq.Logger.Error().Err(err).Msg("Json file reading error for RabbitMQConfiguration")
+		mq.Logger.Error().Err(err).Msg("json file reading error")
 		return err
 	}
 	fail := json.Unmarshal(content, mq)
 	if fail != nil {
-		mq.Logger.Error().Err(err).Msg("Deserialization error for RabbitMQConfiguration")
+		mq.Logger.Error().Err(err).Msg("Deserialization error")
 		return err
 	}
 	return nil

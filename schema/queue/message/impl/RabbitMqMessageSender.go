@@ -16,11 +16,10 @@
 package message
 
 import (
-	"github.com/rs/zerolog"
-	p_buff "th2-grpc/th2_grpc_common"
-
+	p_buff "github.com/th2-net/th2-common-go/proto"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"google.golang.org/protobuf/proto"
+	"log"
 )
 
 type CommonMessageSender struct {
@@ -28,18 +27,18 @@ type CommonMessageSender struct {
 	exchangeName string
 	sendQueue    string
 	th2Pin       string
-
-	Logger zerolog.Logger
 }
 
 func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 
 	if batch == nil {
-		sender.Logger.Fatal().Msg("Value for send can't be null")
+		log.Fatalln("Value for send cann't be null")
 	}
 	body, err := proto.Marshal(batch)
 	if err != nil {
-		sender.Logger.Panic().Err(err).Msg("Error during marshaling message into proto message")
+		if err != nil {
+			log.Panicf("Error during marshaling message into proto message. : %s", err)
+		}
 		return err
 	}
 

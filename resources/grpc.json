@@ -2,23 +2,24 @@
   "server": {
     "attributes": null,
     "host": null,
-    "port": null,
-    "workers": null
+    "port": 8080
   },
   "services": {
-    "pin": {
+    "act": {
       "endpoints": {
-        "endpoint": {
-          "attributes": [],
-          "host": "",
-          "port" : null
+        "act-endpoint": {
+          "attributes": ["actAttr", "otherAttr1", "otherAttr2"],
+          "host": null,
+          "port": 8080
         }
       },
       "filters": [],
-      "service-class": "",
+      "service-class": "com.exactpro.th2.check1.grpc.actService",
       "strategy": {
-        "endpoints": [],
-        "name": ""
+        "endpoints": [
+          "act-endpoint"
+        ],
+        "name": "robin"
       }
     }
   }

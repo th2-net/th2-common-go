@@ -15,7 +15,7 @@
 
 package message
 
-import p_buff "th2-grpc/th2_grpc_common"
+import p_buff "github.com/th2-net/th2-common-go/proto"
 
 type MessageGroupBatchSender interface {
 	Send(batch *p_buff.MessageGroupBatch) error

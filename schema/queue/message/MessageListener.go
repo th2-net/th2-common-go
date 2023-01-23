@@ -16,8 +16,7 @@
 package message
 
 import (
-	p_buff "th2-grpc/th2_grpc_common"
-
+	p_buff "github.com/th2-net/th2-common-go/proto"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 )
 

@@ -17,8 +17,9 @@ package factory
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/rs/zerolog"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,7 +33,6 @@ type ConfigProviderFromFile struct {
 	configurationPath string
 	fileExtension     string
 	files             []string
-	zLogger           zerolog.Logger
 }
 
 func (cfd *ConfigProviderFromFile) getPath(resourceName string) string {
@@ -50,7 +50,7 @@ func (cfd *ConfigProviderFromFile) getPath(resourceName string) string {
 				if fileName == resourceName {
 					path, err := filepath.Abs(fmt.Sprint(filePath, cfd.fileExtension))
 					if err != nil {
-						cfd.zLogger.Error().Err(err).Send()
+						log.Fatalln(err)
 					}
 					return path
 				}
@@ -68,18 +68,15 @@ func (cfd *ConfigProviderFromFile) getPath(resourceName string) string {
 func (cfd *ConfigProviderFromFile) GetConfig(resourceName string, target interface{}) error {
 
 	path := cfd.getPath(resourceName)
-	cfd.zLogger.Debug().Msgf("Reading from file with path: %v", path)
 	fileContentBytes, fileReadErr := os.ReadFile(path)
 	if fileReadErr != nil {
-		cfd.zLogger.Error().Err(fileReadErr).Msgf("file with path %s couldn't be read", path)
-		return fileReadErr
+		return errors.New(fmt.Sprintf("file with path %s couldn't be read", path))
 	}
 
 	err := json.Unmarshal(fileContentBytes, target)
 
 	if err != nil {
-		cfd.zLogger.Error().Err(err).Msg("Deserialization error")
-		return err
+		return errors.New(fmt.Sprintf("deserialization error: %s ", err.Error()))
 	}
 
 	return nil

@@ -7,16 +7,9 @@
 factory "github.com/th2-net/th2-common-go/schema/factory"
 ```
 
-2. Create factory with configs from the default path (`var/th2/config/*`) located on same level as caller file:
+2. Create factory with configs from the default path (`/var/th2/config/*`):
 ```
 NewCommonFactory()
-```
-3. Create factory with configs from the passed path of directory where config files are located and their extension (default is .json):
-```
-NewCommonFactory()
-```
-```
-go run *.go -config-file-path="path" -config-file-extension="ext"
 ```
 
 
