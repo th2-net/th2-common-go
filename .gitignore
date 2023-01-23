@@ -5,7 +5,7 @@
 *.so
 *.dylib
 .idea
-
+go.work.sum
 # Test binary, built with `go test -c`
 *.test
 
@@ -16,3 +16,8 @@
 # vendor/
 .idea
 .DS_Store
+
+# golang
+th2-grpc
+bin
+go.work

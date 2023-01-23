@@ -16,24 +16,29 @@
 package message
 
 import (
-	p_buff "github.com/th2-net/th2-common-go/proto"
+	"github.com/rs/zerolog"
+	"os"
+	"sync"
+	p_buff "th2-grpc/th2_grpc_common"
+
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
-	"log"
-	"sync"
 )
 
 type CommonMessageRouter struct {
 	connManager *MQcommon.ConnectionManager
 	subscribers map[string]CommonMessageSubscriber
 	senders     map[string]CommonMessageSender
+
+	Logger zerolog.Logger
 }
 
 func (cmr *CommonMessageRouter) Construct(manager *MQcommon.ConnectionManager) {
 	cmr.connManager = manager
 	cmr.subscribers = map[string]CommonMessageSubscriber{}
 	cmr.senders = map[string]CommonMessageSender{}
+	cmr.Logger.Debug().Msg("CommonMessageRouter was initialized")
 }
 
 func (cmr *CommonMessageRouter) Close() {
@@ -49,26 +54,26 @@ func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attr
 			sender := cmr.getSender(pin)
 			err := sender.Send(messageGroup)
 			if err != nil {
-				log.Fatalln(err)
+				cmr.Logger.Fatal().Err(err).Send()
 				return err
 			}
 		}
 	} else {
-		log.Fatalln("no such queue to send message")
+		cmr.Logger.Fatal().Msg("no such queue to send message")
 	}
 	return nil
 
 }
 
-func (cmr *CommonMessageRouter) SubscribeWithManualAck(listener *message.ConformationMessageListener, attributes ...string) (MQcommon.Monitor, error) {
+func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener *message.ConformationMessageListener, attributes ...string) (MQcommon.Monitor, error) {
 	attrs := MQcommon.GetSubscribeAttributes(attributes)
 	subscribers := []SubscriberMonitor{}
 	pinFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	for queuePin, _ := range pinFoundByAttrs {
-		log.Printf("Subscrubing %v \n", queuePin)
+		cmr.Logger.Debug().Msgf("Subscribing %s ", queuePin)
 		subscriber, err := cmr.subByPinWithAck(listener, queuePin)
 		if err != nil {
-			log.Fatalln(err)
+			cmr.Logger.Fatal().Err(err).Send()
 			return SubscriberMonitor{}, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -80,7 +85,6 @@ func (cmr *CommonMessageRouter) SubscribeWithManualAck(listener *message.Conform
 			m.Lock()
 			err := s.subscriber.ConfirmationStart()
 			if err != nil {
-				log.Printf("CONSUMING ERROR : %v \n", err)
 				return SubscriberMonitor{}, err
 			}
 			m.Unlock()
@@ -88,7 +92,7 @@ func (cmr *CommonMessageRouter) SubscribeWithManualAck(listener *message.Conform
 
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
-		log.Fatalln("no subscriber ")
+		cmr.Logger.Fatal().Msg("No such subscriber")
 	}
 	return SubscriberMonitor{}, nil
 }
@@ -98,10 +102,10 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, 
 	subscribers := []SubscriberMonitor{}
 	pinsFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	for queuePin, _ := range pinsFoundByAttrs {
-		log.Printf("Subscrubing %v \n", queuePin)
+		cmr.Logger.Debug().Msgf("Subscribing %s ", queuePin)
 		subscriber, err := cmr.subByPin(listener, queuePin)
 		if err != nil {
-			log.Fatalln(err)
+			cmr.Logger.Fatal().Err(err).Send()
 			return nil, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -112,14 +116,13 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, 
 			m.Lock()
 			err := s.subscriber.Start()
 			if err != nil {
-				log.Printf("CONSUMING ERROR : %v \n", err)
 				return SubscriberMonitor{}, err
 			}
 			m.Unlock()
 		}
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
-		log.Fatalln("no subscriber ")
+		cmr.Logger.Fatal().Msg("No such subscriber")
 	}
 	return nil, nil
 }
@@ -127,12 +130,14 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, 
 func (cmr *CommonMessageRouter) subByPin(listener *message.MessageListener, pin string) (SubscriberMonitor, error) {
 	subscriber := cmr.getSubscriber(pin)
 	subscriber.AddListener(listener)
+	cmr.Logger.Debug().Msgf("Getting subscriber monitor for pin %s", pin)
 	return SubscriberMonitor{subscriber: subscriber}, nil
 }
 
-func (cmr *CommonMessageRouter) subByPinWithAck(listener *message.ConformationMessageListener, alias string) (SubscriberMonitor, error) {
-	subscriber := cmr.getSubscriber(alias)
+func (cmr *CommonMessageRouter) subByPinWithAck(listener *message.ConformationMessageListener, pin string) (SubscriberMonitor, error) {
+	subscriber := cmr.getSubscriber(pin)
 	subscriber.AddConfirmationListener(listener)
+	cmr.Logger.Debug().Msgf("Getting subscriber monitor for pin %s", pin)
 	return SubscriberMonitor{subscriber: subscriber}, nil
 }
 
@@ -141,11 +146,13 @@ func (cmr *CommonMessageRouter) getSubscriber(pin string) *CommonMessageSubscrib
 	var result CommonMessageSubscriber
 	if _, ok := cmr.subscribers[pin]; ok {
 		result = cmr.subscribers[pin]
+		cmr.Logger.Debug().Msgf("Getting already existing subscriber for pin %s", pin)
 		return &result
 	} else {
 		result = CommonMessageSubscriber{connManager: cmr.connManager, qConfig: &queueConfig,
-			listener: nil, confirmationListener: nil, th2Pin: pin}
+			listener: nil, confirmationListener: nil, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 		cmr.subscribers[pin] = result
+		cmr.Logger.Debug().Msgf("Created subscriber for pin %s", pin)
 		return &result
 	}
 }
@@ -155,12 +162,13 @@ func (cmr *CommonMessageRouter) getSender(pin string) *CommonMessageSender {
 	var result CommonMessageSender
 	if _, ok := cmr.senders[pin]; ok {
 		result = cmr.senders[pin]
+		cmr.Logger.Debug().Msgf("Getting already existing sender for pin %s", pin)
 		return &result
 	} else {
 		result = CommonMessageSender{ConnManager: cmr.connManager, exchangeName: queueConfig.Exchange,
-			sendQueue: queueConfig.RoutingKey, th2Pin: pin}
+			sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 		cmr.senders[pin] = result
-
+		cmr.Logger.Debug().Msgf("Created sender for pin %s", pin)
 		return &result
 	}
 }

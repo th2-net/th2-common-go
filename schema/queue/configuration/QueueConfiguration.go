@@ -18,7 +18,6 @@ package configuration
 import (
 	"encoding/json"
 	"github.com/rs/zerolog"
-	"log"
 	"os"
 )
 
@@ -41,12 +40,12 @@ type MessageRouterConfiguration struct {
 func (mrc *MessageRouterConfiguration) Init(path string) error {
 	content, err := os.ReadFile(path) // Read json file
 	if err != nil {
-		log.Println("json file reading error: ")
+		mrc.Logger.Error().Err(err).Msg("Json file reading error for QueueConfig")
 		return err
 	}
 	fail := json.Unmarshal(content, mrc)
 	if fail != nil {
-		log.Printf("Deserialization error %v \n", fail)
+		mrc.Logger.Error().Err(err).Msg("Deserialization error for QueueConfig")
 		return err
 	}
 	return nil
@@ -57,8 +56,8 @@ func contains(s []string, str string) bool {
 			return true
 		}
 	}
-
 	return false
+
 }
 func (mrc *MessageRouterConfiguration) FindQueuesByAttr(attrs []string) map[string]QueueConfig {
 	result := make(map[string]QueueConfig)
@@ -76,5 +75,6 @@ func (mrc *MessageRouterConfiguration) FindQueuesByAttr(attrs []string) map[stri
 			}
 		}
 	}
+	mrc.Logger.Debug().Msg("Queue was found")
 	return result
 }

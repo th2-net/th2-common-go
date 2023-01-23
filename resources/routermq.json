@@ -1,13 +1,13 @@
 {
   "queues": {
-    "estore-pin":  {
+    "pin":  {
       "attributes": [
         "group",
         "publish"
       ],
-      "exchange": "mq_ex",
+      "exchange": "",
       "filters": [],
-      "name": "mq_router",
+      "name": "",
       "queue": ""
     }
   }

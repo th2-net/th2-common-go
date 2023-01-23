@@ -18,21 +18,24 @@ package impl
 import (
 	"errors"
 	"fmt"
+	"github.com/rs/zerolog"
 	routerInterface "github.com/th2-net/th2-common-go/schema/grpc"
 	"github.com/th2-net/th2-common-go/schema/grpc/config"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"log"
 	"net"
 )
 
 /*
-checks whether there is just 1 endpoint in all the pins in the config.
-mainly intended for first release
+ checks whether there is just 1 endpoint in all the pins in the config.
+ mainly intended for first release
 */
 
 type CommonGrpcRouter struct {
 	Config    config.GrpcConfig
 	connCache ConnectionCache
+	ZLogger   zerolog.Logger
 }
 
 func (gr *CommonGrpcRouter) createListener() (net.Listener, error) {
@@ -40,9 +43,10 @@ func (gr *CommonGrpcRouter) createListener() (net.Listener, error) {
 
 	listener, netErr := net.Listen("tcp", address)
 	if netErr != nil {
-		return nil, errors.New(
-			fmt.Sprintf("could not start listening to the network: %s", netErr.Error()))
+		gr.ZLogger.Error().Err(netErr).Msgf("could not start listening to the network: %s", netErr.Error())
+		return nil, netErr
 	}
+	gr.ZLogger.Debug().Msgf("listening on address: %v", address)
 
 	return listener, nil
 }
@@ -50,7 +54,13 @@ func (gr *CommonGrpcRouter) createListener() (net.Listener, error) {
 func (gr *CommonGrpcRouter) createServerWithRegisteredService(registrar func(grpc.ServiceRegistrar)) *grpc.Server {
 	s := grpc.NewServer()
 	registrar(s)
+	gr.ZLogger.Debug().Msgf("Created server")
 	return s
+}
+
+func (gr *CommonGrpcRouter) Close() {
+	//gr.connCache.get(gr.Config.GetServerAddress()).Close()
+	log.Println("closing grpc router")
 }
 
 func (gr *CommonGrpcRouter) StartServer(registrar func(grpc.ServiceRegistrar)) error {
@@ -61,9 +71,10 @@ func (gr *CommonGrpcRouter) StartServer(registrar func(grpc.ServiceRegistrar)) e
 
 	s := gr.createServerWithRegisteredService(registrar)
 	if serveErr := s.Serve(listener); serveErr != nil {
-		return errors.New(fmt.Sprintf("error reading gRPC requests: %s", serveErr.Error()))
+		gr.ZLogger.Error().Err(serveErr).Msgf("error reading gRPC requests: %s", serveErr.Error())
+		return serveErr
 	}
-
+	gr.ZLogger.Debug().Msg("server started")
 	return nil
 }
 
@@ -77,7 +88,7 @@ func (gr *CommonGrpcRouter) StartServerAsync(registrar func(grpc.ServiceRegistra
 
 	go func() {
 		if serveErr := s.Serve(listener); serveErr != nil {
-			panic(fmt.Sprintf("error reading gRPC requests: %s", serveErr.Error()))
+			gr.ZLogger.Panic().Err(serveErr).Msgf("error reading gRPC requests: %s", serveErr.Error())
 		}
 	}()
 
@@ -93,19 +104,19 @@ func (ce connError) make() error {
 		fmt.Sprint("could not create a connection to the given target: ", ce.specificErr.Error()))
 }
 
-func (gr *CommonGrpcRouter) GetConnection(attributes ...string) (grpc.ClientConnInterface, error) {
+func (gr *CommonGrpcRouter) GetConnection(ServiceName string) (grpc.ClientConnInterface, error) {
 	if gr.connCache == nil {
 		gr.connCache = InitConnectionAddressKeyCache()
 	}
-
-	addr, findErr := gr.Config.FindEndpointAddrViaAttributes(attributes)
+	addr, findErr := gr.Config.FindEndpointAddrViaServiceName(ServiceName)
 	if findErr != nil {
 		return nil, connError{specificErr: findErr}.make()
 	}
-
 	if conn, exists := gr.findConnection(addr); exists {
+		gr.ZLogger.Debug().Msgf("connection for address %v was found", addr)
 		return conn, nil
 	}
+	gr.ZLogger.Error().Msgf("couldn't found connection for address %v ", addr)
 
 	return gr.newConnection(addr)
 }
@@ -126,6 +137,7 @@ func (gr *CommonGrpcRouter) newConnection(addr config.Address) (grpc.ClientConnI
 	}
 
 	gr.connCache.put(addr, conn)
+	gr.ZLogger.Debug().Msgf("Created new connection for address : %v", addr)
 
 	return conn, nil
 

@@ -17,15 +17,22 @@ package mqModule
 
 import (
 	"fmt"
+	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/schema/common"
 	"github.com/th2-net/th2-common-go/schema/factory"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
-	configuration "github.com/th2-net/th2-common-go/schema/queue/configuration"
+	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	event "github.com/th2-net/th2-common-go/schema/queue/event/impl"
 	"github.com/th2-net/th2-common-go/schema/queue/message/impl"
-	"log"
+	"os"
 	"reflect"
 	"strconv"
+)
+
+const (
+	RABBIT_MQ_CONFIG_FILENAME = "rabbitmq"
+	MQ_ROUTER_CONFIG_FILENAME = "routermq"
+	RABBIT_MQ_MODULE_KEY      = "queue"
 )
 
 type RabbitMQModule struct {
@@ -42,24 +49,25 @@ func (m *RabbitMQModule) Close() {
 	m.MqEventRouter.Close()
 }
 
-var queueModuleKey = common.ModuleKey("queue")
+var queueModuleKey = common.ModuleKey(RABBIT_MQ_MODULE_KEY)
 
 func NewRabbitMQModule(provider factory.ConfigProvider) common.Module {
 
-	queueConfiguration := configuration.MessageRouterConfiguration{}
-	err := provider.GetConfig("routermq", &queueConfiguration)
+	queueConfiguration := configuration.MessageRouterConfiguration{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	err := provider.GetConfig(MQ_ROUTER_CONFIG_FILENAME, &queueConfiguration)
 	if err != nil {
-		log.Fatalln(err)
+		queueConfiguration.Logger.Fatal().Err(err)
 	}
-	connConfiguration := configuration.RabbitMQConfiguration{}
-	fail := provider.GetConfig("rabbitmq", &connConfiguration)
-	if fail != nil {
-		log.Fatalln(fail)
+	connConfiguration := configuration.RabbitMQConfiguration{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	configErr := provider.GetConfig(RABBIT_MQ_CONFIG_FILENAME, &connConfiguration)
+	if configErr != nil {
+		connConfiguration.Logger.Fatal().Err(configErr)
 	}
-	connectionManager := MQcommon.ConnectionManager{QConfig: &queueConfiguration, MqConnConfig: &connConfiguration}
-	port, err := strconv.Atoi(connectionManager.MqConnConfig.Port)
+	connectionManager := MQcommon.ConnectionManager{QConfig: &queueConfiguration, MqConnConfig: &connConfiguration,
+		Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	port, portErr := strconv.Atoi(connectionManager.MqConnConfig.Port)
 	if err != nil {
-		log.Fatalf("%v", err)
+		connectionManager.Logger.Fatal().Err(portErr)
 	}
 	connectionManager.Url = fmt.Sprintf("amqp://%s:%s@%s:%d/%s",
 		connectionManager.MqConnConfig.Username,
@@ -69,10 +77,10 @@ func NewRabbitMQModule(provider factory.ConfigProvider) common.Module {
 		connectionManager.MqConnConfig.VHost)
 	connectionManager.Construct()
 
-	messageRouter := message.CommonMessageRouter{}
+	messageRouter := message.CommonMessageRouter{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	messageRouter.Construct(&connectionManager)
 
-	eventRouter := event.CommonEventRouter{}
+	eventRouter := event.CommonEventRouter{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	eventRouter.Construct(&connectionManager)
 
 	return &RabbitMQModule{connManager: connectionManager,

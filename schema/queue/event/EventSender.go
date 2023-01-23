@@ -15,7 +15,7 @@
 
 package event
 
-import p_buff "github.com/th2-net/th2-common-go/proto"
+import p_buff "th2-grpc/th2_grpc_common"
 
 type EventBatchSender interface {
 	Send(batch *p_buff.EventBatch) error

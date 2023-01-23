@@ -16,13 +16,15 @@
 package message
 
 import (
+	"github.com/rs/zerolog"
+	"os"
+	p_buff "th2-grpc/th2_grpc_common"
+
 	"github.com/streadway/amqp"
-	p_buff "github.com/th2-net/th2-common-go/proto"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
 	"google.golang.org/protobuf/proto"
-	"log"
 )
 
 type CommonMessageSubscriber struct {
@@ -31,37 +33,47 @@ type CommonMessageSubscriber struct {
 	listener             *message.MessageListener
 	confirmationListener *message.ConformationMessageListener
 	th2Pin               string
+
+	Logger zerolog.Logger
 }
 
 func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		log.Fatalf("Cann't unmarshal : %v \n", err)
+		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
-
-	fail := (*cs.listener).Handle(&delivery, result)
-	if fail != nil {
-		log.Fatalf("Cann't Handle : %v \n", fail)
+	if cs.listener == nil {
+		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
 	}
+	handleErr := (*cs.listener).Handle(&delivery, result)
+	if handleErr != nil {
+		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
+	}
+	cs.Logger.Debug().Msg("Successfully Handled")
+
 }
 
 func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) {
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		log.Fatalf("Cann't unmarshal : %v \n", err)
+		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
 
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
-	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery}
+	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
 
-	fail := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
-	if fail != nil {
-		log.Fatalf("Cann't Handle : %v \n", fail)
+	if cs.confirmationListener == nil {
+		cs.Logger.Fatal().Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
 	}
+	handleErr := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
+	if handleErr != nil {
+		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
+	}
+	cs.Logger.Debug().Msg("Successfully Handled")
 }
 
 func (cs *CommonMessageSubscriber) Start() error {
@@ -85,15 +97,17 @@ func (cs *CommonMessageSubscriber) ConfirmationStart() error {
 func (cs *CommonMessageSubscriber) RemoveListener() {
 	cs.listener = nil
 	cs.confirmationListener = nil
-	log.Println("Removed listeners")
+	cs.Logger.Info().Msg("Removed listeners")
 }
 
 func (cs *CommonMessageSubscriber) AddListener(listener *message.MessageListener) {
 	cs.listener = listener
+	cs.Logger.Debug().Msg("Added listener")
 }
 
 func (cs *CommonMessageSubscriber) AddConfirmationListener(listener *message.ConformationMessageListener) {
 	cs.confirmationListener = listener
+	cs.Logger.Debug().Msg("Added confirmation listener")
 }
 
 type SubscriberMonitor struct {

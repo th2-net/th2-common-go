@@ -16,35 +16,40 @@
 package MQcommon
 
 import (
+	"github.com/rs/zerolog"
 	"github.com/streadway/amqp"
-	"log"
 )
 
 type Publisher struct {
 	url  string
 	conn *amqp.Connection
+
+	Logger zerolog.Logger
 }
 
 func (pb *Publisher) connect() {
 	conn, err := amqp.Dial(pb.url)
 	if err != nil {
-		log.Fatalln(err)
+		pb.Logger.Fatal().Err(err).Send()
 	}
 	pb.conn = conn
-
+	pb.Logger.Debug().Msg("Publisher connected")
 }
 
 func (pb *Publisher) Publish(body []byte, routingKey string, exchange string) error {
 	ch, err := pb.conn.Channel()
 	if err != nil {
+		pb.Logger.Error().Err(err).Send()
 		return err
 	}
 	defer ch.Close()
-	fail := ch.Publish(exchange, routingKey, false, false, amqp.Publishing{Body: body})
-	if fail != nil {
+	publError := ch.Publish(exchange, routingKey, false, false, amqp.Publishing{Body: body})
+	if publError != nil {
+		pb.Logger.Fatal().Err(publError).Send()
+
 		return err
 	}
-	log.Printf(" [x] Sent ")
+	pb.Logger.Info().Msg(" [x] Sent ")
 
 	return nil
 }
