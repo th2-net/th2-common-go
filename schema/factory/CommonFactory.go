@@ -19,18 +19,19 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/magiconair/properties"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	"github.com/th2-net/th2-common-go/schema/common"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
+
+	"github.com/magiconair/properties"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/th2-net/th2-common-go/schema/common"
 )
 
 const (
-	configurationPath = "/var/th2/config/"
+	configurationPath = "var/th2/config/"
 	jsonExtension     = ".json"
 )
 
