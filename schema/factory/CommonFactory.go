@@ -33,6 +33,7 @@ import (
 const (
 	configurationPath = "/var/th2/config/"
 	jsonExtension     = ".json"
+	CUSTOM_FILE_NAME  = "custom"
 )
 
 type CommonFactory struct {
@@ -129,6 +130,6 @@ func (cf *CommonFactory) Close() {
 }
 
 func (cf *CommonFactory) GetCustomConfiguration(any interface{}) error {
-	err := cf.cfgProvider.GetConfig("custom", any)
+	err := cf.cfgProvider.GetConfig(CUSTOM_FILE_NAME, any)
 	return err
 }
