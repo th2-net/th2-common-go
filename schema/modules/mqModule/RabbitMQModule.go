@@ -32,7 +32,7 @@ import (
 
 const (
 	RABBIT_MQ_CONFIG_FILENAME = "rabbitMQ"
-	MQ_ROUTER_CONFIG_FILENAME = "mq_router"
+	MQ_ROUTER_CONFIG_FILENAME = "mq"
 	RABBIT_MQ_MODULE_KEY      = "queue"
 )
 
