@@ -7,6 +7,8 @@ import (
 
 type PrometheusMetric struct {
 	Metric prometheus.Gauge
+
+	Enabled bool
 }
 
 func NewPrometheusMetric(name string, help string) *PrometheusMetric {
@@ -17,7 +19,26 @@ func NewPrometheusMetric(name string, help string) *PrometheusMetric {
 		},
 	)
 	return &PrometheusMetric{
-		Metric: gauge,
+		Metric:  gauge,
+		Enabled: false,
+	}
+}
+
+func (promMetric *PrometheusMetric) IsEnabled() bool {
+	return promMetric.Enabled
+}
+
+func (promMetric *PrometheusMetric) Enable() {
+	if !promMetric.Enabled {
+		promMetric.Enabled = true
+		promMetric.OnValueChange(promMetric.Enabled)
+	}
+}
+
+func (promMetric *PrometheusMetric) Disable() {
+	if promMetric.Enabled {
+		promMetric.Enabled = false
+		promMetric.OnValueChange(promMetric.Enabled)
 	}
 }
 

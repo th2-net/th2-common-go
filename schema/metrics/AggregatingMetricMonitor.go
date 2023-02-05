@@ -5,14 +5,14 @@ type AggregatingMetricMonitor struct {
 	AgrMetric *AggregatingMetric
 }
 
-func (agrMetMon *AggregatingMetricMonitor) isEnabled() bool {
-	return agrMetMon.AgrMetric.isEnabled()
+func (agrMetMon *AggregatingMetricMonitor) IsEnabled() bool {
+	return agrMetMon.AgrMetric.IsEnabled()
 }
 
-func (agrMetMon *AggregatingMetricMonitor) enable() {
-	agrMetMon.AgrMetric.enable()
+func (agrMetMon *AggregatingMetricMonitor) Enable() {
+	agrMetMon.AgrMetric.Enable()
 }
 
-func (agrMetMon *AggregatingMetricMonitor) disable() {
-	agrMetMon.AgrMetric.disable()
+func (agrMetMon *AggregatingMetricMonitor) Disable() {
+	agrMetMon.AgrMetric.Disable()
 }
