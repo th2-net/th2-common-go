@@ -16,11 +16,21 @@
 package message
 
 import (
-	"github.com/rs/zerolog"
 	p_buff "th2-grpc/th2_grpc_common"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/rs/zerolog"
 
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"google.golang.org/protobuf/proto"
+)
+
+var OUTGOING_MSG_SIZE = promauto.NewCounter(
+	prometheus.CounterOpts{
+		Name: "th2_rabbitmq_message_size_publish_bytes",
+		Help: "Amount of bytes sent",
+	},
 )
 
 type CommonMessageSender struct {
@@ -42,6 +52,7 @@ func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 		sender.Logger.Panic().Err(err).Msg("Error during marshaling message into proto message")
 		return err
 	}
+	OUTGOING_MSG_SIZE.Add(float64(len(body)))
 
 	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName)
 	if fail != nil {

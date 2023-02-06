@@ -16,15 +16,25 @@
 package message
 
 import (
-	"github.com/rs/zerolog"
 	"os"
 	p_buff "th2-grpc/th2_grpc_common"
 
+	"github.com/rs/zerolog"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/streadway/amqp"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
 	"google.golang.org/protobuf/proto"
+)
+
+var INCOMING_MESSAGE_SIZE = promauto.NewCounter(
+	prometheus.CounterOpts{
+		Name: "th2_rabbitmq_message_size_subscribe_bytes",
+		Help: "Amount of bytes received",
+	},
 )
 
 type CommonMessageSubscriber struct {
@@ -43,6 +53,7 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
+	INCOMING_MESSAGE_SIZE.Add(float64(len(msgDelivery.Body)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
 		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
