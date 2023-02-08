@@ -28,7 +28,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/th2-net/th2-common-go/schema/common"
-	"github.com/th2-net/th2-common-go/schema/metrics"
 )
 
 const (
@@ -42,8 +41,6 @@ type CommonFactory struct {
 	modules     map[common.ModuleKey]common.Module
 	cfgProvider ConfigProvider
 	zLogger     zerolog.Logger
-	liveness    *metrics.AggregatingMetricMonitor
-	prometheus  *metrics.PrometheusServer
 }
 
 type ZerologConfig struct {
@@ -99,24 +96,14 @@ func NewFactory(args ...string) *CommonFactory {
 	}
 
 	provider := newProvider(*configPath, *extension, args)
-
-	liveness := metrics.RegisterLiveness("common_factory_liveness")
-
-	promConfig := metrics.PrometheusConfiguration{}
-	provider.GetConfig(PROMETHEUS_FILE_NAME, &promConfig)
-	serv := metrics.NewPrometheusServer(promConfig.Host, promConfig.Port)
-	if promConfig.Enabled {
-		serv.Run()
-		liveness.Enable()
-	}
-
-	return &CommonFactory{
+	cf := &CommonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
 		cfgProvider: provider,
 		zLogger:     zerolog.New(os.Stdout).With().Timestamp().Logger(),
-		liveness:    liveness,
-		prometheus:  serv,
 	}
+	cf.Register(NewPrometheusModule)
+
+	return cf
 }
 
 func (cf *CommonFactory) Register(factories ...func(ConfigProvider) common.Module) error {
@@ -144,8 +131,6 @@ func (cf *CommonFactory) Close() {
 		module.Close()
 		cf.zLogger.Info().Msgf("Module %v closed. \n", moduleKey)
 	}
-	cf.prometheus.Stop()
-	cf.liveness.Disable()
 }
 
 func (cf *CommonFactory) GetCustomConfiguration(any interface{}) error {
