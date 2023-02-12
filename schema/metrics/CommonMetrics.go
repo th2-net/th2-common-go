@@ -5,35 +5,15 @@ import (
 	"reflect"
 )
 
-// var LIVENESS_ARBITER = NewAggregatingMetric(
-// 	NewPrometheusMetric("th2_liveness", "Service liveness"),
-// )
-// var READINESS_ARBITER = NewAggregatingMetric(
-// 	NewPrometheusMetric("th2_readiness", "Service readiness"),
-// )
-
-// func init() {
-// 	RegisterLiveness("user_liveness")
-// 	RegisterReadiness("user_readiness")
-// }
-
-// func RegisterReadiness(name string) *AggregatingMetricMonitor {
-// 	return READINESS_ARBITER.CreateMonitor(name)
-// }
-
-func RegisterMonitor(name string, agMetric *AggregatingMetric) *AggregatingMetricMonitor {
-	return agMetric.CreateMonitor(name)
-}
-
 type HealthMetrics struct {
-	LivenessMonitor  *AggregatingMetricMonitor
-	ReadinessMonitor *AggregatingMetricMonitor
+	LivenessMonitor  *Monitor
+	ReadinessMonitor *Monitor
 }
 
-func NewHealthMetrics(obj interface{}, liveness *AggregatingMetric, readiness *AggregatingMetric) *HealthMetrics {
+func NewHealthMetrics(obj interface{}, liveness *FlagArbiter, readiness *FlagArbiter) *HealthMetrics {
 	return &HealthMetrics{
-		LivenessMonitor:  RegisterMonitor(fmt.Sprintf("%v_liveness", reflect.TypeOf(obj).Name()), liveness),
-		ReadinessMonitor: RegisterMonitor(fmt.Sprintf("%v_readiness", reflect.TypeOf(obj).Name()), readiness),
+		LivenessMonitor:  liveness.RegisterMonitor(fmt.Sprintf("%v_liveness", reflect.TypeOf(obj).Name())),
+		ReadinessMonitor: readiness.RegisterMonitor(fmt.Sprintf("%v_readiness", reflect.TypeOf(obj).Name())),
 	}
 }
 

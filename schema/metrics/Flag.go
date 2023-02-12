@@ -1,6 +1,6 @@
 package metrics
 
-type Metric interface {
+type Flag interface {
 	IsEnabled() bool
 	Enable()
 	Disable()

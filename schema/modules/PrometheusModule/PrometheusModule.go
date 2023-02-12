@@ -1,4 +1,4 @@
-package factory
+package PrometheusModule
 
 import (
 	"fmt"
@@ -10,14 +10,16 @@ import (
 
 const (
 	PROMETHEUS_MODULE_KEY = "prometheus"
+	PROMETHEUS_FILE_NAME  = "prometheus"
 )
 
 var prometheusModuleKey = common.ModuleKey(PROMETHEUS_MODULE_KEY)
 
 type PrometheusModule struct {
-	livenessMonitor *metrics.AggregatingMetricMonitor
-	prometheus      *metrics.PrometheusServer
-	livenessArbiter *metrics.AggregatingMetric
+	prometheus *metrics.PrometheusServer
+
+	livenessArbiter  *metrics.FlagArbiter
+	readinessArbiter *metrics.FlagArbiter
 }
 
 func (p *PrometheusModule) GetKey() common.ModuleKey {
@@ -28,35 +30,33 @@ func (p *PrometheusModule) Close() {
 	p.prometheus.Stop()
 }
 
-func NewPrometheusModule(provider ConfigProvider) common.Module {
+func NewPrometheusModule(provider common.ConfigProvider) common.Module {
 	promConfig := metrics.PrometheusConfiguration{}
 	provider.GetConfig(PROMETHEUS_FILE_NAME, &promConfig)
 	serv := metrics.NewPrometheusServer(promConfig.Host, promConfig.Port)
 
-	LivenessArbiter := metrics.NewAggregatingMetric(
-		metrics.NewPrometheusMetric("th2_liveness", "Service liveness"),
+	LivenessArbiter := metrics.NewFlagArbiter(
+		metrics.NewMetricFlag("th2_liveness", "Service liveness"),
 	)
 
-	livenessMonitor := metrics.RegisterMonitor("common_factory_liveness", LivenessArbiter)
+	ReadinessArbiter := metrics.NewFlagArbiter(
+		metrics.NewMetricFlag("th2_readiness", "Service readiness"),
+	)
+
 	if promConfig.Enabled {
 		serv.Run()
-		livenessMonitor.Enable()
 	}
 
 	return &PrometheusModule{
-		prometheus:      serv,
-		livenessMonitor: livenessMonitor,
-		livenessArbiter: LivenessArbiter,
+		prometheus:       serv,
+		livenessArbiter:  LivenessArbiter,
+		readinessArbiter: ReadinessArbiter,
 	}
-}
-
-func (p *PrometheusModule) RegisterMonitor(name string) *metrics.AggregatingMetricMonitor {
-	return metrics.RegisterMonitor(name, p.livenessArbiter)
 }
 
 type Identity struct{}
 
-func (id *Identity) GetModule(factory *CommonFactory) (*PrometheusModule, error) {
+func (id *Identity) GetModule(factory common.CommonFactory) (*PrometheusModule, error) {
 	module, err := factory.Get(prometheusModuleKey)
 	if err != nil {
 		return nil, err

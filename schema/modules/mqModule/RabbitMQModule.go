@@ -52,7 +52,7 @@ func (m *RabbitMQModule) Close() {
 
 var queueModuleKey = common.ModuleKey(RABBIT_MQ_MODULE_KEY)
 
-func NewRabbitMQModule(provider factory.ConfigProvider) common.Module {
+func NewRabbitMQModule(provider common.ConfigProvider) common.Module {
 
 	queueConfiguration := configuration.MessageRouterConfiguration{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	err := provider.GetConfig(MQ_ROUTER_CONFIG_FILENAME, &queueConfiguration)

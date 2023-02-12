@@ -5,44 +5,44 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-type PrometheusMetric struct {
+type MetricFlag struct {
 	Metric prometheus.Gauge
 
 	Enabled bool
 }
 
-func NewPrometheusMetric(name string, help string) *PrometheusMetric {
+func NewMetricFlag(name string, help string) *MetricFlag {
 	gauge := promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: name,
 			Help: help,
 		},
 	)
-	return &PrometheusMetric{
+	return &MetricFlag{
 		Metric:  gauge,
 		Enabled: false,
 	}
 }
 
-func (promMetric *PrometheusMetric) IsEnabled() bool {
+func (promMetric *MetricFlag) IsEnabled() bool {
 	return promMetric.Enabled
 }
 
-func (promMetric *PrometheusMetric) Enable() {
+func (promMetric *MetricFlag) Enable() {
 	if !promMetric.Enabled {
 		promMetric.Enabled = true
 		promMetric.OnValueChange(promMetric.Enabled)
 	}
 }
 
-func (promMetric *PrometheusMetric) Disable() {
+func (promMetric *MetricFlag) Disable() {
 	if promMetric.Enabled {
 		promMetric.Enabled = false
 		promMetric.OnValueChange(promMetric.Enabled)
 	}
 }
 
-func (promMetric *PrometheusMetric) OnValueChange(value bool) {
+func (promMetric *MetricFlag) OnValueChange(value bool) {
 	if value {
 		promMetric.Metric.Set(1.0)
 	} else {

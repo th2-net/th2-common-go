@@ -25,10 +25,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type ConfigProvider interface {
-	GetConfig(resourceName string, target interface{}) error
-}
-
 type ConfigProviderFromFile struct {
 	configurationPath string
 	fileExtension     string
