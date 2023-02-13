@@ -33,6 +33,13 @@ var OUTGOING_MSG_SIZE = promauto.NewCounter(
 	},
 )
 
+var OUTGOING_MSG_QUANTITY_ABSTRACT = promauto.NewCounter(
+	prometheus.CounterOpts{
+		Name: "th2_rabbitmq_message_publish_total",
+		Help: "Amount of batches sent",
+	},
+)
+
 type CommonMessageSender struct {
 	ConnManager  *MQcommon.ConnectionManager
 	exchangeName string
@@ -52,12 +59,14 @@ func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 		sender.Logger.Panic().Err(err).Msg("Error during marshaling message into proto message")
 		return err
 	}
-	OUTGOING_MSG_SIZE.Add(float64(len(body)))
 
 	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName)
 	if fail != nil {
 		return fail
 	}
+	OUTGOING_MSG_SIZE.Add(float64(len(body)))
+	OUTGOING_MSG_QUANTITY_ABSTRACT.Inc()
+
 	// th2Pin will be used for Metrics
 	return nil
 }

@@ -18,12 +18,14 @@ package message
 import (
 	"os"
 	p_buff "th2-grpc/th2_grpc_common"
+	"time"
 
 	"github.com/rs/zerolog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/streadway/amqp"
+	"github.com/th2-net/th2-common-go/schema/metrics"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
@@ -34,6 +36,14 @@ var INCOMING_MESSAGE_SIZE = promauto.NewCounter(
 	prometheus.CounterOpts{
 		Name: "th2_rabbitmq_message_size_subscribe_bytes",
 		Help: "Amount of bytes received",
+	},
+)
+
+var HANDLING_DURATION = promauto.NewHistogram(
+	prometheus.HistogramOpts{
+		Name:    "th2_rabbitmq_message_process_duration_seconds",
+		Help:    "Subscriber's handling process duration",
+		Buckets: metrics.DEFAULT_BUCKETS,
 	},
 )
 
@@ -48,6 +58,7 @@ type CommonMessageSubscriber struct {
 }
 
 func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
+	startTime := time.Now()
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
@@ -62,6 +73,7 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
+	HANDLING_DURATION.Observe(float64(time.Now().Unix() - startTime.Unix()))
 	cs.Logger.Debug().Msg("Successfully Handled")
 
 }

@@ -21,6 +21,8 @@ import (
 	"reflect"
 )
 
+var DEFAULT_BUCKETS = []float64{0.000_25, 0.000_5, 0.001, 0.005, 0.010, 0.015, 0.025, 0.050, 0.100, 0.250, 0.500, 1.0}
+
 type HealthMetrics struct {
 	LivenessMonitor  *Monitor
 	ReadinessMonitor *Monitor
