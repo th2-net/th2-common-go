@@ -1,11 +1,21 @@
 package event
 
 import (
-	"github.com/rs/zerolog"
 	p_buff "th2-grpc/th2_grpc_common"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/rs/zerolog"
 
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"google.golang.org/protobuf/proto"
+)
+
+var OUTGOING_EVENT_QUANTITY = promauto.NewCounter(
+	prometheus.CounterOpts{
+		Name: "th2_event_publish_total",
+		Help: "Quantity of outgoing events",
+	},
 )
 
 type CommonEventSender struct {
@@ -35,5 +45,6 @@ func (sender *CommonEventSender) Send(batch *p_buff.EventBatch) error {
 		return fail
 	}
 	// th2Pin will be used for Metrics
+	OUTGOING_EVENT_QUANTITY.Add(len(batch.Events))
 	return nil
 }

@@ -1,15 +1,25 @@
 package event
 
 import (
-	"github.com/rs/zerolog"
 	"os"
 	p_buff "th2-grpc/th2_grpc_common"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/rs/zerolog"
 
 	"github.com/streadway/amqp"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/event"
 	"google.golang.org/protobuf/proto"
+)
+
+var INCOMING_EVENTS_QUANTITY = promauto.NewCounter(
+	prometheus.CounterOpts{
+		Name: "th2_event_subscribe_total",
+		Help: "Amount of events received",
+	},
 )
 
 type CommonEventSubscriber struct {
@@ -46,6 +56,7 @@ func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) {
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
+	INCOMING_EVENTS_QUANTITY.Add(len(result.Events))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
 		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
@@ -63,7 +74,7 @@ func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) 
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
-
+	INCOMING_EVENTS_QUANTITY.Add(len(result.Events))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	var confirmation MQcommon.Confirmation = deliveryConfirm

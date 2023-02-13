@@ -79,12 +79,13 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 }
 
 func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) {
+	startTime := time.Now()
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
-
+	INCOMING_MESSAGE_SIZE.Add(float64(len(msgDelivery.Body)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
@@ -96,6 +97,7 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
+	HANDLING_DURATION.Observe(float64(time.Now().Unix() - startTime.Unix()))
 	cs.Logger.Debug().Msg("Successfully Handled")
 }
 
