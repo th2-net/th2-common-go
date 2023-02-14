@@ -18,7 +18,6 @@ package message
 import (
 	"os"
 	p_buff "th2-grpc/th2_grpc_common"
-	"time"
 
 	"github.com/rs/zerolog"
 
@@ -60,7 +59,8 @@ type CommonMessageSubscriber struct {
 }
 
 func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
-	startTime := time.Now()
+	timer := prometheus.NewTimer(HANDLING_DURATION.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName))
+	defer timer.ObserveDuration()
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
@@ -75,13 +75,12 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
-	HANDLING_DURATION.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Observe(float64(time.Now().Unix() - startTime.Unix()))
 	cs.Logger.Debug().Msg("Successfully Handled")
-
 }
 
 func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) {
-	startTime := time.Now()
+	timer := prometheus.NewTimer(HANDLING_DURATION.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName))
+	defer timer.ObserveDuration()
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
@@ -99,7 +98,6 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
-	HANDLING_DURATION.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Observe(float64(time.Now().Unix() - startTime.Unix()))
 	cs.Logger.Debug().Msg("Successfully Handled")
 }
 
