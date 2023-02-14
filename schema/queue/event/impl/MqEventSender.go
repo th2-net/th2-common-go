@@ -47,6 +47,6 @@ func (sender *CommonEventSender) Send(batch *p_buff.EventBatch) error {
 		return fail
 	}
 	// th2Pin will be used for Metrics
-	OUTGOING_EVENT_QUANTITY.WithLabelValues(sender.th2Pin, metrics.TH2_TYPE, sender.exchangeName, sender.sendQueue).Add(len(batch.Events))
+	OUTGOING_EVENT_QUANTITY.WithLabelValues(sender.th2Pin, metrics.TH2_TYPE, sender.exchangeName, sender.sendQueue).Add(float64(len(batch.Events)))
 	return nil
 }

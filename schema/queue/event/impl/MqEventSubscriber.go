@@ -58,7 +58,7 @@ func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) {
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
-	INCOMING_EVENTS_QUANTITY.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Add(len(result.Events))
+	INCOMING_EVENTS_QUANTITY.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
 		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
@@ -76,7 +76,7 @@ func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) 
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
-	INCOMING_EVENTS_QUANTITY.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Add(len(result.Events))
+	INCOMING_EVENTS_QUANTITY.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
