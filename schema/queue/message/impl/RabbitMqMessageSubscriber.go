@@ -32,19 +32,21 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var INCOMING_MESSAGE_SIZE = promauto.NewCounter(
+var INCOMING_MESSAGE_SIZE = promauto.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: "th2_rabbitmq_message_size_subscribe_bytes",
 		Help: "Amount of bytes received",
 	},
+	metrics.SUBSCRIBER_LABELS,
 )
 
-var HANDLING_DURATION = promauto.NewHistogram(
+var HANDLING_DURATION = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
 		Name:    "th2_rabbitmq_message_process_duration_seconds",
 		Help:    "Subscriber's handling process duration",
 		Buckets: metrics.DEFAULT_BUCKETS,
 	},
+	metrics.SUBSCRIBER_LABELS,
 )
 
 type CommonMessageSubscriber struct {
@@ -64,7 +66,7 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
-	INCOMING_MESSAGE_SIZE.Add(float64(len(msgDelivery.Body)))
+	INCOMING_MESSAGE_SIZE.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Add(float64(len(msgDelivery.Body)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
 		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
@@ -73,7 +75,7 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
-	HANDLING_DURATION.Observe(float64(time.Now().Unix() - startTime.Unix()))
+	HANDLING_DURATION.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Observe(float64(time.Now().Unix() - startTime.Unix()))
 	cs.Logger.Debug().Msg("Successfully Handled")
 
 }
@@ -85,7 +87,7 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
-	INCOMING_MESSAGE_SIZE.Add(float64(len(msgDelivery.Body)))
+	INCOMING_MESSAGE_SIZE.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Add(float64(len(msgDelivery.Body)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
@@ -97,7 +99,7 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
-	HANDLING_DURATION.Observe(float64(time.Now().Unix() - startTime.Unix()))
+	HANDLING_DURATION.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Observe(float64(time.Now().Unix() - startTime.Unix()))
 	cs.Logger.Debug().Msg("Successfully Handled")
 }
 

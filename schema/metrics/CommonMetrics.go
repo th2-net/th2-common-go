@@ -23,6 +23,30 @@ import (
 
 var DEFAULT_BUCKETS = []float64{0.000_25, 0.000_5, 0.001, 0.005, 0.010, 0.015, 0.025, 0.050, 0.100, 0.250, 0.500, 1.0}
 
+const (
+	DEFAULT_SESSION_ALIAS_LABEL_NAME = "session_alias"
+	DEFAULT_DIRECTION_LABEL_NAME     = "direction"
+	DEFAULT_EXCHANGE_LABEL_NAME      = "exchange"
+	DEFAULT_ROUTING_KEY_LABEL_NAME   = "routing_key"
+	DEFAULT_QUEUE_LABEL_NAME         = "queue"
+	DEFAULT_MESSAGE_TYPE_LABEL_NAME  = "message_type"
+	DEFAULT_TH2_PIN_LABEL_NAME       = "th2_pin"
+	DEFAULT_TH2_TYPE_LABEL_NAME      = "th2_type"
+	TH2_TYPE                         = "unknown"
+)
+
+var SENDER_LABELS = []string{
+	DEFAULT_TH2_PIN_LABEL_NAME,
+	DEFAULT_TH2_TYPE_LABEL_NAME,
+	DEFAULT_EXCHANGE_LABEL_NAME,
+	DEFAULT_ROUTING_KEY_LABEL_NAME,
+}
+var SUBSCRIBER_LABELS = []string{
+	DEFAULT_TH2_PIN_LABEL_NAME,
+	DEFAULT_TH2_TYPE_LABEL_NAME,
+	DEFAULT_QUEUE_LABEL_NAME,
+}
+
 type HealthMetrics struct {
 	LivenessMonitor  *Monitor
 	ReadinessMonitor *Monitor
