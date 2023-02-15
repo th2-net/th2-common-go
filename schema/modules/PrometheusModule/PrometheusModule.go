@@ -53,10 +53,12 @@ func NewPrometheusModule(provider common.ConfigProvider) common.Module {
 
 	LivenessArbiter := metrics.NewFlagArbiter(
 		metrics.NewMetricFlag("th2_liveness", "Service liveness"),
+		metrics.NewFileFlag("healthy"),
 	)
 
 	ReadinessArbiter := metrics.NewFlagArbiter(
 		metrics.NewMetricFlag("th2_readiness", "Service readiness"),
+		metrics.NewFileFlag("ready"),
 	)
 
 	if promConfig.Enabled {
