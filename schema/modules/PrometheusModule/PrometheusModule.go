@@ -47,7 +47,7 @@ func (p *PrometheusModule) Close() {
 }
 
 func NewPrometheusModule(provider common.ConfigProvider) common.Module {
-	promConfig := metrics.PrometheusConfiguration{}
+	promConfig := metrics.PrometheusConfiguration{Host: "0.0.0.0", Port: "9752"}
 	provider.GetConfig(PROMETHEUS_FILE_NAME, &promConfig)
 	serv := metrics.NewPrometheusServer(promConfig.Host, promConfig.Port)
 
