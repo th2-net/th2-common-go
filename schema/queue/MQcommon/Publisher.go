@@ -16,8 +16,27 @@
 package MQcommon
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/zerolog"
 	"github.com/streadway/amqp"
+	"github.com/th2-net/th2-common-go/schema/metrics"
+)
+
+var th2_rabbitmq_message_size_publish_bytes = promauto.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "th2_rabbitmq_message_size_publish_bytes",
+		Help: "Amount of bytes sent",
+	},
+	metrics.SENDER_LABELS,
+)
+
+var th2_rabbitmq_message_publish_total = promauto.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "th2_rabbitmq_message_publish_total",
+		Help: "Amount of batches sent",
+	},
+	metrics.SENDER_LABELS,
 )
 
 type Publisher struct {
@@ -36,7 +55,7 @@ func (pb *Publisher) connect() {
 	pb.Logger.Debug().Msg("Publisher connected")
 }
 
-func (pb *Publisher) Publish(body []byte, routingKey string, exchange string) error {
+func (pb *Publisher) Publish(body []byte, routingKey string, exchange string, th2Pin string, th2Type string) error {
 	ch, err := pb.conn.Channel()
 	if err != nil {
 		pb.Logger.Error().Err(err).Send()
@@ -50,6 +69,8 @@ func (pb *Publisher) Publish(body []byte, routingKey string, exchange string) er
 		return err
 	}
 	pb.Logger.Info().Msg(" [x] Sent ")
+	th2_rabbitmq_message_size_publish_bytes.WithLabelValues(th2Pin, th2Type, exchange, routingKey).Add(float64(len(body)))
+	th2_rabbitmq_message_publish_total.WithLabelValues(th2Pin, th2Type, exchange, routingKey).Inc()
 
 	return nil
 }

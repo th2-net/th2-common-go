@@ -7,17 +7,16 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/zerolog"
 
-	"github.com/th2-net/th2-common-go/schema/metrics"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"google.golang.org/protobuf/proto"
 )
 
-var OUTGOING_EVENT_QUANTITY = promauto.NewCounterVec(
+var th2_event_publish_total = promauto.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: "th2_event_publish_total",
 		Help: "Quantity of outgoing events",
 	},
-	metrics.SENDER_LABELS,
+	[]string{"th2Pin"},
 )
 
 type CommonEventSender struct {
@@ -42,11 +41,11 @@ func (sender *CommonEventSender) Send(batch *p_buff.EventBatch) error {
 		return err
 	}
 
-	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName)
+	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName, sender.th2Pin, "EVENT")
 	if fail != nil {
 		return fail
 	}
-	// th2Pin will be used for Metrics
-	OUTGOING_EVENT_QUANTITY.WithLabelValues(sender.th2Pin, metrics.TH2_TYPE, sender.exchangeName, sender.sendQueue).Add(float64(len(batch.Events)))
+
+	th2_event_publish_total.WithLabelValues(sender.th2Pin).Add(float64(len(batch.Events)))
 	return nil
 }

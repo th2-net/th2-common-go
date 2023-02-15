@@ -18,29 +18,10 @@ package message
 import (
 	p_buff "th2-grpc/th2_grpc_common"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/zerolog"
 
-	"github.com/th2-net/th2-common-go/schema/metrics"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"google.golang.org/protobuf/proto"
-)
-
-var OUTGOING_MSG_SIZE = promauto.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: "th2_rabbitmq_message_size_publish_bytes",
-		Help: "Amount of bytes sent",
-	},
-	metrics.SENDER_LABELS,
-)
-
-var OUTGOING_MSG_QUANTITY_ABSTRACT = promauto.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: "th2_rabbitmq_message_publish_total",
-		Help: "Amount of batches sent",
-	},
-	metrics.SENDER_LABELS,
 )
 
 type CommonMessageSender struct {
@@ -63,12 +44,10 @@ func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 		return err
 	}
 
-	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName)
+	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName, sender.th2Pin, "MESSAGE_GROUP")
 	if fail != nil {
 		return fail
 	}
-	OUTGOING_MSG_SIZE.WithLabelValues(sender.th2Pin, metrics.TH2_TYPE, sender.exchangeName, sender.sendQueue).Add(float64(len(body)))
-	OUTGOING_MSG_QUANTITY_ABSTRACT.WithLabelValues(sender.th2Pin, metrics.TH2_TYPE, sender.exchangeName, sender.sendQueue).Inc()
 
 	// th2Pin will be used for Metrics
 	return nil

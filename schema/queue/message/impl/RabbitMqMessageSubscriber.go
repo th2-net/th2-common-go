@@ -21,31 +21,11 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/streadway/amqp"
-	"github.com/th2-net/th2-common-go/schema/metrics"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
 	"google.golang.org/protobuf/proto"
-)
-
-var INCOMING_MESSAGE_SIZE = promauto.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: "th2_rabbitmq_message_size_subscribe_bytes",
-		Help: "Amount of bytes received",
-	},
-	metrics.SUBSCRIBER_LABELS,
-)
-
-var HANDLING_DURATION = promauto.NewHistogramVec(
-	prometheus.HistogramOpts{
-		Name:    "th2_rabbitmq_message_process_duration_seconds",
-		Help:    "Subscriber's handling process duration",
-		Buckets: metrics.DEFAULT_BUCKETS,
-	},
-	metrics.SUBSCRIBER_LABELS,
 )
 
 type CommonMessageSubscriber struct {
@@ -59,14 +39,11 @@ type CommonMessageSubscriber struct {
 }
 
 func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
-	timer := prometheus.NewTimer(HANDLING_DURATION.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName))
-	defer timer.ObserveDuration()
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
-	INCOMING_MESSAGE_SIZE.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Add(float64(len(msgDelivery.Body)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
 		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
@@ -79,14 +56,11 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 }
 
 func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) {
-	timer := prometheus.NewTimer(HANDLING_DURATION.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName))
-	defer timer.ObserveDuration()
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
-	INCOMING_MESSAGE_SIZE.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Add(float64(len(msgDelivery.Body)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
@@ -102,7 +76,7 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 }
 
 func (cs *CommonMessageSubscriber) Start() error {
-	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.Handler)
+	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, "MESSAGE_GROUP", cs.Handler)
 	if err != nil {
 		return err
 	}
@@ -111,7 +85,7 @@ func (cs *CommonMessageSubscriber) Start() error {
 }
 
 func (cs *CommonMessageSubscriber) ConfirmationStart() error {
-	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.ConfirmationHandler)
+	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, "MESSAGE_GROUP", cs.ConfirmationHandler)
 	if err != nil {
 		return err
 	}
