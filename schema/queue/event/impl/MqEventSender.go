@@ -11,6 +11,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const (
+	TH2_TYPE = "EVENT"
+)
+
 var th2_event_publish_total = promauto.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: "th2_event_publish_total",
@@ -41,7 +45,7 @@ func (sender *CommonEventSender) Send(batch *p_buff.EventBatch) error {
 		return err
 	}
 
-	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName, sender.th2Pin, "EVENT")
+	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName, sender.th2Pin, TH2_TYPE)
 	if fail != nil {
 		return fail
 	}

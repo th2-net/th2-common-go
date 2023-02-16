@@ -35,7 +35,7 @@ type CommonEventSubscriber struct {
 }
 
 func (cs *CommonEventSubscriber) Start() error {
-	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, "EVENT", cs.Handler)
+	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, TH2_TYPE, cs.Handler)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (cs *CommonEventSubscriber) Start() error {
 }
 
 func (cs *CommonEventSubscriber) ConfirmationStart() error {
-	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, "EVENT", cs.ConfirmationHandler)
+	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, TH2_TYPE, cs.ConfirmationHandler)
 	if err != nil {
 		return err
 	}

@@ -18,10 +18,26 @@ package message
 import (
 	p_buff "th2-grpc/th2_grpc_common"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/zerolog"
 
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"google.golang.org/protobuf/proto"
+)
+
+const (
+	TH2_TYPE         = "MESSAGE_GROUP"
+	RAW_MESSAGE_TYPE = "RAW_MESSAGE"
+	MESSAGE_TYPE     = "MESSAGE"
+)
+
+var th2_message_publish_total = promauto.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "th2_message_publish_total",
+		Help: "Quantity of outgoing messages",
+	},
+	[]string{"th2Pin", "session_alias", "direction", "message_type"},
 )
 
 type CommonMessageSender struct {
@@ -44,11 +60,19 @@ func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 		return err
 	}
 
-	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName, sender.th2Pin, "MESSAGE_GROUP")
+	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName, sender.th2Pin, TH2_TYPE)
 	if fail != nil {
 		return fail
 	}
 
-	// th2Pin will be used for Metrics
+	for _, msg := range batch.Groups.Messages {
+		switch msg.GetKind().(type) {
+		case *p_buff.AnyMessage_RawMessage:
+			th2_message_publish_total.WithLabelValues(sender.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, RAW_MESSAGE_TYPE).Inc()
+		case *p_buff.AnyMessage_Message:
+			th2_message_publish_total.WithLabelValues(sender.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, MESSAGE_TYPE).Inc()
+		}
+	}
+
 	return nil
 }
