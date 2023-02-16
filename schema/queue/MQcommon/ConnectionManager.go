@@ -16,10 +16,12 @@
 package MQcommon
 
 import (
+	"os"
+
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/streadway/amqp"
 	configuration2 "github.com/th2-net/th2-common-go/schema/queue/configuration"
-	"os"
 )
 
 type ConnectionManager struct {
@@ -67,6 +69,7 @@ func (manager *ConnectionManager) Close() error {
 
 type DeliveryConfirmation struct {
 	Delivery *amqp.Delivery
+	Timer    *prometheus.Timer
 
 	Logger zerolog.Logger
 }
@@ -78,6 +81,7 @@ func (dc DeliveryConfirmation) Confirm() error {
 		return err
 	}
 	dc.Logger.Info().Msg("Acknowledged")
+	dc.Timer.ObserveDuration()
 	return nil
 }
 func (dc DeliveryConfirmation) Reject() error {

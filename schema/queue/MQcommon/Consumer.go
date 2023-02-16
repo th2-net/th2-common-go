@@ -90,7 +90,7 @@ func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, ha
 	return nil
 }
 
-func (cns *Consumer) ConsumeWithManualAck(queueName string, th2Pin string, th2Type string, handler func(msgDelivery amqp.Delivery)) error {
+func (cns *Consumer) ConsumeWithManualAck(queueName string, th2Pin string, th2Type string, handler func(msgDelivery amqp.Delivery, timer *prometheus.Timer)) error {
 	ch, err := cns.conn.Channel()
 	if err != nil {
 		cns.Logger.Fatal().Err(err).Send()
@@ -113,7 +113,7 @@ func (cns *Consumer) ConsumeWithManualAck(queueName string, th2Pin string, th2Ty
 		cns.Logger.Debug().Msgf("Consumed messages will handled from queue %s", queueName)
 		for d := range msgs {
 			timer := prometheus.NewTimer(th2_rabbitmq_message_process_duration_seconds.WithLabelValues(th2Pin, th2Type, queueName))
-			handler(d)
+			handler(d, timer)
 			timer.ObserveDuration()
 			th2_rabbitmq_message_size_subscribe_bytes.WithLabelValues(th2Pin, th2Type, queueName).Add(float64(len(d.Body)))
 		}
