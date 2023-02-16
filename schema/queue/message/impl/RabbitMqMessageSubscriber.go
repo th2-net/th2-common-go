@@ -66,9 +66,11 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 		for _, msg := range group.Messages {
 			switch msg.GetKind().(type) {
 			case *p_buff.AnyMessage_RawMessage:
-				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, RAW_MESSAGE_TYPE).Inc()
+				msg := msg.GetRawMessage()
+				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, string(msg.Metadata.Id.Direction), RAW_MESSAGE_TYPE).Inc()
 			case *p_buff.AnyMessage_Message:
-				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, MESSAGE_TYPE).Inc()
+				msg := msg.GetMessage()
+				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, string(msg.Metadata.Id.Direction), MESSAGE_TYPE).Inc()
 			}
 		}
 	}
@@ -96,9 +98,11 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 		for _, msg := range group.Messages {
 			switch msg.GetKind().(type) {
 			case *p_buff.AnyMessage_RawMessage:
-				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, RAW_MESSAGE_TYPE).Inc()
+				msg := msg.GetRawMessage()
+				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, string(msg.Metadata.Id.Direction), RAW_MESSAGE_TYPE).Inc()
 			case *p_buff.AnyMessage_Message:
-				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, MESSAGE_TYPE).Inc()
+				msg := msg.GetMessage()
+				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, string(msg.Metadata.Id.Direction), MESSAGE_TYPE).Inc()
 			}
 		}
 	}
