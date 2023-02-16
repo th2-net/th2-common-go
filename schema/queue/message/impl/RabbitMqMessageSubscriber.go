@@ -62,12 +62,14 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
-	for _, msg := range result.Groups.Messages {
-		switch msg.GetKind().(type) {
-		case *p_buff.AnyMessage_RawMessage:
-			th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, RAW_MESSAGE_TYPE).Inc()
-		case *p_buff.AnyMessage_Message:
-			th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, MESSAGE_TYPE).Inc()
+	for _, group := range result.Groups {
+		for _, msg := range group.Messages {
+			switch msg.GetKind().(type) {
+			case *p_buff.AnyMessage_RawMessage:
+				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, RAW_MESSAGE_TYPE).Inc()
+			case *p_buff.AnyMessage_Message:
+				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, MESSAGE_TYPE).Inc()
+			}
 		}
 	}
 	cs.Logger.Debug().Msg("Successfully Handled")
@@ -90,12 +92,14 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
-	for _, msg := range result.Groups.Messages {
-		switch msg.GetKind().(type) {
-		case *p_buff.AnyMessage_RawMessage:
-			th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, RAW_MESSAGE_TYPE).Inc()
-		case *p_buff.AnyMessage_Message:
-			th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, MESSAGE_TYPE).Inc()
+	for _, group := range result.Groups {
+		for _, msg := range group.Messages {
+			switch msg.GetKind().(type) {
+			case *p_buff.AnyMessage_RawMessage:
+				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, RAW_MESSAGE_TYPE).Inc()
+			case *p_buff.AnyMessage_Message:
+				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, msg.Metadata.Id.Direction, MESSAGE_TYPE).Inc()
+			}
 		}
 	}
 	cs.Logger.Debug().Msg("Successfully Handled")
