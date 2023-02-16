@@ -24,6 +24,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/streadway/amqp"
+	"github.com/th2-net/th2-common-go/schema/metrics"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
@@ -62,18 +63,7 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
-	for _, group := range result.Groups {
-		for _, msg := range group.Messages {
-			switch msg.GetKind().(type) {
-			case *p_buff.AnyMessage_RawMessage:
-				msg := msg.GetRawMessage()
-				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, string(msg.Metadata.Id.Direction), RAW_MESSAGE_TYPE).Inc()
-			case *p_buff.AnyMessage_Message:
-				msg := msg.GetMessage()
-				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, string(msg.Metadata.Id.Direction), MESSAGE_TYPE).Inc()
-			}
-		}
-	}
+	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	cs.Logger.Debug().Msg("Successfully Handled")
 }
 
@@ -94,23 +84,12 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
-	for _, group := range result.Groups {
-		for _, msg := range group.Messages {
-			switch msg.GetKind().(type) {
-			case *p_buff.AnyMessage_RawMessage:
-				msg := msg.GetRawMessage()
-				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, string(msg.Metadata.Id.Direction), RAW_MESSAGE_TYPE).Inc()
-			case *p_buff.AnyMessage_Message:
-				msg := msg.GetMessage()
-				th2_message_subscribe_total.WithLabelValues(cs.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, string(msg.Metadata.Id.Direction), MESSAGE_TYPE).Inc()
-			}
-		}
-	}
+	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	cs.Logger.Debug().Msg("Successfully Handled")
 }
 
 func (cs *CommonMessageSubscriber) Start() error {
-	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, TH2_TYPE, cs.Handler)
+	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, metrics.TH2_TYPE, cs.Handler)
 	if err != nil {
 		return err
 	}
@@ -119,7 +98,7 @@ func (cs *CommonMessageSubscriber) Start() error {
 }
 
 func (cs *CommonMessageSubscriber) ConfirmationStart() error {
-	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, TH2_TYPE, cs.ConfirmationHandler)
+	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, metrics.TH2_TYPE, cs.ConfirmationHandler)
 	if err != nil {
 		return err
 	}

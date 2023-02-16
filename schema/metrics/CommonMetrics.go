@@ -32,7 +32,9 @@ const (
 	DEFAULT_MESSAGE_TYPE_LABEL_NAME  = "message_type"
 	DEFAULT_TH2_PIN_LABEL_NAME       = "th2_pin"
 	DEFAULT_TH2_TYPE_LABEL_NAME      = "th2_type"
-	TH2_TYPE                         = "unknown"
+	TH2_TYPE                         = "MESSAGE_GROUP"
+	RAW_MESSAGE_TYPE                 = "RAW_MESSAGE"
+	MESSAGE_TYPE                     = "MESSAGE"
 )
 
 var SENDER_LABELS = []string{

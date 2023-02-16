@@ -22,14 +22,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/zerolog"
 
+	"github.com/th2-net/th2-common-go/schema/metrics"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"google.golang.org/protobuf/proto"
-)
-
-const (
-	TH2_TYPE         = "MESSAGE_GROUP"
-	RAW_MESSAGE_TYPE = "RAW_MESSAGE"
-	MESSAGE_TYPE     = "MESSAGE"
 )
 
 var th2_message_publish_total = promauto.NewCounterVec(
@@ -60,23 +55,11 @@ func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 		return err
 	}
 
-	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName, sender.th2Pin, TH2_TYPE)
+	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName, sender.th2Pin, metrics.TH2_TYPE)
 	if fail != nil {
 		return fail
 	}
-
-	for _, group := range batch.Groups {
-		for _, msg := range group.Messages {
-			switch msg.GetKind().(type) {
-			case *p_buff.AnyMessage_RawMessage:
-				msg := msg.GetRawMessage()
-				th2_message_subscribe_total.WithLabelValues(sender.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, string(msg.Metadata.Id.Direction), RAW_MESSAGE_TYPE).Inc()
-			case *p_buff.AnyMessage_Message:
-				msg := msg.GetRawMessage()
-				th2_message_subscribe_total.WithLabelValues(sender.th2Pin, msg.Metadata.Id.ConnectionId.SessionAlias, string(msg.Metadata.Id.Direction), MESSAGE_TYPE).Inc()
-			}
-		}
-	}
+	metrics.UpdateMessageMetrics(batch, th2_message_publish_total, sender.th2Pin)
 
 	return nil
 }

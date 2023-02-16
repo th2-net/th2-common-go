@@ -91,5 +91,6 @@ func (dc DeliveryConfirmation) Reject() error {
 		return err
 	}
 	dc.Logger.Info().Msg("Rejected")
+	dc.Timer.ObserveDuration()
 	return nil
 }
