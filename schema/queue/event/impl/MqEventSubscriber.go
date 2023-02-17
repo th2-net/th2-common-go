@@ -70,7 +70,7 @@ func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) {
 	cs.Logger.Debug().Msg("Successfully Handled")
 }
 
-func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) {
+func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, timer *prometheus.Timer) {
 	result := &p_buff.EventBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
@@ -78,7 +78,7 @@ func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) 
 	}
 	th2_event_subscribe_total.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
-	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), Timer: timer}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
 
 	if cs.confirmationListener == nil {
