@@ -64,11 +64,11 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 	if cs.listener == nil {
 		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
 	}
+	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	handleErr := (*cs.listener).Handle(&delivery, result)
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
-	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	cs.Logger.Debug().Msg("Successfully Handled")
 }
 
@@ -85,11 +85,11 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 	if cs.confirmationListener == nil {
 		cs.Logger.Fatal().Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
 	}
+	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	handleErr := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
-	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	cs.Logger.Debug().Msg("Successfully Handled")
 }
 
