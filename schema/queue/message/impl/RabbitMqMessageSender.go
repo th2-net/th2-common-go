@@ -32,7 +32,12 @@ var th2_message_publish_total = promauto.NewCounterVec(
 		Name: "th2_message_publish_total",
 		Help: "Quantity of outgoing messages",
 	},
-	[]string{"th2Pin", "session_alias", "direction", "message_type"},
+	[]string{
+		metrics.DEFAULT_TH2_PIN_LABEL_NAME,
+		metrics.DEFAULT_SESSION_ALIAS_LABEL_NAME,
+		metrics.DEFAULT_DIRECTION_LABEL_NAME,
+		metrics.DEFAULT_MESSAGE_TYPE_LABEL_NAME,
+	},
 )
 
 type CommonMessageSender struct {
@@ -55,7 +60,7 @@ func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 		return err
 	}
 
-	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName, sender.th2Pin, metrics.TH2_TYPE)
+	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName, sender.th2Pin, metrics.MESSAGE_GROUP_TH2_TYPE)
 	if fail != nil {
 		return fail
 	}

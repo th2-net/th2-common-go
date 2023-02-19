@@ -114,7 +114,6 @@ func (cns *Consumer) ConsumeWithManualAck(queueName string, th2Pin string, th2Ty
 		for d := range msgs {
 			timer := prometheus.NewTimer(th2_rabbitmq_message_process_duration_seconds.WithLabelValues(th2Pin, th2Type, queueName))
 			handler(d, timer)
-			timer.ObserveDuration()
 			th2_rabbitmq_message_size_subscribe_bytes.WithLabelValues(th2Pin, th2Type, queueName).Add(float64(len(d.Body)))
 		}
 	}()

@@ -21,7 +21,7 @@ var th2_event_subscribe_total = promauto.NewCounterVec(
 		Name: "th2_event_subscribe_total",
 		Help: "Amount of events received",
 	},
-	metrics.SENDER_LABELS,
+	[]string{metrics.DEFAULT_TH2_PIN_LABEL_NAME},
 )
 
 type CommonEventSubscriber struct {
@@ -35,7 +35,7 @@ type CommonEventSubscriber struct {
 }
 
 func (cs *CommonEventSubscriber) Start() error {
-	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, TH2_TYPE, cs.Handler)
+	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, metrics.EVENT_TH2_TYPE, cs.Handler)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (cs *CommonEventSubscriber) Start() error {
 }
 
 func (cs *CommonEventSubscriber) ConfirmationStart() error {
-	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, TH2_TYPE, cs.ConfirmationHandler)
+	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, metrics.EVENT_TH2_TYPE, cs.ConfirmationHandler)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) {
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
-	th2_event_subscribe_total.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Add(float64(len(result.Events)))
+	th2_event_subscribe_total.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
 		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
@@ -76,7 +76,7 @@ func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, 
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
-	th2_event_subscribe_total.WithLabelValues(cs.th2Pin, metrics.TH2_TYPE, cs.qConfig.QueueName).Add(float64(len(result.Events)))
+	th2_event_subscribe_total.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), Timer: timer}
 	var confirmation MQcommon.Confirmation = deliveryConfirm

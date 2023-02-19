@@ -32,7 +32,8 @@ const (
 	DEFAULT_MESSAGE_TYPE_LABEL_NAME  = "message_type"
 	DEFAULT_TH2_PIN_LABEL_NAME       = "th2_pin"
 	DEFAULT_TH2_TYPE_LABEL_NAME      = "th2_type"
-	TH2_TYPE                         = "MESSAGE_GROUP"
+	MESSAGE_GROUP_TH2_TYPE           = "MESSAGE_GROUP"
+	EVENT_TH2_TYPE                   = "EVENT"
 	RAW_MESSAGE_TYPE                 = "RAW_MESSAGE"
 	MESSAGE_TYPE                     = "MESSAGE"
 )

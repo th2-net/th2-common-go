@@ -7,12 +7,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/zerolog"
 
+	"github.com/th2-net/th2-common-go/schema/metrics"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"google.golang.org/protobuf/proto"
-)
-
-const (
-	TH2_TYPE = "EVENT"
 )
 
 var th2_event_publish_total = promauto.NewCounterVec(
@@ -20,7 +17,7 @@ var th2_event_publish_total = promauto.NewCounterVec(
 		Name: "th2_event_publish_total",
 		Help: "Quantity of outgoing events",
 	},
-	[]string{"th2Pin"},
+	[]string{metrics.DEFAULT_TH2_PIN_LABEL_NAME},
 )
 
 type CommonEventSender struct {
@@ -45,7 +42,7 @@ func (sender *CommonEventSender) Send(batch *p_buff.EventBatch) error {
 		return err
 	}
 
-	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName, sender.th2Pin, TH2_TYPE)
+	fail := sender.ConnManager.Publisher.Publish(body, sender.sendQueue, sender.exchangeName, sender.th2Pin, metrics.EVENT_TH2_TYPE)
 	if fail != nil {
 		return fail
 	}

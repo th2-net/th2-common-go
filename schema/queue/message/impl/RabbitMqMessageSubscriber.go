@@ -36,7 +36,12 @@ var th2_message_subscribe_total = promauto.NewCounterVec(
 		Name: "th2_message_subscribe_total",
 		Help: "Quantity of incoming messages",
 	},
-	[]string{"th2Pin", "session_alias", "direction", "message_type"},
+	[]string{
+		metrics.DEFAULT_TH2_PIN_LABEL_NAME,
+		metrics.DEFAULT_SESSION_ALIAS_LABEL_NAME,
+		metrics.DEFAULT_DIRECTION_LABEL_NAME,
+		metrics.DEFAULT_MESSAGE_TYPE_LABEL_NAME,
+	},
 )
 
 type CommonMessageSubscriber struct {
@@ -89,7 +94,7 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 }
 
 func (cs *CommonMessageSubscriber) Start() error {
-	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, metrics.TH2_TYPE, cs.Handler)
+	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, metrics.MESSAGE_GROUP_TH2_TYPE, cs.Handler)
 	if err != nil {
 		return err
 	}
@@ -98,7 +103,7 @@ func (cs *CommonMessageSubscriber) Start() error {
 }
 
 func (cs *CommonMessageSubscriber) ConfirmationStart() error {
-	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, metrics.TH2_TYPE, cs.ConfirmationHandler)
+	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, metrics.MESSAGE_GROUP_TH2_TYPE, cs.ConfirmationHandler)
 	if err != nil {
 		return err
 	}
