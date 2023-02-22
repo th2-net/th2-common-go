@@ -28,17 +28,19 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/th2-net/th2-common-go/schema/common"
+	"github.com/th2-net/th2-common-go/schema/modules/PrometheusModule"
 )
 
 const (
-	configurationPath = "/var/th2/config/"
-	jsonExtension     = ".json"
-	CUSTOM_FILE_NAME  = "custom"
+	configurationPath    = "/var/th2/config/"
+	jsonExtension        = ".json"
+	CUSTOM_FILE_NAME     = "custom"
+	PROMETHEUS_FILE_NAME = "prometheus"
 )
 
 type CommonFactory struct {
 	modules     map[common.ModuleKey]common.Module
-	cfgProvider ConfigProvider
+	cfgProvider common.ConfigProvider
 	zLogger     zerolog.Logger
 }
 
@@ -72,7 +74,7 @@ func configureZerolog(cfg *ZerologConfig) {
 
 }
 
-func newProvider(configPath string, extension string, args []string) ConfigProvider {
+func newProvider(configPath string, extension string, args []string) common.ConfigProvider {
 	return &ConfigProviderFromFile{configurationPath: configPath, fileExtension: extension,
 		files: args, zLogger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 }
@@ -95,14 +97,17 @@ func NewFactory(args ...string) *CommonFactory {
 	}
 
 	provider := newProvider(*configPath, *extension, args)
-	return &CommonFactory{
+	cf := &CommonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
 		cfgProvider: provider,
 		zLogger:     zerolog.New(os.Stdout).With().Timestamp().Logger(),
 	}
+	cf.Register(PrometheusModule.NewPrometheusModule)
+
+	return cf
 }
 
-func (cf *CommonFactory) Register(factories ...func(ConfigProvider) common.Module) error {
+func (cf *CommonFactory) Register(factories ...func(common.ConfigProvider) common.Module) error {
 	for _, factory := range factories {
 		module := factory(cf.cfgProvider)
 		if oldModule, exist := cf.modules[module.GetKey()]; exist {

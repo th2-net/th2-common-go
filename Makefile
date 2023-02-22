@@ -11,7 +11,7 @@ PROTOBUF_VERSION=v1.5.2
 
 PROTOC_VERSION=21.12
 
-default: test
+default: prepare-main-module
 
 configure-go:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
@@ -53,9 +53,9 @@ prepare-main-module: clean-main-module genrate-grpc-files
 	go get -u -t github.com/streadway/amqp@v1.0.0
 	go get -u -t golang.org/x/sys@latest
 	go get -u -t github.com/magiconair/properties
-	go get -u -t github.com/golang/protobuf@$(PROTOBUF_VERSION) 
+	go get -u -t github.com/golang/protobuf@$(PROTOBUF_VERSION)
+	go get -u -t github.com/prometheus/client_golang/prometheus
+	go get -u -t github.com/prometheus/client_golang/prometheus/promauto
+	go get -u -t github.com/prometheus/client_golang/prometheus/promhttp 
 
 	go work init ; go work use .
-
-test: prepare-main-module
-	go test ./...

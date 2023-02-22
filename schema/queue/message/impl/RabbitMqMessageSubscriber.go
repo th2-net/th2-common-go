@@ -16,15 +16,32 @@
 package message
 
 import (
-	"github.com/rs/zerolog"
 	"os"
 	p_buff "th2-grpc/th2_grpc_common"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/rs/zerolog"
+
 	"github.com/streadway/amqp"
+	"github.com/th2-net/th2-common-go/schema/metrics"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
 	"google.golang.org/protobuf/proto"
+)
+
+var th2_message_subscribe_total = promauto.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "th2_message_subscribe_total",
+		Help: "Quantity of incoming messages",
+	},
+	[]string{
+		metrics.DEFAULT_TH2_PIN_LABEL_NAME,
+		metrics.DEFAULT_SESSION_ALIAS_LABEL_NAME,
+		metrics.DEFAULT_DIRECTION_LABEL_NAME,
+		metrics.DEFAULT_MESSAGE_TYPE_LABEL_NAME,
+	},
 )
 
 type CommonMessageSubscriber struct {
@@ -47,28 +64,28 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 	if cs.listener == nil {
 		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
 	}
+	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	handleErr := (*cs.listener).Handle(&delivery, result)
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
 	cs.Logger.Debug().Msg("Successfully Handled")
-
 }
 
-func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) {
+func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, timer *prometheus.Timer) {
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
-
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
-	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), Timer: timer}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
 
 	if cs.confirmationListener == nil {
 		cs.Logger.Fatal().Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
 	}
+	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	handleErr := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
@@ -77,7 +94,7 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 }
 
 func (cs *CommonMessageSubscriber) Start() error {
-	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.Handler)
+	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, metrics.MESSAGE_GROUP_TH2_TYPE, cs.Handler)
 	if err != nil {
 		return err
 	}
@@ -86,7 +103,7 @@ func (cs *CommonMessageSubscriber) Start() error {
 }
 
 func (cs *CommonMessageSubscriber) ConfirmationStart() error {
-	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.ConfirmationHandler)
+	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, metrics.MESSAGE_GROUP_TH2_TYPE, cs.ConfirmationHandler)
 	if err != nil {
 		return err
 	}

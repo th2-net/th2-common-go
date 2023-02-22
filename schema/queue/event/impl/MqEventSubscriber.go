@@ -1,15 +1,27 @@
 package event
 
 import (
-	"github.com/rs/zerolog"
 	"os"
 	p_buff "th2-grpc/th2_grpc_common"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/rs/zerolog"
+
 	"github.com/streadway/amqp"
+	"github.com/th2-net/th2-common-go/schema/metrics"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/event"
 	"google.golang.org/protobuf/proto"
+)
+
+var th2_event_subscribe_total = promauto.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "th2_event_subscribe_total",
+		Help: "Amount of events received",
+	},
+	[]string{metrics.DEFAULT_TH2_PIN_LABEL_NAME},
 )
 
 type CommonEventSubscriber struct {
@@ -23,7 +35,7 @@ type CommonEventSubscriber struct {
 }
 
 func (cs *CommonEventSubscriber) Start() error {
-	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.Handler)
+	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, metrics.EVENT_TH2_TYPE, cs.Handler)
 	if err != nil {
 		return err
 	}
@@ -32,7 +44,7 @@ func (cs *CommonEventSubscriber) Start() error {
 }
 
 func (cs *CommonEventSubscriber) ConfirmationStart() error {
-	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.ConfirmationHandler)
+	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, metrics.EVENT_TH2_TYPE, cs.ConfirmationHandler)
 	if err != nil {
 		return err
 	}
@@ -46,6 +58,7 @@ func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) {
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
+	th2_event_subscribe_total.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
 		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
@@ -57,15 +70,15 @@ func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) {
 	cs.Logger.Debug().Msg("Successfully Handled")
 }
 
-func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery) {
+func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, timer *prometheus.Timer) {
 	result := &p_buff.EventBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
 		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
 	}
-
+	th2_event_subscribe_total.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
-	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), Timer: timer}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
 
 	if cs.confirmationListener == nil {
