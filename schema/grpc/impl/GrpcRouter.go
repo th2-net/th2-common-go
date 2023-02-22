@@ -60,7 +60,7 @@ func (gr *CommonGrpcRouter) createServerWithRegisteredService(registrar func(grp
 
 func (gr *CommonGrpcRouter) Close() {
 	//gr.connCache.get(gr.Config.GetServerAddress()).Close()
-	log.Println("closing grpc router")
+	gr.ZLogger.Info().Msg("closing grpc router")
 }
 
 func (gr *CommonGrpcRouter) StartServer(registrar func(grpc.ServiceRegistrar)) error {
