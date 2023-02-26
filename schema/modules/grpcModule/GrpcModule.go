@@ -17,14 +17,13 @@ package grpcModule
 
 import (
 	"fmt"
-	"os"
-	"reflect"
-
 	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/schema/common"
 	"github.com/th2-net/th2-common-go/schema/factory"
 	"github.com/th2-net/th2-common-go/schema/grpc/config"
 	"github.com/th2-net/th2-common-go/schema/grpc/impl"
+	"os"
+	"reflect"
 )
 
 const (

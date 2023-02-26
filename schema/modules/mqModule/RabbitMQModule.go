@@ -17,22 +17,21 @@ package mqModule
 
 import (
 	"fmt"
-	"os"
-	"reflect"
-	"strconv"
-
 	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/schema/common"
 	"github.com/th2-net/th2-common-go/schema/factory"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	event "github.com/th2-net/th2-common-go/schema/queue/event/impl"
-	message "github.com/th2-net/th2-common-go/schema/queue/message/impl"
+	"github.com/th2-net/th2-common-go/schema/queue/message/impl"
+	"os"
+	"reflect"
+	"strconv"
 )
 
 const (
-	RABBIT_MQ_CONFIG_FILENAME = "rabbitMQ"
-	MQ_ROUTER_CONFIG_FILENAME = "mq"
+	RABBIT_MQ_CONFIG_FILENAME = "rabbitmq"
+	MQ_ROUTER_CONFIG_FILENAME = "routermq"
 	RABBIT_MQ_MODULE_KEY      = "queue"
 )
 
