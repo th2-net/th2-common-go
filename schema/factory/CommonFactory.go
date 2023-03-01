@@ -156,11 +156,16 @@ func (cf *CommonFactory) GetLogger(name string) zerolog.Logger {
 	return cf.zLogger.With().Str("component", name).Logger()
 }
 
-func (cf *CommonFactory) Close() {
+func (cf *CommonFactory) Close() error {
+	var err error
 	for moduleKey, module := range cf.modules {
-		module.Close()
-		cf.zLogger.Info().Msgf("Module %v closed. \n", moduleKey)
+		if err = module.Close(); err == nil {
+			cf.zLogger.Info().Msgf("Module %v closed. \n", moduleKey)
+		} else {
+			cf.zLogger.Error().Msgf("Module %v raised error %w\n", moduleKey, err)
+		}
 	}
+	return nil
 }
 
 func (cf *CommonFactory) GetCustomConfiguration(any interface{}) error {

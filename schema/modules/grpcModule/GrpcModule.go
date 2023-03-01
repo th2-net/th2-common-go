@@ -17,13 +17,13 @@ package grpcModule
 
 import (
 	"fmt"
-	"github.com/rs/zerolog"
-	"github.com/th2-net/th2-common-go/schema/common"
-	"github.com/th2-net/th2-common-go/schema/factory"
-	"github.com/th2-net/th2-common-go/schema/grpc/config"
-	"github.com/th2-net/th2-common-go/schema/grpc/impl"
 	"os"
 	"reflect"
+
+	"github.com/rs/zerolog"
+	"github.com/th2-net/th2-common-go/schema/common"
+	"github.com/th2-net/th2-common-go/schema/grpc/config"
+	"github.com/th2-net/th2-common-go/schema/grpc/impl"
 )
 
 const (
@@ -39,8 +39,9 @@ func (m *GrpcModule) GetKey() common.ModuleKey {
 	return grpcModuleKey
 }
 
-func (m *GrpcModule) Close() {
+func (m *GrpcModule) Close() error {
 	m.GrpcRouter.Close()
+	return nil
 }
 
 var grpcModuleKey = common.ModuleKey(GRPC_MODULE_KEY)
@@ -59,7 +60,7 @@ func NewGrpcModule(provider common.ConfigProvider) common.Module {
 
 type Identity struct{}
 
-func (id *Identity) GetModule(factory *factory.CommonFactory) (*GrpcModule, error) {
+func (id *Identity) GetModule(factory common.CommonFactory) (*GrpcModule, error) {
 	module, err := factory.Get(grpcModuleKey)
 	if err != nil {
 		return nil, err

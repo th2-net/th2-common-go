@@ -23,7 +23,6 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/schema/common"
-	"github.com/th2-net/th2-common-go/schema/factory"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	event "github.com/th2-net/th2-common-go/schema/queue/event/impl"
@@ -45,9 +44,10 @@ type RabbitMQModule struct {
 func (m *RabbitMQModule) GetKey() common.ModuleKey {
 	return queueModuleKey
 }
-func (m *RabbitMQModule) Close() {
+func (m *RabbitMQModule) Close() error {
 	m.MqMessageRouter.Close()
 	m.MqEventRouter.Close()
+	return nil
 }
 
 var queueModuleKey = common.ModuleKey(RABBIT_MQ_MODULE_KEY)
@@ -90,7 +90,7 @@ func NewRabbitMQModule(provider common.ConfigProvider) common.Module {
 
 type Identity struct{}
 
-func (id *Identity) GetModule(factory *factory.CommonFactory) (*RabbitMQModule, error) {
+func (id *Identity) GetModule(factory common.CommonFactory) (*RabbitMQModule, error) {
 	module, err := factory.Get(queueModuleKey)
 	if err != nil {
 		return nil, err

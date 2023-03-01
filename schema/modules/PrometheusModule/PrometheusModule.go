@@ -42,8 +42,9 @@ func (p *PrometheusModule) GetKey() common.ModuleKey {
 	return prometheusModuleKey
 }
 
-func (p *PrometheusModule) Close() {
+func (p *PrometheusModule) Close() error {
 	p.prometheus.Stop()
+	return nil
 }
 
 func NewPrometheusModule(provider common.ConfigProvider) common.Module {
