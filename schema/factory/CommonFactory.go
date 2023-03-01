@@ -19,6 +19,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+
 	"os"
 	"path/filepath"
 	"reflect"
@@ -37,6 +38,12 @@ const (
 	CUSTOM_FILE_NAME     = "custom"
 	PROMETHEUS_FILE_NAME = "prometheus"
 )
+
+type Config struct {
+	ConfigurationsDir string
+	FileExtension     string
+	ExtracArguments   []string
+}
 
 type CommonFactory struct {
 	modules     map[common.ModuleKey]common.Module
@@ -80,11 +87,29 @@ func newProvider(configPath string, extension string, args []string) common.Conf
 }
 
 func NewFactory(args ...string) *CommonFactory {
-	configPath := flag.String("config-file-path", configurationPath, "pass path tp=o config file")
+	configPath := flag.String("config-file-path", configurationPath, "pass path to config files")
 	extension := flag.String("config-file-extension", jsonExtension, "file extension")
 	flag.Parse()
+	factory, err := NewFromConfig(Config{
+		ConfigurationsDir: *configPath,
+		FileExtension:     *extension,
+		ExtracArguments:   args,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return factory
+}
+
+func NewFromConfig(config Config) (*CommonFactory, error) {
+	if config.ConfigurationsDir == "" {
+		return nil, fmt.Errorf("configuration directory is empty")
+	}
+	if config.FileExtension == "" {
+		return nil, fmt.Errorf("configurations file extension is empty")
+	}
 	var cfg ZerologConfig
-	p, pErr := properties.LoadFile(filepath.Join(*configPath, "zerolog.properties"), properties.UTF8)
+	p, pErr := properties.LoadFile(filepath.Join(config.ConfigurationsDir, "zerolog.properties"), properties.UTF8)
 	if pErr != nil {
 		log.Error().Err(pErr).Msg("Can't get properties for zerolog")
 	} else {
@@ -96,7 +121,7 @@ func NewFactory(args ...string) *CommonFactory {
 		configureZerolog(&cfg)
 	}
 
-	provider := newProvider(*configPath, *extension, args)
+	provider := newProvider(config.ConfigurationsDir, config.FileExtension, config.ExtracArguments)
 	cf := &CommonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
 		cfgProvider: provider,
@@ -104,7 +129,7 @@ func NewFactory(args ...string) *CommonFactory {
 	}
 	cf.Register(PrometheusModule.NewPrometheusModule)
 
-	return cf
+	return cf, nil
 }
 
 func (cf *CommonFactory) Register(factories ...func(common.ConfigProvider) common.Module) error {
