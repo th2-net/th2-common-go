@@ -152,6 +152,10 @@ func (cf *CommonFactory) Get(key common.ModuleKey) (common.Module, error) {
 	}
 }
 
+func (cf *CommonFactory) GetLogger(name string) zerolog.Logger {
+	return cf.zLogger.With().Str("component", name).Logger()
+}
+
 func (cf *CommonFactory) Close() {
 	for moduleKey, module := range cf.modules {
 		module.Close()
