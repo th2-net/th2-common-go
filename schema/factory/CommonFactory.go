@@ -45,7 +45,7 @@ type Config struct {
 	ExtracArguments   []string
 }
 
-type CommonFactory struct {
+type commonFactory struct {
 	modules     map[common.ModuleKey]common.Module
 	cfgProvider common.ConfigProvider
 	zLogger     zerolog.Logger
@@ -86,7 +86,7 @@ func newProvider(configPath string, extension string, args []string) common.Conf
 		files: args, zLogger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 }
 
-func NewFactory(args ...string) *CommonFactory {
+func NewFactory(args ...string) common.CommonFactory {
 	configPath := flag.String("config-file-path", configurationPath, "pass path to config files")
 	extension := flag.String("config-file-extension", jsonExtension, "file extension")
 	flag.Parse()
@@ -101,7 +101,7 @@ func NewFactory(args ...string) *CommonFactory {
 	return factory
 }
 
-func NewFromConfig(config Config) (*CommonFactory, error) {
+func NewFromConfig(config Config) (common.CommonFactory, error) {
 	if config.ConfigurationsDir == "" {
 		return nil, fmt.Errorf("configuration directory is empty")
 	}
@@ -122,7 +122,7 @@ func NewFromConfig(config Config) (*CommonFactory, error) {
 	}
 
 	provider := newProvider(config.ConfigurationsDir, config.FileExtension, config.ExtracArguments)
-	cf := &CommonFactory{
+	cf := &commonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
 		cfgProvider: provider,
 		zLogger:     zerolog.New(os.Stdout).With().Timestamp().Logger(),
@@ -132,7 +132,7 @@ func NewFromConfig(config Config) (*CommonFactory, error) {
 	return cf, nil
 }
 
-func (cf *CommonFactory) Register(factories ...func(common.ConfigProvider) common.Module) error {
+func (cf *commonFactory) Register(factories ...func(common.ConfigProvider) common.Module) error {
 	for _, factory := range factories {
 		module := factory(cf.cfgProvider)
 		if oldModule, exist := cf.modules[module.GetKey()]; exist {
@@ -144,7 +144,7 @@ func (cf *CommonFactory) Register(factories ...func(common.ConfigProvider) commo
 	return nil
 }
 
-func (cf *CommonFactory) Get(key common.ModuleKey) (common.Module, error) {
+func (cf *commonFactory) Get(key common.ModuleKey) (common.Module, error) {
 	if module, exist := cf.modules[key]; !exist {
 		return nil, errors.New("module " + string(key) + " does not exist")
 	} else {
@@ -152,11 +152,11 @@ func (cf *CommonFactory) Get(key common.ModuleKey) (common.Module, error) {
 	}
 }
 
-func (cf *CommonFactory) GetLogger(name string) zerolog.Logger {
+func (cf *commonFactory) GetLogger(name string) zerolog.Logger {
 	return cf.zLogger.With().Str("component", name).Logger()
 }
 
-func (cf *CommonFactory) Close() error {
+func (cf *commonFactory) Close() error {
 	var err error
 	for moduleKey, module := range cf.modules {
 		if err = module.Close(); err == nil {
@@ -168,7 +168,7 @@ func (cf *CommonFactory) Close() error {
 	return nil
 }
 
-func (cf *CommonFactory) GetCustomConfiguration(any interface{}) error {
+func (cf *commonFactory) GetCustomConfiguration(any interface{}) error {
 	err := cf.cfgProvider.GetConfig(CUSTOM_FILE_NAME, any)
 	return err
 }
