@@ -18,15 +18,12 @@ package factory
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog"
 	"os"
 	"path/filepath"
 	"strings"
-)
 
-type ConfigProvider interface {
-	GetConfig(resourceName string, target interface{}) error
-}
+	"github.com/rs/zerolog"
+)
 
 type ConfigProviderFromFile struct {
 	configurationPath string
@@ -75,7 +72,10 @@ func (cfd *ConfigProviderFromFile) GetConfig(resourceName string, target interfa
 		return fileReadErr
 	}
 
-	err := json.Unmarshal(fileContentBytes, target)
+	content := string(fileContentBytes)
+	cfd.zLogger.Info().Msgf("Config file for %v: %v", resourceName, content)
+	content = os.ExpandEnv(string(fileContentBytes))
+	err := json.Unmarshal([]byte(content), target)
 
 	if err != nil {
 		cfd.zLogger.Error().Err(err).Msg("Deserialization error")

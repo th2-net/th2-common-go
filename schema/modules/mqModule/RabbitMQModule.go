@@ -17,21 +17,22 @@ package mqModule
 
 import (
 	"fmt"
+	"os"
+	"reflect"
+	"strconv"
+
 	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/schema/common"
 	"github.com/th2-net/th2-common-go/schema/factory"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	event "github.com/th2-net/th2-common-go/schema/queue/event/impl"
-	"github.com/th2-net/th2-common-go/schema/queue/message/impl"
-	"os"
-	"reflect"
-	"strconv"
+	message "github.com/th2-net/th2-common-go/schema/queue/message/impl"
 )
 
 const (
-	RABBIT_MQ_CONFIG_FILENAME = "rabbitmq"
-	MQ_ROUTER_CONFIG_FILENAME = "routermq"
+	RABBIT_MQ_CONFIG_FILENAME = "rabbitMQ"
+	MQ_ROUTER_CONFIG_FILENAME = "mq"
 	RABBIT_MQ_MODULE_KEY      = "queue"
 )
 
@@ -51,7 +52,7 @@ func (m *RabbitMQModule) Close() {
 
 var queueModuleKey = common.ModuleKey(RABBIT_MQ_MODULE_KEY)
 
-func NewRabbitMQModule(provider factory.ConfigProvider) common.Module {
+func NewRabbitMQModule(provider common.ConfigProvider) common.Module {
 
 	queueConfiguration := configuration.MessageRouterConfiguration{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	err := provider.GetConfig(MQ_ROUTER_CONFIG_FILENAME, &queueConfiguration)

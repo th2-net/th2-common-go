@@ -1,4 +1,4 @@
-# th2 common library (GO)
+# th2 common library GO (1.0.0)
 
 ## Usage
 
@@ -64,29 +64,13 @@ The `CommonFactory` reads a message's router configuration from the `mq.json` fi
     * name - routing key in RabbitMQ for sending
     * queue - queue's name in RabbitMQ for subscribe
     * exchange - exchange in RabbitMQ
-    * attributes - pin's attribute for filtering. Default attributes:
-        * first
-        * second
+    * attributes - pin's attribute for mark. Default attributes:
         * subscribe
         * publish        
         * parsed
         * raw
-        * store
         * event
-      
-    * filters - pin's message's filters
-        * metadata - a metadata filters
-        * message - a message's fields filters
-    
-Filters format: 
-* fieldName - a field's name
-* expectedValue - expected field's value (not used for all operations)
-* operation - operation's type
-    * `EQUAL` - the filter passes if the field is equal to the exact value
-    * `NOT_EQUAL` - the filter passes if the field does not equal the exact value
-    * `EMPTY` - the filter passes if the field is empty
-    * `NOT_EMPTY` - the filter passes if the field is not empty
-    * `WILDCARD` - filters the field by wildcard expression
+        * store
 
 ```json
 {
@@ -98,24 +82,25 @@ Filters format:
       "attributes": [
         "publish",
         "subscribe"
-      ],
-      "filters": {
-        "metadata": [
-          {
-            "fieldName": "session-alias",
-            "expectedValue": "connection1",
-            "operation": "EQUAL"
-          }
-        ],
-        "message": [
-          {
-            "fieldName": "checkField",
-            "expectedValue": "wil?card*",
-            "operation": "WILDCARD"
-          }
-        ]
-      }
+      ]
     }
   }
 }
 ```
+
+## Release notes
+
+### 1.0.0
+
+#### Implemented:
++ Module architecture
++ Zerolog configuration on CommonFactory creation
++ Read and resolve environment variables during configuration reading
++ Base version of gRPC module
+  + Start server / Start service features
++ Base version of MQ module
+  + EventBatch / MessageGroupBatch router
+  + SendAll / SubscribeAll / SubscribeAllWithManualAck features
++ Prometheus module
+  + Liveness / Readiness probe
+  + MQ module metrics

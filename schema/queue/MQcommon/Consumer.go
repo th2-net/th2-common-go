@@ -16,8 +16,28 @@
 package MQcommon
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/zerolog"
 	"github.com/streadway/amqp"
+	"github.com/th2-net/th2-common-go/schema/metrics"
+)
+
+var th2_rabbitmq_message_size_subscribe_bytes = promauto.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "th2_rabbitmq_message_size_subscribe_bytes",
+		Help: "Amount of bytes received",
+	},
+	metrics.SUBSCRIBER_LABELS,
+)
+
+var th2_rabbitmq_message_process_duration_seconds = promauto.NewHistogramVec(
+	prometheus.HistogramOpts{
+		Name:    "th2_rabbitmq_message_process_duration_seconds",
+		Help:    "Subscriber's handling process duration",
+		Buckets: metrics.DEFAULT_BUCKETS,
+	},
+	metrics.SUBSCRIBER_LABELS,
 )
 
 type Consumer struct {
@@ -36,7 +56,7 @@ func (cns *Consumer) connect() {
 	cns.Logger.Debug().Msg("Consumer connected")
 }
 
-func (cns *Consumer) Consume(queueName string, handler func(delivery amqp.Delivery)) error {
+func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, handler func(delivery amqp.Delivery)) error {
 	ch, err := cns.conn.Channel()
 	if err != nil {
 		cns.Logger.Fatal().Err(err).Send()
@@ -60,14 +80,17 @@ func (cns *Consumer) Consume(queueName string, handler func(delivery amqp.Delive
 	go func() {
 		cns.Logger.Debug().Msgf("Consumed messages will handled from queue %s", queueName)
 		for d := range msgs {
+			timer := prometheus.NewTimer(th2_rabbitmq_message_process_duration_seconds.WithLabelValues(th2Pin, th2Type, queueName))
 			handler(d)
+			timer.ObserveDuration()
+			th2_rabbitmq_message_size_subscribe_bytes.WithLabelValues(th2Pin, th2Type, queueName).Add(float64(len(d.Body)))
 		}
 	}()
 
 	return nil
 }
 
-func (cns *Consumer) ConsumeWithManualAck(queueName string, handler func(msgDelivery amqp.Delivery)) error {
+func (cns *Consumer) ConsumeWithManualAck(queueName string, th2Pin string, th2Type string, handler func(msgDelivery amqp.Delivery, timer *prometheus.Timer)) error {
 	ch, err := cns.conn.Channel()
 	if err != nil {
 		cns.Logger.Fatal().Err(err).Send()
@@ -89,7 +112,9 @@ func (cns *Consumer) ConsumeWithManualAck(queueName string, handler func(msgDeli
 	go func() {
 		cns.Logger.Debug().Msgf("Consumed messages will handled from queue %s", queueName)
 		for d := range msgs {
-			handler(d)
+			timer := prometheus.NewTimer(th2_rabbitmq_message_process_duration_seconds.WithLabelValues(th2Pin, th2Type, queueName))
+			handler(d, timer)
+			th2_rabbitmq_message_size_subscribe_bytes.WithLabelValues(th2Pin, th2Type, queueName).Add(float64(len(d.Body)))
 		}
 	}()
 

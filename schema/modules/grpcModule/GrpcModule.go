@@ -45,7 +45,7 @@ func (m *GrpcModule) Close() {
 
 var grpcModuleKey = common.ModuleKey(GRPC_MODULE_KEY)
 
-func NewGrpcModule(provider factory.ConfigProvider) common.Module {
+func NewGrpcModule(provider common.ConfigProvider) common.Module {
 
 	grpcConfiguration := config.GrpcConfig{ZLogger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	err := provider.GetConfig(GRPC_CONFIG_FILENAME, &grpcConfiguration)

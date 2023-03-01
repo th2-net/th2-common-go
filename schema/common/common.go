@@ -21,3 +21,13 @@ type Module interface {
 }
 
 type ModuleKey string
+
+type ConfigProvider interface {
+	GetConfig(resourceName string, target interface{}) error
+}
+
+type CommonFactory interface {
+	Register(factories ...func(ConfigProvider) Module) error
+	Get(key ModuleKey) (Module, error)
+	Close()
+}
