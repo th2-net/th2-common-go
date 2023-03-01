@@ -15,6 +15,8 @@
 
 package common
 
+import "github.com/rs/zerolog"
+
 type Module interface {
 	GetKey() ModuleKey
 	Close()
@@ -29,5 +31,6 @@ type ConfigProvider interface {
 type CommonFactory interface {
 	Register(factories ...func(ConfigProvider) Module) error
 	Get(key ModuleKey) (Module, error)
+	GetLogger(name string) zerolog.Logger
 	Close()
 }
