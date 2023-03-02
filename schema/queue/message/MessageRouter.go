@@ -16,12 +16,13 @@
 package message
 
 import (
-	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	p_buff "th2-grpc/th2_grpc_common"
+
+	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 )
 
 type MessageRouter interface {
 	SendAll(batch *p_buff.MessageGroupBatch, attributes ...string) error
-	SubscribeAll(listener *MessageListener, attributes ...string) (MQcommon.Monitor, error)
-	SubscribeAllWithManualAck(listener *ConformationMessageListener, attributes ...string) (MQcommon.Monitor, error)
+	SubscribeAll(listener MessageListener, attributes ...string) (MQcommon.Monitor, error)
+	SubscribeAllWithManualAck(listener ConformationMessageListener, attributes ...string) (MQcommon.Monitor, error)
 }
