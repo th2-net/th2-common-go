@@ -47,8 +47,8 @@ var th2_message_subscribe_total = promauto.NewCounterVec(
 type CommonMessageSubscriber struct {
 	connManager          *MQcommon.ConnectionManager
 	qConfig              *configuration.QueueConfig
-	listener             *message.MessageListener
-	confirmationListener *message.ConformationMessageListener
+	listener             message.MessageListener
+	confirmationListener message.ConformationMessageListener
 	th2Pin               string
 
 	Logger zerolog.Logger
@@ -65,7 +65,7 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
 	}
 	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
-	handleErr := (*cs.listener).Handle(&delivery, result)
+	handleErr := cs.listener.Handle(&delivery, result)
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
@@ -86,7 +86,7 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 		cs.Logger.Fatal().Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
 	}
 	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
-	handleErr := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
+	handleErr := cs.confirmationListener.Handle(&delivery, result, &confirmation)
 	if handleErr != nil {
 		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
 	}
@@ -117,12 +117,12 @@ func (cs *CommonMessageSubscriber) RemoveListener() {
 	cs.Logger.Info().Msg("Removed listeners")
 }
 
-func (cs *CommonMessageSubscriber) AddListener(listener *message.MessageListener) {
+func (cs *CommonMessageSubscriber) AddListener(listener message.MessageListener) {
 	cs.listener = listener
 	cs.Logger.Debug().Msg("Added listener")
 }
 
-func (cs *CommonMessageSubscriber) AddConfirmationListener(listener *message.ConformationMessageListener) {
+func (cs *CommonMessageSubscriber) AddConfirmationListener(listener message.ConformationMessageListener) {
 	cs.confirmationListener = listener
 	cs.Logger.Debug().Msg("Added confirmation listener")
 }
@@ -133,7 +133,7 @@ type SubscriberMonitor struct {
 
 func (sub SubscriberMonitor) Unsubscribe() error {
 	if sub.subscriber.listener != nil {
-		err := (*sub.subscriber.listener).OnClose()
+		err := sub.subscriber.listener.OnClose()
 		if err != nil {
 			return err
 		}
@@ -141,7 +141,7 @@ func (sub SubscriberMonitor) Unsubscribe() error {
 	}
 
 	if sub.subscriber.confirmationListener != nil {
-		err := (*sub.subscriber.confirmationListener).OnClose()
+		err := sub.subscriber.confirmationListener.OnClose()
 		if err != nil {
 			return err
 		}

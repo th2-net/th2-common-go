@@ -16,10 +16,11 @@
 package message
 
 import (
-	"github.com/rs/zerolog"
 	"os"
 	"sync"
 	p_buff "th2-grpc/th2_grpc_common"
+
+	"github.com/rs/zerolog"
 
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
@@ -65,7 +66,7 @@ func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attr
 
 }
 
-func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener *message.ConformationMessageListener, attributes ...string) (MQcommon.Monitor, error) {
+func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener message.ConformationMessageListener, attributes ...string) (MQcommon.Monitor, error) {
 	attrs := MQcommon.GetSubscribeAttributes(attributes)
 	subscribers := []SubscriberMonitor{}
 	pinFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
@@ -97,7 +98,7 @@ func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener *message.Conf
 	return SubscriberMonitor{}, nil
 }
 
-func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, attributes ...string) (MQcommon.Monitor, error) {
+func (cmr *CommonMessageRouter) SubscribeAll(listener message.MessageListener, attributes ...string) (MQcommon.Monitor, error) {
 	attrs := MQcommon.GetSubscribeAttributes(attributes)
 	subscribers := []SubscriberMonitor{}
 	pinsFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
@@ -127,14 +128,14 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, 
 	return nil, nil
 }
 
-func (cmr *CommonMessageRouter) subByPin(listener *message.MessageListener, pin string) (SubscriberMonitor, error) {
+func (cmr *CommonMessageRouter) subByPin(listener message.MessageListener, pin string) (SubscriberMonitor, error) {
 	subscriber := cmr.getSubscriber(pin)
 	subscriber.AddListener(listener)
 	cmr.Logger.Debug().Msgf("Getting subscriber monitor for pin %s", pin)
 	return SubscriberMonitor{subscriber: subscriber}, nil
 }
 
-func (cmr *CommonMessageRouter) subByPinWithAck(listener *message.ConformationMessageListener, pin string) (SubscriberMonitor, error) {
+func (cmr *CommonMessageRouter) subByPinWithAck(listener message.ConformationMessageListener, pin string) (SubscriberMonitor, error) {
 	subscriber := cmr.getSubscriber(pin)
 	subscriber.AddConfirmationListener(listener)
 	cmr.Logger.Debug().Msgf("Getting subscriber monitor for pin %s", pin)
