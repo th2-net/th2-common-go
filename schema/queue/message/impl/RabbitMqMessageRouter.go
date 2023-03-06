@@ -21,15 +21,17 @@ import (
 	"sync"
 	p_buff "th2-grpc/th2_grpc_common"
 
+	"github.com/th2-net/th2-common-go/schema/filter/strategy/impl"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
 )
 
 type CommonMessageRouter struct {
-	connManager *MQcommon.ConnectionManager
-	subscribers map[string]CommonMessageSubscriber
-	senders     map[string]CommonMessageSender
+	connManager    *MQcommon.ConnectionManager
+	subscribers    map[string]CommonMessageSubscriber
+	senders        map[string]CommonMessageSender
+	filterStrategy impl.DefaultFilterStrategy
 
 	Logger zerolog.Logger
 }
@@ -39,6 +41,8 @@ func (cmr *CommonMessageRouter) Construct(manager *MQcommon.ConnectionManager) {
 	cmr.subscribers = map[string]CommonMessageSubscriber{}
 	cmr.senders = map[string]CommonMessageSender{}
 	cmr.Logger.Debug().Msg("CommonMessageRouter was initialized")
+	cmr.filterStrategy = impl.DefaultFilterStrategy{}
+	cmr.filterStrategy.Construct()
 }
 
 func (cmr *CommonMessageRouter) Close() {
@@ -173,17 +177,17 @@ func (cmr *CommonMessageRouter) getSender(pin string) *CommonMessageSender {
 	}
 }
 
-func (cmr *CommonMessageRouter) getMessageGroupWithPins(queue map[string]configuration.QueueConfig, message *p_buff.MessageGroupBatch) map[string]*p_buff.MessageGroupBatch {
+func (cmr *CommonMessageRouter) getMessageGroupWithPins(queue map[string]configuration.QueueConfig, msgGrBatch *p_buff.MessageGroupBatch) map[string]*p_buff.MessageGroupBatch {
 	//Here will be added filter handling
 	result := make(map[string]*p_buff.MessageGroupBatch)
-	for pin, _ := range queue {
-
+	for pin, config := range queue {
 		msgBatch := p_buff.MessageGroupBatch{}
-		for _, messageGroup := range message.Groups {
+		for _, messageGroup := range msgGrBatch.Groups {
 			//doing filtering based on queue filters on message_group
-			msgBatch.Groups = append(msgBatch.Groups, messageGroup)
+			if cmr.filterStrategy.Verify(messageGroup, config.Filters) {
+				msgBatch.Groups = append(msgBatch.Groups, messageGroup)
+			}
 		}
-
 		result[pin] = &msgBatch
 	}
 	return result
