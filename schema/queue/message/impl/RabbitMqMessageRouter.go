@@ -181,14 +181,19 @@ func (cmr *CommonMessageRouter) getMessageGroupWithPins(queue map[string]configu
 	//Here will be added filter handling
 	result := make(map[string]*p_buff.MessageGroupBatch)
 	for pin, config := range queue {
-		msgBatch := p_buff.MessageGroupBatch{}
-		for _, messageGroup := range msgGrBatch.Groups {
-			//doing filtering based on queue filters on message_group
-			if cmr.filterStrategy.Verify(messageGroup, config.Filters) {
-				msgBatch.Groups = append(msgBatch.Groups, messageGroup)
+		if len(config.Filters) > 0 {
+			msgBatch := p_buff.MessageGroupBatch{}
+			for _, messageGroup := range msgGrBatch.Groups {
+				//doing filtering based on queue filters on message_group
+				if cmr.filterStrategy.Verify(messageGroup, config.Filters) {
+					msgBatch.Groups = append(msgBatch.Groups, messageGroup)
+				}
 			}
+			result[pin] = &msgBatch
+		} else {
+			result[pin] = msgGrBatch
 		}
-		result[pin] = &msgBatch
+
 	}
 	return result
 

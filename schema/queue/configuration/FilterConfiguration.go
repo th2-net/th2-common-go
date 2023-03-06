@@ -57,8 +57,8 @@ func ConfigureFilters(filters []MqRouterFilterConfiguration) {
 	}
 }
 
-func pickOperation(op string) FilterOperation {
-	switch op {
+func pickOperation(operation string) FilterOperation {
+	switch operation {
 	case string(EQUAL):
 		return EQUAL
 	case string(NOT_EQUAL):
@@ -70,7 +70,7 @@ func pickOperation(op string) FilterOperation {
 	case string(WILDCARD):
 		return WILDCARD
 	default:
-		log.Panic("wrong operation ", op)
+		log.Panic("wrong operation ", operation)
 		return ""
 	}
 }

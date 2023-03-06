@@ -1,74 +1,15 @@
 {
   "queues": {
-    "simple_filter": {
+    "pin":  {
       "attributes": [
-        "publish",
-        "raw"
+        "group",
+        "publish"
       ],
-      "exchange": "th2-exchange",
-      "filters": [
-        {
-          "message": {},
-          "metadata": {
-            "message_type": {
-              "operation": "EQUAL",
-              "value": "ExecutionReport"
-            }
-          }
-        }
-      ],
-      "name": "key[th2-auto-tests:test-filter:simple_filter]",
-      "queue": ""
-    },
-    "two_filters_in_different_area": {
-      "attributes": [
-        "publish",
-        "raw"
-      ],
-      "exchange": "th2-exchange",
-      "filters": [
-        {
-          "message": {},
-          "metadata": {
-            "message_type": {
-              "operation": "EQUAL",
-              "value": "ExecutionReport"
-            },
-            "session_alias": {
-              "operation": "EQUAL",
-              "value": "ALIAS"
-            }
-          }
-        }
-      ],
-      "name": "key[th2-auto-tests:test-filter:two_filters_in_different_area]",
-      "queue": ""
-    },
-    "two_filters_in_same_area": {
-      "attributes": [
-        "publish",
-        "raw"
-      ],
-      "exchange": "th2-exchange",
-      "filters": [
-        {
-          "message": [],
-          "metadata": [
-            {
-              "expectedValue": "Execution*",
-              "fieldName": "message_type",
-              "operation": "WILDCARD"
-            },
-            {
-              "expectedValue": "*Report",
-              "fieldName": "message_type",
-              "operation": "WILDCARD"
-            }
-          ]
-        }
-      ],
-      "name": "key[th2-auto-tests:test-filter:two_filters_in_same_area]",
+      "exchange": "",
+      "filters": [],
+      "name": "",
       "queue": ""
     }
   }
 }
+
