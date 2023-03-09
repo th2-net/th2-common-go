@@ -5,7 +5,18 @@ on: push
 jobs:
   check:
     runs-on: ubuntu-20.04
-    container: golang:1.19
     steps:
-      - name: check library
-        run: go build -race ./...
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+        
+      - name: Init repository
+        run: make prepare-main-module
+      
+      - name: Build sources
+        run: go build -v ./...
+      - name: Check sources
+        run: go test -v ./...
