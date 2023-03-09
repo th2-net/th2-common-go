@@ -43,20 +43,6 @@ genrate-grpc-files: prepare-grpc-module configure-go
 		--proto_path=$($@_PROTO_DIR) \
 		$(shell find $($@_PROTO_DIR) -name '*.proto' )
 
-clean-main-module: clean-grpc-module
-	-rm go.work go.work.sum
-	-rm go.mod go.sum
-
-prepare-main-module: clean-main-module genrate-grpc-files
-	go mod init github.com/th2-net/th2-common-go
-	go get -u -t github.com/rs/zerolog@v1.28.0
-	go get -u -t github.com/streadway/amqp@v1.0.0
-	go get -u -t golang.org/x/sys@latest
-	go get -u -t github.com/magiconair/properties
-	go get -u -t github.com/golang/protobuf@$(PROTOBUF_VERSION)
-	go get -u -t github.com/prometheus/client_golang/prometheus
-	go get -u -t github.com/prometheus/client_golang/prometheus/promauto
-	go get -u -t github.com/prometheus/client_golang/prometheus/promhttp 
-	go get -u -t google.golang.org/grpc@v1.53.0
-
-	go work init ; go work use .
+prepare-main-module: genrate-grpc-files
+	- go work init
+	go work use .
