@@ -57,5 +57,6 @@ prepare-main-module: clean-main-module genrate-grpc-files
 	go get -u -t github.com/prometheus/client_golang/prometheus
 	go get -u -t github.com/prometheus/client_golang/prometheus/promauto
 	go get -u -t github.com/prometheus/client_golang/prometheus/promhttp 
+	go get -u -t google.golang.org/grpc@v1.53.0
 
 	go work init ; go work use .
