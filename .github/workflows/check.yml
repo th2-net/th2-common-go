@@ -1,0 +1,11 @@
+name: Check library state
+
+on: push
+
+jobs:
+  check:
+    runs-on: ubuntu-20.04
+    container: golang:1.19
+    steps:
+      - name: check library
+        run: go build -race ./...
