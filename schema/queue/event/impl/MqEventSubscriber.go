@@ -15,6 +15,7 @@
 package event
 
 import (
+	"errors"
 	"os"
 	p_buff "th2-grpc/th2_grpc_common"
 
@@ -66,29 +67,30 @@ func (cs *CommonEventSubscriber) ConfirmationStart() error {
 	//use th2Pin for metrics
 }
 
-func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) {
+func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) error {
 	result := &p_buff.EventBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
+		return errors.New("can't unmarshal proto")
 	}
 	th2_event_subscribe_total.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
-		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
+		return errors.New("no Listener to handle delivery")
 	}
 	handleErr := (*cs.listener).Handle(&delivery, result)
 	if handleErr != nil {
-		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
+		return handleErr
 	}
 	cs.Logger.Debug().Msg("Successfully Handled")
+	return nil
 }
 
-func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, timer *prometheus.Timer) {
+func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, timer *prometheus.Timer) error {
 	result := &p_buff.EventBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
+		return err
 	}
 	th2_event_subscribe_total.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
@@ -96,13 +98,14 @@ func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, 
 	var confirmation MQcommon.Confirmation = deliveryConfirm
 
 	if cs.confirmationListener == nil {
-		cs.Logger.Fatal().Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
+		return errors.New("no Confirmation Listener to Handle")
 	}
 	handleErr := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
 	if handleErr != nil {
-		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
+		return handleErr
 	}
 	cs.Logger.Debug().Msg("Successfully Handled")
+	return nil
 }
 
 func (cs *CommonEventSubscriber) RemoveListener() {

@@ -33,7 +33,7 @@ type ConfigProvider interface {
 }
 
 type CommonFactory interface {
-	Register(factories ...func(ConfigProvider) Module) error
+	Register(factories ...func(ConfigProvider) (Module, error)) error
 	Get(key ModuleKey) (Module, error)
 	GetLogger(name string) zerolog.Logger
 	GetCustomConfiguration(any interface{}) error

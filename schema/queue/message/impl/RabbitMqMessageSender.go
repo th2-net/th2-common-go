@@ -16,6 +16,7 @@
 package message
 
 import (
+	"errors"
 	p_buff "th2-grpc/th2_grpc_common"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -52,7 +53,7 @@ type CommonMessageSender struct {
 func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 
 	if batch == nil {
-		sender.Logger.Fatal().Msg("Value for send can't be null")
+		return errors.New("value for send can't be null")
 	}
 	body, err := proto.Marshal(batch)
 	if err != nil {

@@ -46,13 +46,14 @@ type Publisher struct {
 	Logger zerolog.Logger
 }
 
-func (pb *Publisher) connect() {
+func (pb *Publisher) connect() error {
 	conn, err := amqp.Dial(pb.url)
 	if err != nil {
-		pb.Logger.Fatal().Err(err).Send()
+		return err
 	}
 	pb.conn = conn
 	pb.Logger.Debug().Msg("Publisher connected")
+	return nil
 }
 
 func (pb *Publisher) Publish(body []byte, routingKey string, exchange string, th2Pin string, th2Type string) error {
@@ -64,8 +65,6 @@ func (pb *Publisher) Publish(body []byte, routingKey string, exchange string, th
 	defer ch.Close()
 	publError := ch.Publish(exchange, routingKey, false, false, amqp.Publishing{Body: body})
 	if publError != nil {
-		pb.Logger.Fatal().Err(publError).Send()
-
 		return err
 	}
 	pb.Logger.Info().Msg(" [x] Sent ")

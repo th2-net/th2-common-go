@@ -18,8 +18,9 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog"
 	"strings"
+
+	"github.com/rs/zerolog"
 )
 
 type Address struct {
@@ -80,7 +81,7 @@ func (gc *GrpcConfig) FindEndpointAddrViaServiceName(srvcName string) (Address, 
 		}
 		if serviceName == srvcName {
 			if len(service.Endpoints) > 1 {
-				gc.ZLogger.Fatal().Msg("number of endpoints should equal to 1")
+				return Address{}, fmt.Errorf("number of endpoints should equal to 1")
 			} else {
 				for _, endpoint := range service.Endpoints {
 					gc.ZLogger.Debug().Msg("Endpoint was found")
@@ -89,7 +90,7 @@ func (gc *GrpcConfig) FindEndpointAddrViaServiceName(srvcName string) (Address, 
 			}
 		}
 	}
-	gc.ZLogger.Error().Msgf("No endpoint for service name %v ", srvcName)
+	gc.ZLogger.Error().Str("service", srvcName).Msg("No endpoint exists")
 	return Address{}, errors.New("endpoint with provided service name does not exist")
 }
 

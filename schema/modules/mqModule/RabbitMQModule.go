@@ -52,23 +52,23 @@ func (m *RabbitMQModule) Close() error {
 
 var queueModuleKey = common.ModuleKey(RABBIT_MQ_MODULE_KEY)
 
-func NewRabbitMQModule(provider common.ConfigProvider) common.Module {
+func NewRabbitMQModule(provider common.ConfigProvider) (common.Module, error) {
 
 	queueConfiguration := configuration.MessageRouterConfiguration{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	err := provider.GetConfig(MQ_ROUTER_CONFIG_FILENAME, &queueConfiguration)
 	if err != nil {
-		queueConfiguration.Logger.Fatal().Err(err)
+		return nil, err
 	}
 	connConfiguration := configuration.RabbitMQConfiguration{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	configErr := provider.GetConfig(RABBIT_MQ_CONFIG_FILENAME, &connConfiguration)
 	if configErr != nil {
-		connConfiguration.Logger.Fatal().Err(configErr)
+		return nil, configErr
 	}
 	connectionManager := MQcommon.ConnectionManager{QConfig: &queueConfiguration, MqConnConfig: &connConfiguration,
 		Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	port, portErr := strconv.Atoi(connectionManager.MqConnConfig.Port)
-	if err != nil {
-		connectionManager.Logger.Fatal().Err(portErr)
+	if portErr != nil {
+		return nil, portErr
 	}
 	connectionManager.Url = fmt.Sprintf("amqp://%s:%s@%s:%d/%s",
 		connectionManager.MqConnConfig.Username,
@@ -76,7 +76,9 @@ func NewRabbitMQModule(provider common.ConfigProvider) common.Module {
 		connectionManager.MqConnConfig.Host,
 		port,
 		connectionManager.MqConnConfig.VHost)
-	connectionManager.Construct()
+	if err = connectionManager.Construct(); err != nil {
+		return nil, err
+	}
 
 	messageRouter := message.CommonMessageRouter{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	messageRouter.Construct(&connectionManager)
@@ -85,7 +87,7 @@ func NewRabbitMQModule(provider common.ConfigProvider) common.Module {
 	eventRouter.Construct(&connectionManager)
 
 	return &RabbitMQModule{connManager: connectionManager,
-		MqMessageRouter: messageRouter, MqEventRouter: eventRouter}
+		MqMessageRouter: messageRouter, MqEventRouter: eventRouter}, nil
 }
 
 type Identity struct{}

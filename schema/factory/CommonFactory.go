@@ -132,9 +132,12 @@ func NewFromConfig(config Config) (common.CommonFactory, error) {
 	return cf, nil
 }
 
-func (cf *commonFactory) Register(factories ...func(common.ConfigProvider) common.Module) error {
+func (cf *commonFactory) Register(factories ...func(common.ConfigProvider) (common.Module, error)) error {
 	for _, factory := range factories {
-		module := factory(cf.cfgProvider)
+		module, err := factory(cf.cfgProvider)
+		if err != nil {
+			return err
+		}
 		if oldModule, exist := cf.modules[module.GetKey()]; exist {
 			return fmt.Errorf("module %s with key %s already registered", reflect.TypeOf(oldModule), module.GetKey())
 		}

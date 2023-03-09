@@ -46,16 +46,16 @@ func (m *GrpcModule) Close() error {
 
 var grpcModuleKey = common.ModuleKey(GRPC_MODULE_KEY)
 
-func NewGrpcModule(provider common.ConfigProvider) common.Module {
+func NewGrpcModule(provider common.ConfigProvider) (common.Module, error) {
 
 	grpcConfiguration := config.GrpcConfig{ZLogger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	err := provider.GetConfig(GRPC_CONFIG_FILENAME, &grpcConfiguration)
 	if err != nil {
-		grpcConfiguration.ZLogger.Fatal().Err(err).Send()
+		return nil, err
 	}
 	router := impl.CommonGrpcRouter{Config: grpcConfiguration,
 		ZLogger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
-	return &GrpcModule{GrpcRouter: router}
+	return &GrpcModule{GrpcRouter: router}, nil
 }
 
 type Identity struct{}

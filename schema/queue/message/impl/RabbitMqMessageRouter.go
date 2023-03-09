@@ -16,6 +16,7 @@
 package message
 
 import (
+	"errors"
 	"os"
 	"sync"
 	p_buff "th2-grpc/th2_grpc_common"
@@ -55,12 +56,11 @@ func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attr
 			sender := cmr.getSender(pin)
 			err := sender.Send(messageGroup)
 			if err != nil {
-				cmr.Logger.Fatal().Err(err).Send()
 				return err
 			}
 		}
 	} else {
-		cmr.Logger.Fatal().Msg("no such queue to send message")
+		return errors.New("no such queue to send message")
 	}
 	return nil
 
@@ -74,7 +74,6 @@ func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener message.Confo
 		cmr.Logger.Debug().Msgf("Subscribing %s ", queuePin)
 		subscriber, err := cmr.subByPinWithAck(listener, queuePin)
 		if err != nil {
-			cmr.Logger.Fatal().Err(err).Send()
 			return SubscriberMonitor{}, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -93,7 +92,7 @@ func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener message.Confo
 
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
-		cmr.Logger.Fatal().Msg("No such subscriber")
+		return SubscriberMonitor{}, errors.New("no such subscriber")
 	}
 	return SubscriberMonitor{}, nil
 }
@@ -106,7 +105,6 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener message.MessageListener, a
 		cmr.Logger.Debug().Msgf("Subscribing %s ", queuePin)
 		subscriber, err := cmr.subByPin(listener, queuePin)
 		if err != nil {
-			cmr.Logger.Fatal().Err(err).Send()
 			return nil, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -117,13 +115,13 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener message.MessageListener, a
 			m.Lock()
 			err := s.subscriber.Start()
 			if err != nil {
-				return SubscriberMonitor{}, err
+				return nil, err
 			}
 			m.Unlock()
 		}
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
-		cmr.Logger.Fatal().Msg("No such subscriber")
+		return nil, errors.New("no such subscriber")
 	}
 	return nil, nil
 }

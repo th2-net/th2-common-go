@@ -47,19 +47,20 @@ type Consumer struct {
 	Logger   zerolog.Logger
 }
 
-func (cns *Consumer) connect() {
+func (cns *Consumer) connect() error {
 	conn, err := amqp.Dial(cns.url)
 	if err != nil {
-		cns.Logger.Fatal().Err(err).Send()
+		return err
 	}
 	cns.conn = conn
 	cns.Logger.Debug().Msg("Consumer connected")
+	return nil
 }
 
-func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, handler func(delivery amqp.Delivery)) error {
+func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, handler func(delivery amqp.Delivery) error) error {
 	ch, err := cns.conn.Channel()
 	if err != nil {
-		cns.Logger.Fatal().Err(err).Send()
+		return err
 	}
 	cns.channels[queueName] = ch
 
@@ -81,7 +82,13 @@ func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, ha
 		cns.Logger.Debug().Msgf("Consumed messages will handled from queue %s", queueName)
 		for d := range msgs {
 			timer := prometheus.NewTimer(th2_rabbitmq_message_process_duration_seconds.WithLabelValues(th2Pin, th2Type, queueName))
-			handler(d)
+			if err := handler(d); err != nil {
+				cns.Logger.Error().Err(err).
+					Str("exchange", d.Exchange).
+					Str("routing", d.RoutingKey).
+					Int("bodySize", len(d.Body)).
+					Msg("Cannot handle delivery")
+			}
 			timer.ObserveDuration()
 			th2_rabbitmq_message_size_subscribe_bytes.WithLabelValues(th2Pin, th2Type, queueName).Add(float64(len(d.Body)))
 		}
@@ -90,10 +97,10 @@ func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, ha
 	return nil
 }
 
-func (cns *Consumer) ConsumeWithManualAck(queueName string, th2Pin string, th2Type string, handler func(msgDelivery amqp.Delivery, timer *prometheus.Timer)) error {
+func (cns *Consumer) ConsumeWithManualAck(queueName string, th2Pin string, th2Type string, handler func(msgDelivery amqp.Delivery, timer *prometheus.Timer) error) error {
 	ch, err := cns.conn.Channel()
 	if err != nil {
-		cns.Logger.Fatal().Err(err).Send()
+		return err
 	}
 	cns.channels[queueName] = ch
 	msgs, consErr := ch.Consume(
@@ -113,7 +120,13 @@ func (cns *Consumer) ConsumeWithManualAck(queueName string, th2Pin string, th2Ty
 		cns.Logger.Debug().Msgf("Consumed messages will handled from queue %s", queueName)
 		for d := range msgs {
 			timer := prometheus.NewTimer(th2_rabbitmq_message_process_duration_seconds.WithLabelValues(th2Pin, th2Type, queueName))
-			handler(d, timer)
+			if err := handler(d, timer); err != nil {
+				cns.Logger.Error().Err(err).
+					Str("exchange", d.Exchange).
+					Str("routing", d.RoutingKey).
+					Int("bodySize", len(d.Body)).
+					Msg("cannot handle delivery")
+			}
 			th2_rabbitmq_message_size_subscribe_bytes.WithLabelValues(th2Pin, th2Type, queueName).Add(float64(len(d.Body)))
 		}
 	}()

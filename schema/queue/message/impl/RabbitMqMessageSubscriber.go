@@ -16,6 +16,7 @@
 package message
 
 import (
+	"errors"
 	"os"
 	p_buff "th2-grpc/th2_grpc_common"
 
@@ -54,43 +55,45 @@ type CommonMessageSubscriber struct {
 	Logger zerolog.Logger
 }
 
-func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
+func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) error {
+	if cs.listener == nil {
+		return errors.New("no Listener to handle")
+	}
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
+		return err
 	}
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
-	if cs.listener == nil {
-		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
-	}
 	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	handleErr := cs.listener.Handle(&delivery, result)
 	if handleErr != nil {
-		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
+		return handleErr
 	}
 	cs.Logger.Debug().Msg("Successfully Handled")
+	return nil
 }
 
-func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, timer *prometheus.Timer) {
+func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, timer *prometheus.Timer) error {
+	if cs.confirmationListener == nil {
+		return errors.New("no Confirmation Listener to Handle")
+	}
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
+		return nil
 	}
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), Timer: timer}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
 
-	if cs.confirmationListener == nil {
-		cs.Logger.Fatal().Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
-	}
 	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	handleErr := cs.confirmationListener.Handle(&delivery, result, &confirmation)
 	if handleErr != nil {
-		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
+		return handleErr
 	}
 	cs.Logger.Debug().Msg("Successfully Handled")
+	return nil
 }
 
 func (cs *CommonMessageSubscriber) Start() error {

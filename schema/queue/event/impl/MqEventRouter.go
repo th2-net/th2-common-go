@@ -15,13 +15,16 @@
 package event
 
 import (
-	"github.com/rs/zerolog"
-	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
-	"github.com/th2-net/th2-common-go/schema/queue/event"
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"sync"
 	p_buff "th2-grpc/th2_grpc_common"
+
+	"github.com/rs/zerolog"
+	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
+	"github.com/th2-net/th2-common-go/schema/queue/event"
 )
 
 type CommonEventRouter struct {
@@ -51,12 +54,11 @@ func (cer *CommonEventRouter) SendAll(EventBatch *p_buff.EventBatch, attributes 
 			sender := cer.getSender(pin)
 			err := sender.Send(EventBatch)
 			if err != nil {
-				cer.Logger.Fatal().Err(err).Send()
 				return err
 			}
 		}
 	} else {
-		cer.Logger.Fatal().Msg("no such queue to send message")
+		return fmt.Errorf("no such queue to send message")
 	}
 	return nil
 
@@ -70,7 +72,6 @@ func (cer *CommonEventRouter) SubscribeAll(listener *event.EventListener, attrib
 		cer.Logger.Debug().Msgf("Subscribing %s ", queuePin)
 		subscriber, err := cer.subByPin(listener, queuePin)
 		if err != nil {
-			cer.Logger.Fatal().Err(err).Send()
 			return nil, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -87,10 +88,8 @@ func (cer *CommonEventRouter) SubscribeAll(listener *event.EventListener, attrib
 			m.Unlock()
 		}
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
-	} else {
-		cer.Logger.Fatal().Msg("No such subscriber")
 	}
-	return nil, nil
+	return nil, errors.New("no such subscriber")
 }
 
 func (cer *CommonEventRouter) SubscribeAllWithManualAck(listener *event.ConformationEventListener, attributes ...string) (MQcommon.Monitor, error) {
@@ -101,7 +100,6 @@ func (cer *CommonEventRouter) SubscribeAllWithManualAck(listener *event.Conforma
 		cer.Logger.Debug().Msgf("Subscribing %s ", queuePin)
 		subscriber, err := cer.subByPinWithAck(listener, queuePin)
 		if err != nil {
-			cer.Logger.Fatal().Err(err).Send()
 			return SubscriberMonitor{}, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -120,10 +118,8 @@ func (cer *CommonEventRouter) SubscribeAllWithManualAck(listener *event.Conforma
 		}
 
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
-	} else {
-		cer.Logger.Fatal().Msg("No such subscriber")
 	}
-	return SubscriberMonitor{}, nil
+	return SubscriberMonitor{}, errors.New("no such subscriber")
 }
 
 func (cer *CommonEventRouter) subByPin(listener *event.EventListener, pin string) (SubscriberMonitor, error) {
