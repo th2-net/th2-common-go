@@ -163,9 +163,9 @@ func (cf *commonFactory) Close() error {
 	var err error
 	for moduleKey, module := range cf.modules {
 		if err = module.Close(); err == nil {
-			cf.zLogger.Info().Msgf("Module %v closed. \n", moduleKey)
+			cf.zLogger.Info().Msgf("Module %v closed", moduleKey)
 		} else {
-			cf.zLogger.Error().Msgf("Module %v raised error %w\n", moduleKey, err)
+			cf.zLogger.Error().Err(err).Msgf("Module %v raised error", moduleKey)
 		}
 	}
 	return nil
