@@ -17,13 +17,14 @@ package message
 
 import (
 	"github.com/rs/zerolog"
+	"github.com/th2-net/th2-common-go/schema/filter/strategy"
+	defaultStrategy "github.com/th2-net/th2-common-go/schema/filter/strategy/impl"
+
 	"os"
 	"sync"
 	p_buff "th2-grpc/th2_grpc_common"
 
-	"github.com/th2-net/th2-common-go/schema/filter/strategy/impl"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
-	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
 )
 
@@ -31,7 +32,7 @@ type CommonMessageRouter struct {
 	connManager    *MQcommon.ConnectionManager
 	subscribers    map[string]CommonMessageSubscriber
 	senders        map[string]CommonMessageSender
-	filterStrategy impl.DefaultFilterStrategy
+	filterStrategy strategy.FilterStrategy
 
 	Logger zerolog.Logger
 }
@@ -41,25 +42,25 @@ func (cmr *CommonMessageRouter) Construct(manager *MQcommon.ConnectionManager) {
 	cmr.subscribers = map[string]CommonMessageSubscriber{}
 	cmr.senders = map[string]CommonMessageSender{}
 	cmr.Logger.Debug().Msg("CommonMessageRouter was initialized")
-	cmr.filterStrategy = impl.DefaultFilterStrategy{}
-	cmr.filterStrategy.Construct()
+	cmr.filterStrategy = defaultStrategy.Default
 }
 
 func (cmr *CommonMessageRouter) Close() {
 	_ = cmr.connManager.Close()
 }
 
-func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attributes ...string) error {
+func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attributes ...string) error {
 	attrs := MQcommon.GetSendAttributes(attributes)
 	pinsFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
-	pinsAndMessageGroup := cmr.getMessageGroupWithPins(pinsFoundByAttrs, MsgBatch)
-	if len(pinsAndMessageGroup) != 0 {
-		for pin, messageGroup := range pinsAndMessageGroup {
-			sender := cmr.getSender(pin)
-			err := sender.Send(messageGroup)
-			if err != nil {
-				cmr.Logger.Fatal().Err(err).Send()
-				return err
+	if len(pinsFoundByAttrs) != 0 {
+		for pin, config := range pinsFoundByAttrs {
+			if cmr.filterStrategy.Verify(msgBatch, config.Filters) {
+				sender := cmr.getSender(pin)
+				err := sender.Send(msgBatch)
+				if err != nil {
+					cmr.Logger.Fatal().Err(err).Send()
+					return err
+				}
 			}
 		}
 	} else {
@@ -175,26 +176,4 @@ func (cmr *CommonMessageRouter) getSender(pin string) *CommonMessageSender {
 		cmr.Logger.Debug().Msgf("Created sender for pin %s", pin)
 		return &result
 	}
-}
-
-func (cmr *CommonMessageRouter) getMessageGroupWithPins(queue map[string]configuration.QueueConfig, msgGrBatch *p_buff.MessageGroupBatch) map[string]*p_buff.MessageGroupBatch {
-	//Here will be added filter handling
-	result := make(map[string]*p_buff.MessageGroupBatch)
-	for pin, config := range queue {
-		if len(config.Filters) > 0 {
-			msgBatch := p_buff.MessageGroupBatch{}
-			for _, messageGroup := range msgGrBatch.Groups {
-				//doing filtering based on queue filters on message_group
-				if cmr.filterStrategy.Verify(messageGroup, config.Filters) {
-					msgBatch.Groups = append(msgBatch.Groups, messageGroup)
-				}
-			}
-			result[pin] = &msgBatch
-		} else {
-			result[pin] = msgGrBatch
-		}
-
-	}
-	return result
-
 }

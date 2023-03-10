@@ -22,8 +22,9 @@ import (
 )
 
 type MqRouterFilterConfiguration struct {
-	Metadata interface{} `json:"metadata"`
-	Message  interface{} `json:"message"`
+	//Metadata []byte `json:"metadata"`
+	//Message  []byte `json:"message"`
+	// still thinking about its structure. Published version before its resolving
 }
 type QueueConfig struct {
 	RoutingKey string                        `json:"name"`
