@@ -59,9 +59,6 @@ func NewRabbitMQModule(provider common.ConfigProvider) common.Module {
 	if err != nil {
 		queueConfiguration.Logger.Fatal().Err(err)
 	}
-	for _, queue := range queueConfiguration.Queues {
-		configuration.ConfigureFilters(queue.Filters)
-	}
 	connConfiguration := configuration.RabbitMQConfiguration{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	configErr := provider.GetConfig(RABBIT_MQ_CONFIG_FILENAME, &connConfiguration)
 	if configErr != nil {

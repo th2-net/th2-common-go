@@ -16,23 +16,13 @@
 package configuration
 
 import (
-	"fmt"
 	"log"
 )
 
-const (
-	FIELDNAME     string = "fieldName"
-	VALUE         string = "value"
-	OPERATION     string = "operation"
-	EXPECTEDVALUE string = "expectedValue"
-)
-
-// still thinking about structure of filters, uploaded current state before I will come up with this solution
-
-type FilterFieldsConfiguration struct {
-	FieldName     string
-	ExpectedValue string
-	Operation     FilterOperation
+type FilterFieldsConfig struct {
+	FieldName     string          `json:"fieldName"`
+	ExpectedValue string          `json:"expectedValue"`
+	Operation     FilterOperation `json:"operation"`
 }
 type FilterOperation string
 
@@ -42,39 +32,16 @@ const (
 	EMPTY     FilterOperation = "EMPTY"
 	NOT_EMPTY FilterOperation = "NOT_EMPTY"
 	WILDCARD  FilterOperation = "WILDCARD"
+	UNKNOWN   FilterOperation = "UNKNOWN"
 )
 
-func ConfigureFilters(filters []MqRouterFilterConfiguration) {
-	for _, filter := range filters {
-		metadatas := []FilterFieldsConfiguration{}
-		switch mType := filter.Metadata.(type) {
-		case map[string]interface{}:
-			log.Println("reading map")
-			for k, v := range filter.Metadata.(map[string]interface{}) {
-				metadata := FilterFieldsConfiguration{}
-				metadata.FieldName = k
-				metadata.Operation = pickOperation(v.(map[string]interface{})["operation"].(string))
-				metadata.ExpectedValue = v.(map[string]interface{})["value"].(string)
-				metadatas = append(metadatas, metadata)
-			}
-		case []interface{}:
-			log.Println("reading slice")
-			for _, metaD := range mType {
-				filed := metaD.(map[string]interface{})
-				metadata := FilterFieldsConfiguration{}
-				metadata.FieldName = filed["fieldName"].(string)
-				metadata.Operation = pickOperation(filed["operation"].(string))
-				metadata.ExpectedValue = filed["expectedValue"].(string)
-				metadatas = append(metadatas, metadata)
-			}
-		default:
-			fmt.Println(mType, " is of a type I don't know how to handle")
-		}
-		filter.Metadata = metadatas
-	}
+type MqRouterFilterConfiguration struct {
+	Metadata []FilterFieldsConfig `json:"metadata"`
+	Message  []FilterFieldsConfig `json:"message"`
+	WasList  bool
 }
 
-func pickOperation(operation string) FilterOperation {
+func PickOperation(operation string) FilterOperation {
 	switch operation {
 	case string(EQUAL):
 		return EQUAL
@@ -87,7 +54,7 @@ func pickOperation(operation string) FilterOperation {
 	case string(WILDCARD):
 		return WILDCARD
 	default:
-		log.Panic("wrong operation ", operation)
-		return ""
+		log.Panic("unknown operation ", operation)
+		return UNKNOWN
 	}
 }

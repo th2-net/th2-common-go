@@ -17,7 +17,9 @@ package strategy
 
 import (
 	"github.com/IGLOU-EU/go-wildcard"
+	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/schema/filter/strategy"
+	"os"
 
 	mqFilter "github.com/th2-net/th2-common-go/schema/queue/configuration"
 	p_buff "th2-grpc/th2_grpc_common"
@@ -25,11 +27,13 @@ import (
 
 type defaultFilterStrategy struct {
 	extractFields th2MsgFieldExtraction
+
+	Logger zerolog.Logger
 }
 
-var Default strategy.FilterStrategy = defaultFilterStrategy{}
+var Default strategy.FilterStrategy = defaultFilterStrategy{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 
-func (fs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filters []mqFilter.MqRouterFilterConfiguration) bool {
+func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filters []mqFilter.MqRouterFilterConfiguration) bool {
 	// returns true if MessageGroupBatch entirely matches at least one filter(any) from list of filters in the queueConfig,
 	// returns true if filters are not at all
 	// returns false otherwise
@@ -37,7 +41,7 @@ func (fs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filte
 	if len(filters) != 0 {
 		for _, filter := range filters {
 			for _, msgGroup := range messages.Groups {
-				if !fs.CheckValues(msgGroup, filter.Metadata.([]mqFilter.FilterFieldsConfiguration)) {
+				if !dfs.CheckValues(msgGroup, filter) {
 					res = false
 					break
 				}
@@ -46,38 +50,59 @@ func (fs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filte
 				res = true
 				continue
 			} else {
+				// as batch matches one filter (ANY), that is enough and returns true
+				dfs.Logger.Debug().Msg("MessageGroupBatch matched filter")
 				return res
 			}
 		}
-		//if code riches here, meaning that batch didn't match any filter, so returns false
+		dfs.Logger.Debug().Msg("MessageGroupBatch didn't match any filter")
 		return !res
 	} else {
+		dfs.Logger.Debug().Msg("no filters for MessageGroupBatch")
 		return res
 	}
 
 }
 
-func (fs defaultFilterStrategy) CheckValues(msgGroup *p_buff.MessageGroup, metadataFilters []mqFilter.FilterFieldsConfiguration) bool {
-	// return true if all messages match all simple filters (metadatas in this case)
+func (dfs defaultFilterStrategy) CheckValues(msgGroup *p_buff.MessageGroup, filter mqFilter.MqRouterFilterConfiguration) bool {
+	// return true if all messages match all simple filters (metadata in this case)
 	// return false if at least one message doesn't match any simple filter
 	for _, anyMessage := range msgGroup.Messages {
-		messageFields := fs.extractFields.GetFields(anyMessage)
-		for _, filter := range metadataFilters {
+		messageFields := dfs.extractFields.GetFields(anyMessage)
+		for _, filterFields := range filter.Metadata {
 			for name, value := range messageFields {
-				if filter.FieldName == name {
-					if !checkValue(value, filter) {
-						return false
+				if filterFields.FieldName == name {
+					if filter.WasList {
+						if checkValue(value, filterFields) {
+							dfs.Logger.Debug().Msg("message matched filter")
+							return true
+						}
+					} else {
+						if !checkValue(value, filterFields) {
+							dfs.Logger.Debug().Msg("message didn't match filter")
+							return false
+						}
 					}
+
 				}
 			}
 		}
+
 	}
-	// if there was not any mismatching, therefore all messages matches filters and returning true
-	return true
+
+	if filter.WasList {
+		// if there was not any matching in metadata list, therefore none of messages matches filters and returning false
+		dfs.Logger.Debug().Msg("MessageGroup didn't match any filter from metadata filter list")
+		return false
+	} else {
+		// if there was not any mismatching in metadata object, therefore ALL messages matches filters and returning true
+		dfs.Logger.Debug().Msg("MessageGroup matched all filters from metadata filter object")
+		return true
+	}
 
 }
 
-func checkValue(value string, filter mqFilter.FilterFieldsConfiguration) bool {
+func checkValue(value string, filter mqFilter.FilterFieldsConfig) bool {
 	expected := filter.ExpectedValue
 	switch filter.Operation {
 	case mqFilter.EQUAL:
