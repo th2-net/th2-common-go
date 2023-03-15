@@ -125,7 +125,7 @@ func NewFromConfig(config Config) (common.CommonFactory, error) {
 	provider := newProvider(config.ConfigurationsDir, config.FileExtension, config.ExtracArguments)
 	var boxConfig common.BoxConfig
 	if err := provider.GetConfig("box", &boxConfig); err != nil {
-		log.Warn().Msg("cannot read box configuration")
+		log.Warn().Err(err).Msg("cannot read box configuration")
 	}
 	cf := &commonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
