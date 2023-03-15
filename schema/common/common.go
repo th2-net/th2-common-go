@@ -21,6 +21,11 @@ import (
 	"github.com/rs/zerolog"
 )
 
+type BoxConfig struct {
+	Name string `json:"boxName"`
+	Book string `json:"bookName"`
+}
+
 type Module interface {
 	GetKey() ModuleKey
 	io.Closer
@@ -33,6 +38,7 @@ type ConfigProvider interface {
 }
 
 type CommonFactory interface {
+	GetBoxConfig() BoxConfig
 	Register(factories ...func(ConfigProvider) (Module, error)) error
 	Get(key ModuleKey) (Module, error)
 	GetLogger(name string) zerolog.Logger

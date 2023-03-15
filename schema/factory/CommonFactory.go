@@ -49,6 +49,7 @@ type commonFactory struct {
 	modules     map[common.ModuleKey]common.Module
 	cfgProvider common.ConfigProvider
 	zLogger     zerolog.Logger
+	boxConfig   common.BoxConfig
 }
 
 type ZerologConfig struct {
@@ -122,10 +123,15 @@ func NewFromConfig(config Config) (common.CommonFactory, error) {
 	}
 
 	provider := newProvider(config.ConfigurationsDir, config.FileExtension, config.ExtracArguments)
+	var boxConfig common.BoxConfig
+	if err := provider.GetConfig("box", &boxConfig); err != nil {
+		log.Warn().Msg("cannot read box configuration")
+	}
 	cf := &commonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
 		cfgProvider: provider,
 		zLogger:     zerolog.New(os.Stdout).With().Timestamp().Logger(),
+		boxConfig:   boxConfig,
 	}
 	cf.Register(PrometheusModule.NewPrometheusModule)
 
@@ -174,4 +180,8 @@ func (cf *commonFactory) Close() error {
 func (cf *commonFactory) GetCustomConfiguration(any interface{}) error {
 	err := cf.cfgProvider.GetConfig(CUSTOM_FILE_NAME, any)
 	return err
+}
+
+func (cf *commonFactory) GetBoxConfig() common.BoxConfig {
+	return cf.boxConfig
 }
