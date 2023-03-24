@@ -17,9 +17,8 @@ package message
 
 import (
 	"github.com/rs/zerolog"
-	"github.com/th2-net/th2-common-go/schema/filter/strategy"
-	defaultStrategy "github.com/th2-net/th2-common-go/schema/filter/strategy/impl"
-
+	"github.com/th2-net/th2-common-go/schema/filter"
+	defaultStrategy "github.com/th2-net/th2-common-go/schema/filter/impl"
 	"os"
 	"sync"
 	p_buff "th2-grpc/th2_grpc_common"
@@ -32,7 +31,7 @@ type CommonMessageRouter struct {
 	connManager    *MQcommon.ConnectionManager
 	subscribers    map[string]CommonMessageSubscriber
 	senders        map[string]CommonMessageSender
-	filterStrategy strategy.FilterStrategy
+	filterStrategy filter.FilterStrategy
 
 	Logger zerolog.Logger
 }
@@ -54,7 +53,7 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 	pinsFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	if len(pinsFoundByAttrs) != 0 {
 		for pin, config := range pinsFoundByAttrs {
-			if cmr.filterStrategy.Verify(msgBatch, config.Filters) {
+			if config.Verify(msgBatch) {
 				sender := cmr.getSender(pin)
 				err := sender.Send(msgBatch)
 				if err != nil {

@@ -19,8 +19,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/rs/zerolog"
+	mqFilter "github.com/th2-net/th2-common-go/schema/filter/impl"
 	"log"
 	"os"
+	p_buff "th2-grpc/th2_grpc_common"
 )
 
 type QueueConfigFields struct {
@@ -32,6 +34,7 @@ type QueueConfigFields struct {
 type QueueConfig struct {
 	QueueConfigFields
 	Filters []MqRouterFilterConfiguration `json:"filters"`
+	Logger  zerolog.Logger
 }
 
 type MessageRouterConfiguration struct {
@@ -50,6 +53,9 @@ func (mrc *MessageRouterConfiguration) Init(path string) error {
 	if fail != nil {
 		mrc.Logger.Error().Err(err).Msg("Deserialization error for QueueConfig")
 		return err
+	}
+	for _, config := range mrc.Queues {
+		config.Logger = mrc.Logger
 	}
 	return nil
 }
@@ -178,4 +184,35 @@ func (mrc *MessageRouterConfiguration) FindQueuesByAttr(attrs []string) map[stri
 	}
 	mrc.Logger.Debug().Msg("Queue was found")
 	return result
+}
+
+func (qc *QueueConfig) Verify(messages *p_buff.MessageGroupBatch) bool {
+	// returns true if MessageGroupBatch entirely matches at least one filter(any) from list of filters in the queueConfig,
+	// returns true if filters are not at all
+	// returns false otherwise
+	res := true
+	if len(qc.Filters) != 0 {
+		for _, filter := range qc.Filters {
+			for _, msgGroup := range messages.Groups {
+				if !mqFilter.CheckValues(msgGroup, filter, qc.Logger) {
+					res = false
+					break
+				}
+			}
+			if !res {
+				res = true
+				continue
+			} else {
+				// as batch matches one filter (ANY), that is enough and returns true
+				qc.Logger.Debug().Msg("MessageGroupBatch matched filter")
+				return res
+			}
+		}
+		qc.Logger.Debug().Msg("MessageGroupBatch didn't match any filter")
+		return !res
+	} else {
+		qc.Logger.Debug().Msg("no filters for MessageGroupBatch")
+		return res
+	}
+
 }
