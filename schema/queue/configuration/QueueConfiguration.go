@@ -41,7 +41,6 @@ type MessageRouterConfiguration struct {
 }
 
 func (mrc *MessageRouterConfiguration) Init(path string) error {
-	mrc.Queues = map[string]QueueConfig{}
 	content, err := os.ReadFile(path) // Read json file
 	if err != nil {
 		mrc.Logger.Error().Err(err).Msg("Json file reading error for QueueConfig")
@@ -70,7 +69,7 @@ func (mrc *MessageRouterConfiguration) UnmarshalJSON(data []byte) error {
 		mrc.Logger.Error().Err(err).Msg("Deserialization error for RouterConfigRaw")
 		return err
 	}
-
+	mrc.Queues = map[string]QueueConfig{}
 	for name, queue := range RouterConfigRaw.Queues {
 		filters := []MqRouterFilterConfiguration{}
 		for _, filter := range queue.Filters {
