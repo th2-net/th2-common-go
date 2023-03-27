@@ -23,6 +23,7 @@ import (
 
 type MessageRouter interface {
 	SendAll(batch *p_buff.MessageGroupBatch, attributes ...string) error
+	SendRawAll(payload []byte, attributes ...string) error
 	SubscribeAll(listener MessageListener, attributes ...string) (MQcommon.Monitor, error)
 	SubscribeAllWithManualAck(listener ConformationMessageListener, attributes ...string) (MQcommon.Monitor, error)
 }

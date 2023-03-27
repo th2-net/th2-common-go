@@ -66,6 +66,23 @@ func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attr
 
 }
 
+func (cmr *CommonMessageRouter) SendRawAll(rawData []byte, attributes ...string) error {
+	attrs := MQcommon.GetSendAttributes(attributes)
+	pinsFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
+	if len(pinsFoundByAttrs) == 0 {
+		return errors.New("no such queue to send message")
+	}
+	for pin, _ := range pinsFoundByAttrs {
+		sender := cmr.getSender(pin)
+		err := sender.SendRaw(rawData)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+
+}
+
 func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener message.ConformationMessageListener, attributes ...string) (MQcommon.Monitor, error) {
 	attrs := MQcommon.GetSubscribeAttributes(attributes)
 	subscribers := []SubscriberMonitor{}

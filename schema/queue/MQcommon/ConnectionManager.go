@@ -18,6 +18,7 @@ package MQcommon
 import (
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
@@ -36,7 +37,7 @@ type ConnectionManager struct {
 }
 
 func (manager *ConnectionManager) Construct() error {
-	manager.Publisher = Publisher{url: manager.Url, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	manager.Publisher = Publisher{url: manager.Url, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), mutex: sync.Mutex{}}
 	err := manager.Publisher.connect()
 
 	if err != nil {

@@ -69,3 +69,10 @@ func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 
 	return nil
 }
+
+func (sender *CommonMessageSender) SendRaw(data []byte) error {
+	if data == nil {
+		return errors.New("nil raw data")
+	}
+	return sender.ConnManager.Publisher.Publish(data, sender.sendQueue, sender.exchangeName, sender.th2Pin, metrics.MESSAGE_GROUP_TH2_TYPE)
+}
