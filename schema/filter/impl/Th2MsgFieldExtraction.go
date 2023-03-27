@@ -19,17 +19,20 @@ import (
 	p_buff "th2-grpc/th2_grpc_common"
 )
 
+type th2MsgFieldExtraction struct{}
+
 const SESSION_ALIAS_KEY = "session_alias"
 const MESSAGE_TYPE_KEY = "message_type"
 const DIRECTION_KEY = "direction"
 const PROTOCOL_KEY = "protocol"
 
-func GetFieldValue(anyMsg *p_buff.AnyMessage, fieldName string) string {
+// here "GetFieldValue" also can be just function, don't need th2MsgFieldExtraction this case. Do I need to change to that version?
+func (mfe th2MsgFieldExtraction) GetFieldValue(anyMsg *p_buff.AnyMessage, fieldName string) string {
 	if anyMsg.GetMessage() != nil {
-		return msgFieldValue(anyMsg.GetMessage(), fieldName)
+		return mfe.msgFieldValue(anyMsg.GetMessage(), fieldName)
 	} else {
 		if anyMsg.GetRawMessage() != nil {
-			return rawMsgFieldValue(anyMsg.GetRawMessage(), fieldName)
+			return mfe.rawMsgFieldValue(anyMsg.GetRawMessage(), fieldName)
 
 		} else {
 			return ""
@@ -37,7 +40,7 @@ func GetFieldValue(anyMsg *p_buff.AnyMessage, fieldName string) string {
 	}
 }
 
-func msgFieldValue(msg *p_buff.Message, fieldName string) string {
+func (mfe th2MsgFieldExtraction) msgFieldValue(msg *p_buff.Message, fieldName string) string {
 	switch fieldName {
 	case SESSION_ALIAS_KEY:
 		return msg.Metadata.Id.ConnectionId.SessionAlias
@@ -52,7 +55,7 @@ func msgFieldValue(msg *p_buff.Message, fieldName string) string {
 	}
 }
 
-func rawMsgFieldValue(msg *p_buff.RawMessage, fieldName string) string {
+func (mfe th2MsgFieldExtraction) rawMsgFieldValue(msg *p_buff.RawMessage, fieldName string) string {
 	switch fieldName {
 	case SESSION_ALIAS_KEY:
 		return msg.Metadata.Id.ConnectionId.SessionAlias

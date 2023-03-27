@@ -18,23 +18,60 @@ package filter
 import (
 	"github.com/IGLOU-EU/go-wildcard"
 	"github.com/rs/zerolog"
+	"github.com/th2-net/th2-common-go/schema/filter"
 	mqFilter "github.com/th2-net/th2-common-go/schema/queue/configuration"
+	"os"
 	p_buff "th2-grpc/th2_grpc_common"
 )
 
-func CheckValues(msgGroup *p_buff.MessageGroup, filter mqFilter.MqRouterFilterConfiguration, logger zerolog.Logger) bool {
+type defaultFilterStrategy struct {
+	extractFields th2MsgFieldExtraction
+
+	Logger zerolog.Logger
+}
+
+var Default filter.FilterStrategy = defaultFilterStrategy{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+
+func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filters []mqFilter.MqRouterFilterConfiguration) bool {
+	// returns true if MessageGroupBatch entirely matches at least one filter(any) from list of filters in the queueConfig,
+	// returns true if filters are not at all
+	// returns false otherwise
+	res := true
+	if len(filters) != 0 {
+		for _, flt := range filters {
+			for _, msgGroup := range messages.Groups {
+				if !dfs.CheckValues(msgGroup, flt) {
+					res = false
+					break
+				}
+			}
+			if !res {
+				res = true
+				continue
+			}
+			// as batch matches one filter (ANY), that is enough and returns true
+			dfs.Logger.Debug().Msg("MessageGroupBatch matched filter")
+			return res
+		}
+		dfs.Logger.Debug().Msg("MessageGroupBatch didn't match any filter")
+		return !res
+	}
+	dfs.Logger.Debug().Msg("no filters for MessageGroupBatch")
+	return res
+}
+func (dfs defaultFilterStrategy) CheckValues(msgGroup *p_buff.MessageGroup, filter mqFilter.MqRouterFilterConfiguration) bool {
 	// return true if all messages match all simple filters (metadata in this case)
 	// return false if at least one message doesn't match any simple filter
 	for _, anyMessage := range msgGroup.Messages {
 		for _, filterFields := range filter.Metadata {
 			if filter.WasList {
-				if checkValue(GetFieldValue(anyMessage, filterFields.FieldName), filterFields) {
-					logger.Debug().Msg("message matched filter")
+				if checkValue(dfs.extractFields.GetFieldValue(anyMessage, filterFields.FieldName), filterFields) {
+					dfs.Logger.Debug().Msg("message matched filter")
 					return true
 				}
 			} else {
-				if !checkValue(GetFieldValue(anyMessage, filterFields.FieldName), filterFields) {
-					logger.Debug().Msg("message didn't match filter")
+				if !checkValue(dfs.extractFields.GetFieldValue(anyMessage, filterFields.FieldName), filterFields) {
+					dfs.Logger.Debug().Msg("message didn't match filter")
 					return false
 				}
 			}
@@ -42,11 +79,11 @@ func CheckValues(msgGroup *p_buff.MessageGroup, filter mqFilter.MqRouterFilterCo
 	}
 	if filter.WasList {
 		// if there was not any matching in metadata list, therefore none of messages matches filters and returning false
-		logger.Debug().Msg("MessageGroup didn't match any filter from metadata filter list")
+		dfs.Logger.Debug().Msg("MessageGroup didn't match any filter from metadata filter list")
 		return false
 	} else {
 		// if there was not any mismatching in metadata object, therefore ALL messages matches filters and returning true
-		logger.Debug().Msg("MessageGroup matched all filters from metadata filter object")
+		dfs.Logger.Debug().Msg("MessageGroup matched all filters from metadata filter object")
 		return true
 	}
 }

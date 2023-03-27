@@ -53,7 +53,7 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 	pinsFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	if len(pinsFoundByAttrs) != 0 {
 		for pin, config := range pinsFoundByAttrs {
-			if config.Verify(msgBatch) {
+			if cmr.filterStrategy.Verify(msgBatch, config.Filters) {
 				sender := cmr.getSender(pin)
 				err := sender.Send(msgBatch)
 				if err != nil {
