@@ -16,15 +16,9 @@
 package configuration
 
 import (
+	"encoding/json"
 	"log"
 )
-
-type FilterFieldsConfig struct {
-	FieldName     string          `json:"fieldName"`
-	ExpectedValue string          `json:"expectedValue"`
-	Operation     FilterOperation `json:"operation"`
-}
-type FilterOperation string
 
 const (
 	EQUAL     FilterOperation = "EQUAL"
@@ -36,9 +30,49 @@ const (
 )
 
 type MqRouterFilterConfiguration struct {
-	Metadata []FilterFieldsConfig `json:"metadata"`
-	Message  []FilterFieldsConfig `json:"message"`
-	WasList  bool
+	Metadata FilterSpec `json:"metadata"`
+	Message  FilterSpec `json:"message"`
+}
+
+type FilterSpec struct {
+	Filters []FilterFieldsConfig
+}
+
+type FilterFieldsConfig struct {
+	FieldName     string
+	ExpectedValue string
+	Operation     FilterOperation
+}
+
+type FilterOperation string
+
+func (fc *FilterSpec) UnmarshalJSON(data []byte) error {
+	if string(data[0]) == "[" {
+		FilterFields := []struct {
+			FieldName     string `json:"fieldName"`
+			ExpectedValue string `json:"expectedValue"`
+			Operation     string `json:"operation"`
+		}{}
+		if err := json.Unmarshal(data, &FilterFields); err != nil {
+			return err
+		}
+		for _, filter := range FilterFields {
+			fc.Filters = append(fc.Filters, FilterFieldsConfig{FieldName: filter.FieldName, ExpectedValue: filter.ExpectedValue, Operation: PickOperation(filter.Operation)})
+		}
+	} else if string(data[0]) == "{" {
+		type mapFilt struct {
+			ExpectedValue string `json:"value"`
+			Operation     string `json:"operation"`
+		}
+		res := map[string]mapFilt{}
+		if err := json.Unmarshal(data, &res); err != nil {
+			return err
+		}
+		for k, v := range res {
+			fc.Filters = append(fc.Filters, FilterFieldsConfig{FieldName: k, ExpectedValue: v.ExpectedValue, Operation: PickOperation(v.Operation)})
+		}
+	}
+	return nil
 }
 
 func PickOperation(operation string) FilterOperation {

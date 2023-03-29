@@ -37,55 +37,42 @@ func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filt
 	// returns true if filters are not at all
 	// returns false otherwise
 	res := true
-	if len(filters) != 0 {
-		for _, flt := range filters {
-			for _, msgGroup := range messages.Groups {
-				if !dfs.CheckValues(msgGroup, flt) {
-					res = false
-					break
-				}
-			}
-			if !res {
-				res = true
-				continue
-			}
-			// as batch matches one filter (ANY), that is enough and returns true
-			dfs.Logger.Debug().Msg("MessageGroupBatch matched filter")
-			return res
-		}
-		dfs.Logger.Debug().Msg("MessageGroupBatch didn't match any filter")
-		return !res
+	if len(filters) == 0 {
+		dfs.Logger.Debug().Msg("no filters for MessageGroupBatch")
+		return res
 	}
-	dfs.Logger.Debug().Msg("no filters for MessageGroupBatch")
-	return res
+	for _, flt := range filters {
+		for _, msgGroup := range messages.Groups {
+			if !dfs.CheckValues(msgGroup, flt) {
+				res = false
+				break
+			}
+		}
+		if !res {
+			res = true
+			continue
+		}
+		// as batch matches one filter (ANY), that is enough and returns true
+		dfs.Logger.Debug().Msg("MessageGroupBatch matched filter")
+		return res
+	}
+	dfs.Logger.Debug().Msg("MessageGroupBatch didn't match any filter")
+	return !res
 }
 func (dfs defaultFilterStrategy) CheckValues(msgGroup *p_buff.MessageGroup, filter mqFilter.MqRouterFilterConfiguration) bool {
 	// return true if all messages match all simple filters (metadata in this case)
 	// return false if at least one message doesn't match any simple filter
 	for _, anyMessage := range msgGroup.Messages {
-		for _, filterFields := range filter.Metadata {
-			if filter.WasList {
-				if checkValue(dfs.extractFields.GetFieldValue(anyMessage, filterFields.FieldName), filterFields) {
-					dfs.Logger.Debug().Msg("message matched filter")
-					return true
-				}
-			} else {
-				if !checkValue(dfs.extractFields.GetFieldValue(anyMessage, filterFields.FieldName), filterFields) {
-					dfs.Logger.Debug().Msg("message didn't match filter")
-					return false
-				}
+		for _, filterFields := range filter.Metadata.Filters {
+			if !checkValue(dfs.extractFields.GetFieldValue(anyMessage, filterFields.FieldName), filterFields) {
+				dfs.Logger.Debug().Msg("message didn't match filter")
+				return false
 			}
 		}
 	}
-	if filter.WasList {
-		// if there was not any matching in metadata list, therefore none of messages matches filters and returning false
-		dfs.Logger.Debug().Msg("MessageGroup didn't match any filter from metadata filter list")
-		return false
-	} else {
-		// if there was not any mismatching in metadata object, therefore ALL messages matches filters and returning true
-		dfs.Logger.Debug().Msg("MessageGroup matched all filters from metadata filter object")
-		return true
-	}
+	// if there was not any mismatching in metadata, therefore ALL messages matches ALL filters and returning true
+	dfs.Logger.Debug().Msg("MessageGroup matched all filters from metadata filter object")
+	return true
 }
 
 func checkValue(value string, filter mqFilter.FilterFieldsConfig) bool {
