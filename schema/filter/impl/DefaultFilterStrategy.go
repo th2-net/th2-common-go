@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023 Exactpro (Exactpro Systems Limited)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,6 +18,7 @@ package filter
 import (
 	"github.com/IGLOU-EU/go-wildcard"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/th2-net/th2-common-go/schema/filter"
 	mqFilter "github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"os"
@@ -36,28 +37,25 @@ func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filt
 	// returns true if MessageGroupBatch entirely matches at least one filter(any) from list of filters in the queueConfig,
 	// returns true if filters are not at all
 	// returns false otherwise
-	res := true
 	if len(filters) == 0 {
 		dfs.Logger.Debug().Msg("no filters for MessageGroupBatch")
-		return res
+		return true
 	}
 	for _, flt := range filters {
+		res := true
 		for _, msgGroup := range messages.Groups {
 			if !dfs.CheckValues(msgGroup, flt) {
 				res = false
 				break
 			}
 		}
-		if !res {
-			res = true
-			continue
+		if res {
+			// as batch matches one filter (ANY), that is enough and returns true
+			dfs.Logger.Debug().Msgf("MessageGroupBatch matched filter %v", flt)
+			return res
 		}
-		// as batch matches one filter (ANY), that is enough and returns true
-		dfs.Logger.Debug().Msg("MessageGroupBatch matched filter")
-		return res
 	}
-	dfs.Logger.Debug().Msg("MessageGroupBatch didn't match any filter")
-	return !res
+	return false
 }
 func (dfs defaultFilterStrategy) CheckValues(msgGroup *p_buff.MessageGroup, filter mqFilter.MqRouterFilterConfiguration) bool {
 	// return true if all messages match all simple filters (metadata in this case)
@@ -65,13 +63,20 @@ func (dfs defaultFilterStrategy) CheckValues(msgGroup *p_buff.MessageGroup, filt
 	for _, anyMessage := range msgGroup.Messages {
 		for _, filterFields := range filter.Metadata.Filters {
 			if !checkValue(dfs.extractFields.GetFieldValue(anyMessage, filterFields.FieldName), filterFields) {
-				dfs.Logger.Debug().Msg("message didn't match filter")
+				if e := log.Debug(); e.Enabled() {
+					var mId *p_buff.MessageID
+					if anyMessage.GetRawMessage() != nil {
+						mId = anyMessage.GetRawMessage().Metadata.Id
+					} else {
+						mId = anyMessage.GetMessage().Metadata.Id
+					}
+					e.Msgf("Message with id: %v didn't match filter %v ", mId, filterFields)
+				}
 				return false
 			}
 		}
 	}
 	// if there was not any mismatching in metadata, therefore ALL messages matches ALL filters and returning true
-	dfs.Logger.Debug().Msg("MessageGroup matched all filters from metadata filter object")
 	return true
 }
 

@@ -17,6 +17,7 @@ package message
 
 import (
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/th2-net/th2-common-go/schema/filter"
 	defaultStrategy "github.com/th2-net/th2-common-go/schema/filter/impl"
 	"os"
@@ -54,12 +55,30 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 	if len(pinsFoundByAttrs) != 0 {
 		for pin, config := range pinsFoundByAttrs {
 			if cmr.filterStrategy.Verify(msgBatch, config.Filters) {
+				if e := log.Debug(); e.Enabled() {
+					var mId *p_buff.MessageID
+					if msgBatch.Groups[0].Messages[0].GetRawMessage() != nil {
+						mId = msgBatch.Groups[0].Messages[0].GetRawMessage().Metadata.Id
+					} else {
+						mId = msgBatch.Groups[0].Messages[0].GetMessage().Metadata.Id
+					}
+					e.Msgf("Message batch with first id: %v  matched pin: %v filter", mId, pin)
+				}
 				sender := cmr.getSender(pin)
 				err := sender.Send(msgBatch)
 				if err != nil {
 					cmr.Logger.Fatal().Err(err).Send()
 					return err
 				}
+			}
+			if e := log.Debug(); e.Enabled() {
+				var mId *p_buff.MessageID
+				if msgBatch.Groups[0].Messages[0].GetRawMessage() != nil {
+					mId = msgBatch.Groups[0].Messages[0].GetRawMessage().Metadata.Id
+				} else {
+					mId = msgBatch.Groups[0].Messages[0].GetMessage().Metadata.Id
+				}
+				e.Msgf("Message batch with first id: %v didn't match pin: %v filter", mId, pin)
 			}
 		}
 	} else {

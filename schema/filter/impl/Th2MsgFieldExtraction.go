@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023 Exactpro (Exactpro Systems Limited)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,14 +30,11 @@ const PROTOCOL_KEY = "protocol"
 func (mfe th2MsgFieldExtraction) GetFieldValue(anyMsg *p_buff.AnyMessage, fieldName string) string {
 	if anyMsg.GetMessage() != nil {
 		return mfe.msgFieldValue(anyMsg.GetMessage(), fieldName)
-	} else {
-		if anyMsg.GetRawMessage() != nil {
-			return mfe.rawMsgFieldValue(anyMsg.GetRawMessage(), fieldName)
-
-		} else {
-			return ""
-		}
 	}
+	if anyMsg.GetRawMessage() != nil {
+		return mfe.rawMsgFieldValue(anyMsg.GetRawMessage(), fieldName)
+	}
+	return ""
 }
 
 func (mfe th2MsgFieldExtraction) msgFieldValue(msg *p_buff.Message, fieldName string) string {
