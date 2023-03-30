@@ -70,15 +70,16 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 					cmr.Logger.Fatal().Err(err).Send()
 					return err
 				}
-			}
-			if e := log.Debug(); e.Enabled() {
-				var mId *p_buff.MessageID
-				if msgBatch.Groups[0].Messages[0].GetRawMessage() != nil {
-					mId = msgBatch.Groups[0].Messages[0].GetRawMessage().Metadata.Id
-				} else {
-					mId = msgBatch.Groups[0].Messages[0].GetMessage().Metadata.Id
+			} else {
+				if e := log.Debug(); e.Enabled() {
+					var mId *p_buff.MessageID
+					if msgBatch.Groups[0].Messages[0].GetRawMessage() != nil {
+						mId = msgBatch.Groups[0].Messages[0].GetRawMessage().Metadata.Id
+					} else {
+						mId = msgBatch.Groups[0].Messages[0].GetMessage().Metadata.Id
+					}
+					e.Msgf("Message batch with first id: %v didn't match pin: %v filter", mId, pin)
 				}
-				e.Msgf("Message batch with first id: %v didn't match pin: %v filter", mId, pin)
 			}
 		}
 	} else {
