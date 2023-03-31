@@ -106,7 +106,7 @@ func (mrc *MessageRouterConfiguration) FindQueuesByAttr(attrs []string) map[stri
 			}
 			if i == (len(containsAttr) - 1) {
 				result[pin] = config
-				mrc.Logger.Debug().Msgf("Queue  was found with pin %v", pin)
+				mrc.Logger.Debug().Msgf("Queue was found with pin %v", pin)
 			}
 		}
 	}

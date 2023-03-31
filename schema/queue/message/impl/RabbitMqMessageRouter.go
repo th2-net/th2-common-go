@@ -99,6 +99,7 @@ func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener *message.Conf
 	if len(subscribers) != 0 {
 		for _, s := range subscribers {
 			m.Lock()
+			cmr.Logger.Debug().Msgf("Start confirmation subscribing of queue with pin %s ", s.subscriber.th2Pin)
 			err := s.subscriber.ConfirmationStart()
 			if err != nil {
 				return SubscriberMonitor{}, err
@@ -130,6 +131,7 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, 
 	if len(subscribers) != 0 {
 		for _, s := range subscribers {
 			m.Lock()
+			cmr.Logger.Debug().Msgf("Start subscribing of queue with pin %s ", s.subscriber.th2Pin)
 			err := s.subscriber.Start()
 			if err != nil {
 				return SubscriberMonitor{}, err
