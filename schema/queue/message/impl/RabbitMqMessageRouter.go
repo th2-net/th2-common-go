@@ -54,6 +54,7 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 	pinsFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	if len(pinsFoundByAttrs) != 0 {
 		for pin, config := range pinsFoundByAttrs {
+			cmr.Logger.Debug().Msgf("Try filtering for pin: %v", pin)
 			if cmr.filterStrategy.Verify(msgBatch, config.Filters) {
 				if e := log.Debug(); e.Enabled() {
 					e.Msgf("Message batch with first id: %v  matched pin: %v filter", defaultStrategy.ExtractID(msgBatch), pin)

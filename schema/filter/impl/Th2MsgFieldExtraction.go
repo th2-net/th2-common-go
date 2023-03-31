@@ -82,5 +82,13 @@ func ExtractID(ex interface{}) *p_buff.MessageID {
 			return castedB.Groups[0].Messages[0].GetMessage().Metadata.Id
 		}
 	}
+	castedM, successM := ex.(*p_buff.AnyMessage)
+	if successM {
+		if castedM.GetRawMessage() != nil {
+			return castedM.GetRawMessage().Metadata.Id
+		} else {
+			return castedM.GetMessage().Metadata.Id
+		}
+	}
 	return nil
 }
