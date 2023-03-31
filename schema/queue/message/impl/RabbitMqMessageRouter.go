@@ -56,13 +56,7 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 		for pin, config := range pinsFoundByAttrs {
 			if cmr.filterStrategy.Verify(msgBatch, config.Filters) {
 				if e := log.Debug(); e.Enabled() {
-					var mId *p_buff.MessageID
-					if msgBatch.Groups[0].Messages[0].GetRawMessage() != nil {
-						mId = msgBatch.Groups[0].Messages[0].GetRawMessage().Metadata.Id
-					} else {
-						mId = msgBatch.Groups[0].Messages[0].GetMessage().Metadata.Id
-					}
-					e.Msgf("Message batch with first id: %v  matched pin: %v filter", mId, pin)
+					e.Msgf("Message batch with first id: %v  matched pin: %v filter", defaultStrategy.ExtractID(msgBatch), pin)
 				}
 				sender := cmr.getSender(pin)
 				err := sender.Send(msgBatch)
@@ -70,20 +64,17 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 					cmr.Logger.Fatal().Err(err).Send()
 					return err
 				}
+				if e := log.Debug(); e.Enabled() {
+					e.Msgf("Message batch with first id: %v was sent to pin: %v ", defaultStrategy.ExtractID(msgBatch), pin)
+				}
 			} else {
 				if e := log.Debug(); e.Enabled() {
-					var mId *p_buff.MessageID
-					if msgBatch.Groups[0].Messages[0].GetRawMessage() != nil {
-						mId = msgBatch.Groups[0].Messages[0].GetRawMessage().Metadata.Id
-					} else {
-						mId = msgBatch.Groups[0].Messages[0].GetMessage().Metadata.Id
-					}
-					e.Msgf("Message batch with first id: %v didn't match pin: %v filter", mId, pin)
+					e.Msgf("Message batch with first id: %v didn't match pin: %v filter", defaultStrategy.ExtractID(msgBatch), pin)
 				}
 			}
 		}
 	} else {
-		cmr.Logger.Fatal().Msg("no such queue to send message")
+		cmr.Logger.Fatal().Msg("No such queue to send message")
 	}
 	return nil
 

@@ -69,15 +69,18 @@ func (mrc *MessageRouterConfiguration) UnmarshalConfig(data []byte) error {
 		for _, f := range RouterConfig.Queues[k].Filters {
 			filter := MqRouterFilterConfiguration{}
 			if err := filter.Metadata.UnmarshalJSON(f.Metadata); err != nil {
+				mrc.Logger.Error().Err(err).Msg("Deserialization error for filter metadata")
 				return err
 			}
 			if err := filter.Message.UnmarshalJSON(f.Message); err != nil {
+				mrc.Logger.Error().Err(err).Msg("Deserialization error for filter message")
 				return err
 			}
 			filters = append(filters, filter)
 		}
 		v.Filters = filters
 	}
+	mrc.Logger.Debug().Msg("Successfully deserialized router configuration")
 	return nil
 }
 
@@ -103,9 +106,9 @@ func (mrc *MessageRouterConfiguration) FindQueuesByAttr(attrs []string) map[stri
 			}
 			if i == (len(containsAttr) - 1) {
 				result[pin] = config
+				mrc.Logger.Debug().Msgf("Queue  was found with pin %v", pin)
 			}
 		}
 	}
-	mrc.Logger.Debug().Msg("Queue was found")
 	return result
 }

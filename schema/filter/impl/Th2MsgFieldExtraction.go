@@ -64,3 +64,23 @@ func (mfe th2MsgFieldExtraction) rawMsgFieldValue(msg *p_buff.RawMessage, fieldN
 		return ""
 	}
 }
+
+func ExtractID(ex interface{}) *p_buff.MessageID {
+	castedG, successG := ex.(*p_buff.MessageGroup)
+	if successG {
+		if castedG.Messages[0].GetRawMessage() != nil {
+			return castedG.Messages[0].GetRawMessage().Metadata.Id
+		} else {
+			return castedG.Messages[0].GetMessage().Metadata.Id
+		}
+	}
+	castedB, successB := ex.(*p_buff.MessageGroupBatch)
+	if successB {
+		if castedB.Groups[0].Messages[0].GetRawMessage() != nil {
+			return castedB.Groups[0].Messages[0].GetRawMessage().Metadata.Id
+		} else {
+			return castedB.Groups[0].Messages[0].GetMessage().Metadata.Id
+		}
+	}
+	return nil
+}

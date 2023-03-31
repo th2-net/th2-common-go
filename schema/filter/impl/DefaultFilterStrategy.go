@@ -38,14 +38,18 @@ func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filt
 	// returns true if filters are not at all
 	// returns false otherwise
 	if len(filters) == 0 {
-		dfs.Logger.Debug().Msg("no filters for MessageGroupBatch")
+		dfs.Logger.Debug().Msg("No filters for MessageGroupBatch")
 		return true
 	}
+	dfs.Logger.Debug().Msg("Started filtering of MessageGroupBatch sending")
 	for _, flt := range filters {
 		res := true
 		for _, msgGroup := range messages.Groups {
 			if !dfs.CheckValues(msgGroup, flt) {
 				res = false
+				if e := log.Debug(); e.Enabled() {
+					e.Msgf("MessageGroup with first message id: %v didn't match filter %v ", ExtractID(msgGroup), flt)
+				}
 				break
 			}
 		}
@@ -63,15 +67,6 @@ func (dfs defaultFilterStrategy) CheckValues(msgGroup *p_buff.MessageGroup, filt
 	for _, anyMessage := range msgGroup.Messages {
 		for _, filterFields := range filter.Metadata.Filters {
 			if !checkValue(dfs.extractFields.GetFieldValue(anyMessage, filterFields.FieldName), filterFields) {
-				if e := log.Debug(); e.Enabled() {
-					var mId *p_buff.MessageID
-					if anyMessage.GetRawMessage() != nil {
-						mId = anyMessage.GetRawMessage().Metadata.Id
-					} else {
-						mId = anyMessage.GetMessage().Metadata.Id
-					}
-					e.Msgf("Message with id: %v didn't match filter %v ", mId, filterFields)
-				}
 				return false
 			}
 		}
