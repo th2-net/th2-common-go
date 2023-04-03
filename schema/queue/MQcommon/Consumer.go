@@ -78,7 +78,7 @@ func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, ha
 	}
 
 	go func() {
-		cns.Logger.Debug().Str("Method", "\"Consume\"").Msgf("Consumed messages will handled from queue %s", queueName)
+		cns.Logger.Debug().Str("Method", "\"Consume\"").Msgf("Consumed messages will be handled from queue %s", queueName)
 		for d := range msgs {
 			timer := prometheus.NewTimer(th2_rabbitmq_message_process_duration_seconds.WithLabelValues(th2Pin, th2Type, queueName))
 			handler(d)
