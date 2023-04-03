@@ -68,7 +68,7 @@ func (pb *Publisher) Publish(body []byte, routingKey string, exchange string, th
 
 		return err
 	}
-	pb.Logger.Info().Msg(" [x] Sent ")
+	pb.Logger.Info().Msg("MessageGroupBatch Published")
 	th2_rabbitmq_message_size_publish_bytes.WithLabelValues(th2Pin, th2Type, exchange, routingKey).Add(float64(len(body)))
 	th2_rabbitmq_message_publish_total.WithLabelValues(th2Pin, th2Type, exchange, routingKey).Inc()
 

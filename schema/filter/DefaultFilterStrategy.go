@@ -36,7 +36,6 @@ func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filt
 	// returns true if filters are not at all
 	// returns false otherwise
 	if len(filters) == 0 {
-		dfs.logger.Debug().Msg("No filters for MessageGroupBatch")
 		return true
 	}
 	dfs.logger.Debug().Msg("Started filtering of MessageGroupBatch for sending")
@@ -49,7 +48,7 @@ func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filt
 					e.Int("filter N", n+1).
 						Fields(flt.Metadata.Filters).
 						Fields(flt.Message.Filters).
-						Msgf("MessageGroup with first message id: %v didn't match filter ", IDFromMsgGroup(msgGroup))
+						Msgf("Filter fields to which didn't match MessageGroupBatch with first message id: %v  ", IDFromMsgGroup(msgGroup))
 				}
 				break
 			}
@@ -60,7 +59,7 @@ func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filt
 				e.Int("filter N", n+1).
 					Fields(flt.Metadata.Filters).
 					Fields(flt.Message.Filters).
-					Msg("MessageGroupBatch matched filter")
+					Msg("Filter fields to which matched MessageGroupBatch")
 			}
 			return res
 		}

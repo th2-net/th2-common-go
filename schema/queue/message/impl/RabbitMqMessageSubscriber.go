@@ -16,6 +16,7 @@
 package message
 
 import (
+	"github.com/th2-net/th2-common-go/schema/filter"
 	"os"
 	p_buff "th2-grpc/th2_grpc_common"
 
@@ -58,39 +59,48 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
+		cs.Logger.Fatal().Err(err).Str("Method", "\"Handler\"").Msg("Can't unmarshal proto")
 	}
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
-		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
+		cs.Logger.Fatal().Str("Method", "\"Handler\"").Msgf("No Listener to Handle : %s ", cs.listener)
 	}
 	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	handleErr := (*cs.listener).Handle(&delivery, result)
 	if handleErr != nil {
-		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
+		cs.Logger.Fatal().Err(handleErr).Str("Method", "\"Handler\"").Msg("Can't Handle")
 	}
-	cs.Logger.Debug().Msg("Successfully Handled")
+	cs.Logger.Info().Msg("Successfully Handled")
+	if e := cs.Logger.Debug(); e.Enabled() {
+		e.Str("Method", "\"Handler\"").
+			Fields(filter.IDFromMsgBatch(result)).
+			Msgf("First message ID of message batch that handled successfully")
+	}
 }
 
 func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, timer *prometheus.Timer) {
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
+		cs.Logger.Fatal().Err(err).Str("Method", "\"ConfirmationHandler\"").Msg("Can't unmarshal proto")
 	}
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), Timer: timer}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
 
 	if cs.confirmationListener == nil {
-		cs.Logger.Fatal().Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
+		cs.Logger.Fatal().Str("Method", "\"ConfirmationHandler\"").Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
 	}
 	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	handleErr := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
 	if handleErr != nil {
-		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
+		cs.Logger.Fatal().Err(handleErr).Str("Method", "\"ConfirmationHandler\"").Msg("Can't Handle")
 	}
-	cs.Logger.Debug().Msg("Successfully Handled")
+	if e := cs.Logger.Debug(); e.Enabled() {
+		e.Str("Method", "\"ConfirmationHandler\"").
+			Fields(filter.IDFromMsgBatch(result)).
+			Msgf("First message ID of message batch that handled successfully")
+	}
 }
 
 func (cs *CommonMessageSubscriber) Start() error {
