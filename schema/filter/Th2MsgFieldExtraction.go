@@ -21,10 +21,12 @@ import (
 
 type th2MsgFieldExtraction struct{}
 
-const SESSION_ALIAS_KEY = "session_alias"
-const MESSAGE_TYPE_KEY = "message_type"
-const DIRECTION_KEY = "direction"
-const PROTOCOL_KEY = "protocol"
+const (
+	SESSION_ALIAS_KEY = "session_alias"
+	MESSAGE_TYPE_KEY  = "message_type"
+	DIRECTION_KEY     = "direction"
+	PROTOCOL_KEY      = "protocol"
+)
 
 // here "GetFieldValue" also can be just function, don't need th2MsgFieldExtraction this case. Do I need to change to that version?
 func (mfe th2MsgFieldExtraction) GetFieldValue(anyMsg *p_buff.AnyMessage, fieldName string) string {
@@ -65,30 +67,25 @@ func (mfe th2MsgFieldExtraction) rawMsgFieldValue(msg *p_buff.RawMessage, fieldN
 	}
 }
 
-func ExtractID(ex interface{}) *p_buff.MessageID {
-	castedG, successG := ex.(*p_buff.MessageGroup)
-	if successG {
-		if castedG.Messages[0].GetRawMessage() != nil {
-			return castedG.Messages[0].GetRawMessage().Metadata.Id
-		} else {
-			return castedG.Messages[0].GetMessage().Metadata.Id
-		}
+func IDFromMsgGroup(group *p_buff.MessageGroup) *p_buff.MessageID {
+	if group.Messages[0].GetRawMessage() != nil {
+		return group.Messages[0].GetRawMessage().Metadata.Id
+	} else {
+		return group.Messages[0].GetMessage().Metadata.Id
 	}
-	castedB, successB := ex.(*p_buff.MessageGroupBatch)
-	if successB {
-		if castedB.Groups[0].Messages[0].GetRawMessage() != nil {
-			return castedB.Groups[0].Messages[0].GetRawMessage().Metadata.Id
-		} else {
-			return castedB.Groups[0].Messages[0].GetMessage().Metadata.Id
-		}
+}
+func IDFromMsgBatch(batch *p_buff.MessageGroupBatch) *p_buff.MessageID {
+	if batch.Groups[0].Messages[0].GetRawMessage() != nil {
+		return batch.Groups[0].Messages[0].GetRawMessage().Metadata.Id
+	} else {
+		return batch.Groups[0].Messages[0].GetMessage().Metadata.Id
 	}
-	castedM, successM := ex.(*p_buff.AnyMessage)
-	if successM {
-		if castedM.GetRawMessage() != nil {
-			return castedM.GetRawMessage().Metadata.Id
-		} else {
-			return castedM.GetMessage().Metadata.Id
-		}
+}
+
+func IDFromAnyMsg(msg *p_buff.AnyMessage) *p_buff.MessageID {
+	if msg.GetRawMessage() != nil {
+		return msg.GetRawMessage().Metadata.Id
+	} else {
+		return msg.GetMessage().Metadata.Id
 	}
-	return nil
 }

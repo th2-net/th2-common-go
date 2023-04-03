@@ -57,7 +57,7 @@ func (fc *FilterSpec) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		for _, filter := range FilterFields {
-			fc.Filters = append(fc.Filters, FilterFieldsConfig{FieldName: filter.FieldName, ExpectedValue: filter.ExpectedValue, Operation: PickOperation(filter.Operation)})
+			fc.Filters = append(fc.Filters, FilterFieldsConfig{FieldName: filter.FieldName, ExpectedValue: filter.ExpectedValue, Operation: pickOperation(filter.Operation)})
 		}
 	} else if string(data[0]) == "{" {
 		type mapFilt struct {
@@ -69,13 +69,13 @@ func (fc *FilterSpec) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		for k, v := range res {
-			fc.Filters = append(fc.Filters, FilterFieldsConfig{FieldName: k, ExpectedValue: v.ExpectedValue, Operation: PickOperation(v.Operation)})
+			fc.Filters = append(fc.Filters, FilterFieldsConfig{FieldName: k, ExpectedValue: v.ExpectedValue, Operation: pickOperation(v.Operation)})
 		}
 	}
 	return nil
 }
 
-func PickOperation(operation string) FilterOperation {
+func pickOperation(operation string) FilterOperation {
 	switch operation {
 	case string(EQUAL):
 		return EQUAL

@@ -18,8 +18,6 @@ package filter
 import (
 	"github.com/IGLOU-EU/go-wildcard"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	"github.com/th2-net/th2-common-go/schema/filter"
 	mqFilter "github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"os"
 	p_buff "th2-grpc/th2_grpc_common"
@@ -28,34 +26,42 @@ import (
 type defaultFilterStrategy struct {
 	extractFields th2MsgFieldExtraction
 
-	Logger zerolog.Logger
+	logger zerolog.Logger
 }
 
-var Default filter.FilterStrategy = defaultFilterStrategy{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+var Default FilterStrategy = defaultFilterStrategy{logger: zerolog.New(os.Stdout).With().Str("component", "default_filter_strategy").Timestamp().Logger()}
 
 func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filters []mqFilter.MqRouterFilterConfiguration) bool {
 	// returns true if MessageGroupBatch entirely matches at least one filter(any) from list of filters in the queueConfig,
 	// returns true if filters are not at all
 	// returns false otherwise
 	if len(filters) == 0 {
-		dfs.Logger.Debug().Msg("No filters for MessageGroupBatch")
+		dfs.logger.Debug().Msg("No filters for MessageGroupBatch")
 		return true
 	}
-	dfs.Logger.Debug().Msg("Started filtering of MessageGroupBatch for sending")
+	dfs.logger.Debug().Msg("Started filtering of MessageGroupBatch for sending")
 	for n, flt := range filters {
 		res := true
 		for _, msgGroup := range messages.Groups {
 			if !dfs.CheckValues(msgGroup, flt) {
 				res = false
-				if e := log.Debug(); e.Enabled() {
-					e.Msgf("MessageGroup with first message id: %v didn't match filter #%v : metadata - %v , message: %v ", ExtractID(msgGroup), n+1, flt.Metadata.Filters, flt.Message.Filters)
+				if e := dfs.logger.Debug(); e.Enabled() {
+					e.Int("filter N", n+1).
+						Fields(flt.Metadata.Filters).
+						Fields(flt.Message.Filters).
+						Msgf("MessageGroup with first message id: %v didn't match filter ", IDFromMsgGroup(msgGroup))
 				}
 				break
 			}
 		}
 		if res {
 			// as batch matches one filter (ANY), that is enough and returns true
-			dfs.Logger.Debug().Msgf("MessageGroupBatch matched filter #%v : metadata - %v , message - %v ", n+1, flt.Metadata.Filters, flt.Message.Filters)
+			if e := dfs.logger.Debug(); e.Enabled() {
+				e.Int("filter N", n+1).
+					Fields(flt.Metadata.Filters).
+					Fields(flt.Message.Filters).
+					Msg("MessageGroupBatch matched filter")
+			}
 			return res
 		}
 	}
@@ -67,8 +73,8 @@ func (dfs defaultFilterStrategy) CheckValues(msgGroup *p_buff.MessageGroup, filt
 	for _, anyMessage := range msgGroup.Messages {
 		for _, filterFields := range filter.Metadata.Filters {
 			if !checkValue(dfs.extractFields.GetFieldValue(anyMessage, filterFields.FieldName), filterFields) {
-				if e := log.Debug(); e.Enabled() {
-					e.Msgf("Message with id: %v didn't match filter with fields: %v ", ExtractID(anyMessage), filterFields)
+				if e := dfs.logger.Debug(); e.Enabled() {
+					e.Fields(filterFields).Msgf("Message with id: %v didn't match filter with fields: %v ", IDFromAnyMsg(anyMessage))
 				}
 				return false
 			}
