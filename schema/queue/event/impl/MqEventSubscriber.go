@@ -108,17 +108,17 @@ func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, 
 func (cs *CommonEventSubscriber) RemoveListener() {
 	cs.listener = nil
 	cs.confirmationListener = nil
-	cs.Logger.Info().Msg("Removed listeners")
+	cs.Logger.Trace().Msg("Removed listeners")
 }
 
 func (cs *CommonEventSubscriber) AddListener(listener *event.EventListener) {
 	cs.listener = listener
-	cs.Logger.Debug().Msg("Added listener")
+	cs.Logger.Trace().Msg("Added listener")
 }
 
 func (cs *CommonEventSubscriber) AddConfirmationListener(listener *event.ConformationEventListener) {
 	cs.confirmationListener = listener
-	cs.Logger.Debug().Msg("Added confirmation listener")
+	cs.Logger.Trace().Msg("Added confirmation listener")
 }
 
 type SubscriberMonitor struct {

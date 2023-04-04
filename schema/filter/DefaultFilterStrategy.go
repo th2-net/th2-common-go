@@ -47,7 +47,8 @@ func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filt
 				if e := dfs.logger.Debug(); e.Enabled() {
 					e.Int("filter N", n+1).
 						Interface("Metadata", flt.Metadata.Filters).
-						Msgf("Filter fields to which didn't match MessageGroupBatch with first message id: %v  ", IDFromMsgGroup(msgGroup))
+						Interface("MessageID", IDFromMsgGroup(msgGroup)).
+						Msg("First message ID of MessageGroupBatch that didn't match filter")
 				}
 				break
 			}
@@ -71,7 +72,9 @@ func (dfs defaultFilterStrategy) CheckValues(msgGroup *p_buff.MessageGroup, filt
 		for _, filterFields := range filter.Metadata.Filters {
 			if !checkValue(dfs.extractFields.GetFieldValue(anyMessage, filterFields.FieldName), filterFields) {
 				if e := dfs.logger.Debug(); e.Enabled() {
-					e.Interface("Filter", filterFields).Msgf("Message with id: %v didn't match filter with fields: %v ", IDFromAnyMsg(anyMessage))
+					e.Interface("Filter", filterFields).
+						Interface("MessageID", IDFromAnyMsg(anyMessage)).
+						Msg("Message didn't match filter")
 				}
 				return false
 			}

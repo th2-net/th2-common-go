@@ -50,12 +50,12 @@ func (cer *CommonEventRouter) SendAll(EventBatch *p_buff.EventBatch, attributes 
 			sender := cer.getSender(pin)
 			err := sender.Send(EventBatch)
 			if err != nil {
-				cer.Logger.Fatal().Err(err).Send()
+				cer.Logger.Error().Err(err).Send()
 				return err
 			}
 		}
 	} else {
-		cer.Logger.Fatal().Msg("No such queue to send message")
+		cer.Logger.Error().Msg("No such queue to send message")
 	}
 	return nil
 
@@ -69,7 +69,7 @@ func (cer *CommonEventRouter) SubscribeAll(listener *event.EventListener, attrib
 		cer.Logger.Debug().Str("Pin", queuePin).Msg("Subscribing")
 		subscriber, err := cer.subByPin(listener, queuePin)
 		if err != nil {
-			cer.Logger.Fatal().Err(err).Send()
+			cer.Logger.Error().Err(err).Send()
 			return nil, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -86,7 +86,7 @@ func (cer *CommonEventRouter) SubscribeAll(listener *event.EventListener, attrib
 		}
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
-		cer.Logger.Fatal().Msg("No such subscriber")
+		cer.Logger.Error().Msg("No such subscriber")
 	}
 	return nil, nil
 }
@@ -99,7 +99,7 @@ func (cer *CommonEventRouter) SubscribeAllWithManualAck(listener *event.Conforma
 		cer.Logger.Debug().Str("Pin", queuePin).Msg("Subscribing with manual ack")
 		subscriber, err := cer.subByPinWithAck(listener, queuePin)
 		if err != nil {
-			cer.Logger.Fatal().Err(err).Send()
+			cer.Logger.Error().Err(err).Send()
 			return SubscriberMonitor{}, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -118,7 +118,7 @@ func (cer *CommonEventRouter) SubscribeAllWithManualAck(listener *event.Conforma
 
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
-		cer.Logger.Fatal().Msg("No such subscriber")
+		cer.Logger.Error().Msg("No such subscriber")
 	}
 	return SubscriberMonitor{}, nil
 }

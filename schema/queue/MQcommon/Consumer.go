@@ -59,7 +59,8 @@ func (cns *Consumer) connect() {
 func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, handler func(delivery amqp.Delivery)) error {
 	ch, err := cns.conn.Channel()
 	if err != nil {
-		cns.Logger.Fatal().Err(err).Send()
+		cns.Logger.Error().Err(err).Send()
+		return err
 	}
 	cns.channels[queueName] = ch
 
@@ -73,12 +74,12 @@ func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, ha
 		nil,       // args
 	)
 	if consErr != nil {
-		cns.Logger.Error().Err(err).Str("Method", "\"Consume\"").Msg("Consuming error")
+		cns.Logger.Error().Err(err).Str("Method", "Consume").Msg("Consuming error")
 		return consErr
 	}
 
 	go func() {
-		cns.Logger.Debug().Str("Method", "\"Consume\"").Msgf("Consumed messages will be handled from queue %s", queueName)
+		cns.Logger.Debug().Str("Method", "Consume").Msgf("Consumed messages will be handled from queue %s", queueName)
 		for d := range msgs {
 			timer := prometheus.NewTimer(th2_rabbitmq_message_process_duration_seconds.WithLabelValues(th2Pin, th2Type, queueName))
 			handler(d)
@@ -93,7 +94,8 @@ func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, ha
 func (cns *Consumer) ConsumeWithManualAck(queueName string, th2Pin string, th2Type string, handler func(msgDelivery amqp.Delivery, timer *prometheus.Timer)) error {
 	ch, err := cns.conn.Channel()
 	if err != nil {
-		cns.Logger.Fatal().Err(err).Send()
+		cns.Logger.Error().Err(err).Send()
+		return err
 	}
 	cns.channels[queueName] = ch
 	msgs, consErr := ch.Consume(
@@ -106,11 +108,11 @@ func (cns *Consumer) ConsumeWithManualAck(queueName string, th2Pin string, th2Ty
 		nil,       // args
 	)
 	if consErr != nil {
-		cns.Logger.Error().Err(err).Str("Method", "\"ConsumeWithManualAck\"").Msg("Consuming error")
+		cns.Logger.Error().Err(err).Str("Method", "ConsumeWithManualAck").Msg("Consuming error")
 		return consErr
 	}
 	go func() {
-		cns.Logger.Debug().Str("Method", "\"ConsumeWithManualAck\"").Msgf("Consumed messages will handled from queue %s", queueName)
+		cns.Logger.Debug().Str("Method", "ConsumeWithManualAck").Msgf("Consumed messages will handled from queue %s", queueName)
 		for d := range msgs {
 			timer := prometheus.NewTimer(th2_rabbitmq_message_process_duration_seconds.WithLabelValues(th2Pin, th2Type, queueName))
 			handler(d, timer)

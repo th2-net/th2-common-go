@@ -41,7 +41,7 @@ func (cmr *CommonMessageRouter) Construct(manager *MQcommon.ConnectionManager) {
 	cmr.subscribers = map[string]CommonMessageSubscriber{}
 	cmr.senders = map[string]CommonMessageSender{}
 	cmr.filterStrategy = filter.Default
-	cmr.Logger.Trace().Str("Method", "\"construct\"").Msg("CommonMessageRouter was initialized")
+	cmr.Logger.Trace().Str("Method", "construct").Msg("CommonMessageRouter was initialized")
 }
 
 func (cmr *CommonMessageRouter) Close() {
@@ -52,7 +52,7 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 	attrs := MQcommon.GetSendAttributes(attributes)
 	pinsFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	if len(pinsFoundByAttrs) == 0 {
-		cmr.Logger.Fatal().Msg("No such queue to send message")
+		cmr.Logger.Error().Msg("No such queue to send message")
 		return nil
 	}
 	for pin, config := range pinsFoundByAttrs {
@@ -65,7 +65,7 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 			sender := cmr.getSender(pin)
 			err := sender.Send(msgBatch)
 			if err != nil {
-				cmr.Logger.Fatal().Err(err).Send()
+				cmr.Logger.Error().Err(err).Send()
 				return err
 			}
 			if e := log.Debug(); e.Enabled() {
@@ -92,7 +92,7 @@ func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener *message.Conf
 		cmr.Logger.Debug().Str("Pin", queuePin).Msg("Subscribing with manual ack")
 		subscriber, err := cmr.subByPinWithAck(listener, queuePin)
 		if err != nil {
-			cmr.Logger.Fatal().Err(err).Send()
+			cmr.Logger.Error().Err(err).Send()
 			return SubscriberMonitor{}, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -112,7 +112,7 @@ func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener *message.Conf
 
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
-		cmr.Logger.Fatal().Msg("No such subscriber")
+		cmr.Logger.Error().Msg("No such subscriber")
 	}
 	return SubscriberMonitor{}, nil
 }
@@ -125,7 +125,7 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, 
 		cmr.Logger.Debug().Str("Pin", queuePin).Msg("Subscribing")
 		subscriber, err := cmr.subByPin(listener, queuePin)
 		if err != nil {
-			cmr.Logger.Fatal().Err(err).Send()
+			cmr.Logger.Error().Err(err).Send()
 			return nil, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -137,13 +137,14 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, 
 			cmr.Logger.Trace().Str("Pin", s.subscriber.th2Pin).Msg("Start subscribing of queue")
 			err := s.subscriber.Start()
 			if err != nil {
+				cmr.Logger.Error().Err(err).Send()
 				return SubscriberMonitor{}, err
 			}
 			m.Unlock()
 		}
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
-		cmr.Logger.Fatal().Msg("No such subscriber")
+		cmr.Logger.Error().Msg("No such subscriber")
 	}
 	return nil, nil
 }

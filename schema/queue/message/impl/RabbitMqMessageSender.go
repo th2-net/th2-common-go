@@ -16,6 +16,7 @@
 package message
 
 import (
+	"fmt"
 	p_buff "th2-grpc/th2_grpc_common"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -52,11 +53,12 @@ type CommonMessageSender struct {
 func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 
 	if batch == nil {
-		sender.Logger.Fatal().Msg("Value for send can't be null")
+		sender.Logger.Error().Msg("Value for send can't be null")
+		return fmt.Errorf("null value for sending")
 	}
 	body, err := proto.Marshal(batch)
 	if err != nil {
-		sender.Logger.Panic().Err(err).Msg("Error during marshaling message into proto message")
+		sender.Logger.Error().Err(err).Msg("Error during marshaling message into proto message")
 		return err
 	}
 

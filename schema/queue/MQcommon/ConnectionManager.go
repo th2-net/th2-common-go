@@ -77,20 +77,20 @@ type DeliveryConfirmation struct {
 func (dc DeliveryConfirmation) Confirm() error {
 	err := dc.Delivery.Ack(false)
 	if err != nil {
-		dc.Logger.Fatal().Err(err).Str("Method", "\"Confirm\"").Msg("Error during Acknowledgment")
+		dc.Logger.Error().Err(err).Str("Method", "Confirm").Msg("Error during Acknowledgment")
 		return err
 	}
-	dc.Logger.Info().Str("Method", "\"Confirm\"").Msg("Acknowledged")
+	dc.Logger.Info().Str("Method", "Confirm").Msg("Acknowledged")
 	dc.Timer.ObserveDuration()
 	return nil
 }
 func (dc DeliveryConfirmation) Reject() error {
 	err := dc.Delivery.Reject(false)
 	if err != nil {
-		dc.Logger.Fatal().Err(err).Str("Method", "\"Reject\"").Msg("Error during Rejection")
+		dc.Logger.Error().Err(err).Str("Method", "Reject").Msg("Error during Rejection")
 		return err
 	}
-	dc.Logger.Info().Str("Method", "\"Reject\"").Msg("Rejected")
+	dc.Logger.Info().Str("Method", "Reject").Msg("Rejected")
 	dc.Timer.ObserveDuration()
 	return nil
 }

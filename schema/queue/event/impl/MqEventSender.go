@@ -15,6 +15,7 @@
 package event
 
 import (
+	"fmt"
 	p_buff "th2-grpc/th2_grpc_common"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -46,13 +47,12 @@ type CommonEventSender struct {
 func (sender *CommonEventSender) Send(batch *p_buff.EventBatch) error {
 
 	if batch == nil {
-		sender.Logger.Fatal().Msg("Value for send can't be null")
+		sender.Logger.Error().Msg("Value for send can't be null")
+		return fmt.Errorf("null value for sending")
 	}
 	body, err := proto.Marshal(batch)
 	if err != nil {
-		if err != nil {
-			sender.Logger.Panic().Err(err).Msg("Error during marshaling message into proto event")
-		}
+		sender.Logger.Error().Err(err).Msg("Error during marshaling message into proto event")
 		return err
 	}
 
