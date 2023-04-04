@@ -40,47 +40,11 @@ func (mrc *MessageRouterConfiguration) Init(path string) error {
 		mrc.Logger.Error().Err(err).Msg("Json file reading error for QueueConfig")
 		return err
 	}
-	fail := mrc.UnmarshalConfig(content)
+	fail := json.Unmarshal(content, mrc)
 	if fail != nil {
 		mrc.Logger.Error().Err(err).Msg("Deserialization error for QueueConfig")
 		return err
 	}
-	return nil
-}
-func (mrc *MessageRouterConfiguration) UnmarshalConfig(data []byte) error {
-	if err := json.Unmarshal(data, mrc); err != nil {
-		return err
-	}
-	type FilterConfig struct {
-		Metadata json.RawMessage `json:"metadata"`
-		Message  json.RawMessage `json:"message"`
-	}
-	type QConfig struct {
-		Filters []FilterConfig `json:"filters"`
-	}
-	RouterConfig := struct {
-		Queues map[string]QConfig `json:"queues"`
-	}{}
-	if err := json.Unmarshal(data, &RouterConfig); err != nil {
-		return err
-	}
-	for k, v := range mrc.Queues {
-		filters := []MqRouterFilterConfiguration{}
-		for _, f := range RouterConfig.Queues[k].Filters {
-			filter := MqRouterFilterConfiguration{}
-			if err := filter.Metadata.UnmarshalJSON(f.Metadata); err != nil {
-				mrc.Logger.Error().Err(err).Msg("Deserialization error for filter metadata")
-				return err
-			}
-			if err := filter.Message.UnmarshalJSON(f.Message); err != nil {
-				mrc.Logger.Error().Err(err).Msg("Deserialization error for filter message")
-				return err
-			}
-			filters = append(filters, filter)
-		}
-		v.Filters = filters
-	}
-	mrc.Logger.Debug().Msg("Successfully deserialized router configuration")
 	return nil
 }
 
