@@ -35,11 +35,11 @@ type ConnectionManager struct {
 }
 
 func (manager *ConnectionManager) Construct() {
-	manager.Publisher = Publisher{url: manager.Url, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	manager.Publisher = Publisher{url: manager.Url, Logger: zerolog.New(os.Stdout).With().Str("component", "publisher").Timestamp().Logger()}
 	manager.Publisher.connect()
 
 	manager.Consumer = Consumer{url: manager.Url, channels: make(map[string]*amqp.Channel),
-		Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+		Logger: zerolog.New(os.Stdout).With().Str("component", "subscriber").Timestamp().Logger()}
 	manager.Consumer.connect()
 }
 
