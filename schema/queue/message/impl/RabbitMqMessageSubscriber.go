@@ -59,17 +59,19 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		//TODO In this method I need to stop execution in case of error. can I use here Fatal or Panic ?
-		cs.Logger.Fatal().Err(err).Str("Method", "Handler").Msg("Can't unmarshal proto")
+		cs.Logger.Error().Err(err).Str("Method", "Handler").Msg("Can't unmarshal proto")
+		//TODO Return error to the caller side
 	}
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
-		cs.Logger.Fatal().Str("Method", "Handler").Msgf("No Listener to Handle : %s ", cs.listener)
+		cs.Logger.Error().Str("Method", "Handler").Msgf("No Listener to Handle : %s ", cs.listener)
+		//TODO Return error to the caller side
 	}
 	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	handleErr := (*cs.listener).Handle(&delivery, result)
 	if handleErr != nil {
-		cs.Logger.Fatal().Err(handleErr).Str("Method", "Handler").Msg("Can't Handle")
+		cs.Logger.Error().Err(handleErr).Str("Method", "Handler").Msg("Can't Handle")
+		//TODO Return error to the caller side
 	}
 	cs.Logger.Info().Msg("Successfully Handled")
 	if e := cs.Logger.Debug(); e.Enabled() {
@@ -83,19 +85,22 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Fatal().Err(err).Str("Method", "ConfirmationHandler").Msg("Can't unmarshal proto")
+		cs.Logger.Error().Err(err).Str("Method", "ConfirmationHandler").Msg("Can't unmarshal proto")
+		//TODO Return error to the caller side
 	}
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), Timer: timer}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
 
 	if cs.confirmationListener == nil {
-		cs.Logger.Fatal().Str("Method", "ConfirmationHandler").Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
+		cs.Logger.Error().Str("Method", "ConfirmationHandler").Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
+		//TODO Return error to the caller side
 	}
 	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
 	handleErr := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
 	if handleErr != nil {
-		cs.Logger.Fatal().Err(handleErr).Str("Method", "ConfirmationHandler").Msg("Can't Handle")
+		cs.Logger.Error().Err(handleErr).Str("Method", "ConfirmationHandler").Msg("Can't Handle")
+		//TODO Return error to the caller side
 	}
 	if e := cs.Logger.Debug(); e.Enabled() {
 		e.Str("Method", "ConfirmationHandler").

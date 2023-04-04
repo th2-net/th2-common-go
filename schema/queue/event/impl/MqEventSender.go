@@ -15,7 +15,7 @@
 package event
 
 import (
-	"fmt"
+	"errors"
 	p_buff "th2-grpc/th2_grpc_common"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -26,6 +26,8 @@ import (
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"google.golang.org/protobuf/proto"
 )
+
+const ErrMsg = "null value for sending"
 
 var th2_event_publish_total = promauto.NewCounterVec(
 	prometheus.CounterOpts{
@@ -47,8 +49,9 @@ type CommonEventSender struct {
 func (sender *CommonEventSender) Send(batch *p_buff.EventBatch) error {
 
 	if batch == nil {
-		sender.Logger.Error().Msg("Value for send can't be null")
-		return fmt.Errorf("null value for sending")
+		err := errors.New(ErrMsg)
+		sender.Logger.Error().Err(err).Msg("Value for send can't be null")
+		return err
 	}
 	body, err := proto.Marshal(batch)
 	if err != nil {
