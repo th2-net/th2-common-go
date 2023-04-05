@@ -45,7 +45,7 @@ type Publisher struct {
 	url      string
 	conn     *amqp.Connection
 	channels map[string]*amqp.Channel
-	mutex    sync.Mutex
+	mutex    *sync.Mutex
 
 	Logger zerolog.Logger
 }
