@@ -28,6 +28,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const ErrMsg = "null value for sending"
+
 var th2_message_publish_total = promauto.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: "th2_message_publish_total",
@@ -53,11 +55,13 @@ type CommonMessageSender struct {
 func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 
 	if batch == nil {
-		return errors.New("value for send can't be null")
+		err := errors.New(ErrMsg)
+		sender.Logger.Error().Err(err).Msg("Value for send can't be null")
+		return err
 	}
 	body, err := proto.Marshal(batch)
 	if err != nil {
-		sender.Logger.Panic().Err(err).Msg("Error during marshaling message into proto message")
+		sender.Logger.Error().Err(err).Msg("Error during marshaling message into proto message")
 		return err
 	}
 

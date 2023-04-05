@@ -71,15 +71,19 @@ func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) error {
 	result := &p_buff.EventBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
+		cs.Logger.Error().Err(err).Msg("Can't unmarshal proto")
+		//Maybe it is better to return err itself?
 		return errors.New("can't unmarshal proto")
 	}
 	th2_event_subscribe_total.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
+		cs.Logger.Error().Msgf("No Listener to Handle : %s ", cs.listener)
 		return errors.New("no Listener to handle delivery")
 	}
 	handleErr := (*cs.listener).Handle(&delivery, result)
 	if handleErr != nil {
+		cs.Logger.Error().Err(handleErr).Msg("Can't Handle")
 		return handleErr
 	}
 	cs.Logger.Debug().Msg("Successfully Handled")
@@ -90,6 +94,7 @@ func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, 
 	result := &p_buff.EventBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
+		cs.Logger.Error().Err(err).Msg("Can't unmarshal proto")
 		return err
 	}
 	th2_event_subscribe_total.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
@@ -98,10 +103,12 @@ func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, 
 	var confirmation MQcommon.Confirmation = deliveryConfirm
 
 	if cs.confirmationListener == nil {
+		cs.Logger.Error().Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
 		return errors.New("no Confirmation Listener to Handle")
 	}
 	handleErr := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
 	if handleErr != nil {
+		cs.Logger.Error().Err(handleErr).Msg("Can't Handle")
 		return handleErr
 	}
 	cs.Logger.Debug().Msg("Successfully Handled")
@@ -111,17 +118,17 @@ func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, 
 func (cs *CommonEventSubscriber) RemoveListener() {
 	cs.listener = nil
 	cs.confirmationListener = nil
-	cs.Logger.Info().Msg("Removed listeners")
+	cs.Logger.Trace().Msg("Removed listeners")
 }
 
 func (cs *CommonEventSubscriber) AddListener(listener *event.EventListener) {
 	cs.listener = listener
-	cs.Logger.Debug().Msg("Added listener")
+	cs.Logger.Trace().Msg("Added listener")
 }
 
 func (cs *CommonEventSubscriber) AddConfirmationListener(listener *event.ConformationEventListener) {
 	cs.confirmationListener = listener
-	cs.Logger.Debug().Msg("Added confirmation listener")
+	cs.Logger.Trace().Msg("Added confirmation listener")
 }
 
 type SubscriberMonitor struct {

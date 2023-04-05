@@ -67,9 +67,10 @@ func (pb *Publisher) Publish(body []byte, routingKey string, exchange string, th
 
 	publError := ch.Publish(exchange, routingKey, false, false, amqp.Publishing{Body: body})
 	if publError != nil {
+		pb.Logger.Error().Err(publError).Send()
 		return err
 	}
-	pb.Logger.Trace().Msg(" [x] Sent ")
+	pb.Logger.Trace().Msg("MessageGroupBatch Published")
 	th2_rabbitmq_message_size_publish_bytes.WithLabelValues(th2Pin, th2Type, exchange, routingKey).Add(float64(len(body)))
 	th2_rabbitmq_message_publish_total.WithLabelValues(th2Pin, th2Type, exchange, routingKey).Inc()
 

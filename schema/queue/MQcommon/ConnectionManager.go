@@ -37,7 +37,7 @@ type ConnectionManager struct {
 }
 
 func (manager *ConnectionManager) Construct() error {
-	manager.Publisher = Publisher{url: manager.Url, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), mutex: sync.Mutex{}}
+	manager.Publisher = Publisher{url: manager.Url, Logger: zerolog.New(os.Stdout).With().Str("component", "publisher").Timestamp().Logger(), mutex: sync.Mutex{}}
 	err := manager.Publisher.connect()
 
 	if err != nil {
@@ -45,7 +45,7 @@ func (manager *ConnectionManager) Construct() error {
 	}
 
 	manager.Consumer = Consumer{url: manager.Url, channels: make(map[string]*amqp.Channel),
-		Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+		Logger: zerolog.New(os.Stdout).With().Str("component", "subscriber").Timestamp().Logger()}
 	err = manager.Consumer.connect()
 
 	if err != nil {
@@ -89,18 +89,20 @@ type DeliveryConfirmation struct {
 func (dc DeliveryConfirmation) Confirm() error {
 	err := dc.Delivery.Ack(false)
 	if err != nil {
+		dc.Logger.Error().Err(err).Str("Method", "Confirm").Msg("Error during Acknowledgment")
 		return err
 	}
-	dc.Logger.Info().Msg("Acknowledged")
+	dc.Logger.Info().Str("Method", "Confirm").Msg("Acknowledged")
 	dc.Timer.ObserveDuration()
 	return nil
 }
 func (dc DeliveryConfirmation) Reject() error {
 	err := dc.Delivery.Reject(false)
 	if err != nil {
+		dc.Logger.Error().Err(err).Str("Method", "Reject").Msg("Error during Rejection")
 		return err
 	}
-	dc.Logger.Info().Msg("Rejected")
+	dc.Logger.Info().Str("Method", "Reject").Msg("Rejected")
 	dc.Timer.ObserveDuration()
 	return nil
 }

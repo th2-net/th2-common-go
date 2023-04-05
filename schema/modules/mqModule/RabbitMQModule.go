@@ -54,12 +54,12 @@ var queueModuleKey = common.ModuleKey(RABBIT_MQ_MODULE_KEY)
 
 func NewRabbitMQModule(provider common.ConfigProvider) (common.Module, error) {
 
-	queueConfiguration := configuration.MessageRouterConfiguration{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	queueConfiguration := configuration.MessageRouterConfiguration{Logger: zerolog.New(os.Stdout).With().Str("component", "message_router_configuration").Timestamp().Logger()}
 	err := provider.GetConfig(MQ_ROUTER_CONFIG_FILENAME, &queueConfiguration)
 	if err != nil {
 		return nil, err
 	}
-	connConfiguration := configuration.RabbitMQConfiguration{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	connConfiguration := configuration.RabbitMQConfiguration{Logger: zerolog.New(os.Stdout).With().Str("component", "rabbitmq_configuration").Timestamp().Logger()}
 	configErr := provider.GetConfig(RABBIT_MQ_CONFIG_FILENAME, &connConfiguration)
 	if configErr != nil {
 		return nil, configErr
@@ -80,10 +80,10 @@ func NewRabbitMQModule(provider common.ConfigProvider) (common.Module, error) {
 		return nil, err
 	}
 
-	messageRouter := message.CommonMessageRouter{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	messageRouter := message.CommonMessageRouter{Logger: zerolog.New(os.Stdout).With().Str("component", "rabbitmq_message_router").Timestamp().Logger()}
 	messageRouter.Construct(&connectionManager)
 
-	eventRouter := event.CommonEventRouter{Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	eventRouter := event.CommonEventRouter{Logger: zerolog.New(os.Stdout).With().Str("component", "mq_event_router").Timestamp().Logger()}
 	eventRouter.Construct(&connectionManager)
 
 	return &RabbitMQModule{connManager: connectionManager,
