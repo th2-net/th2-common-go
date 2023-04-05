@@ -6,7 +6,7 @@ require (
 	github.com/IGLOU-EU/go-wildcard v1.0.3
 	github.com/magiconair/properties v1.8.7
 	github.com/prometheus/client_golang v1.14.0
-	github.com/rs/zerolog v1.28.0
+	github.com/rs/zerolog v1.29.0
 	github.com/streadway/amqp v1.0.0
 	google.golang.org/grpc v1.53.0
 	google.golang.org/protobuf v1.28.1

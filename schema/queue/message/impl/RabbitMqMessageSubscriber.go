@@ -76,7 +76,7 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
 	cs.Logger.Info().Msg("Successfully Handled")
 	if e := cs.Logger.Debug(); e.Enabled() {
 		e.Str("Method", "Handler").
-			Fields(filter.IDFromMsgBatch(result)).
+			Fields(filter.FirstIDFromMsgBatch(result)).
 			Msgf("First message ID of message batch that handled successfully")
 	}
 }
@@ -104,7 +104,7 @@ func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery
 	}
 	if e := cs.Logger.Debug(); e.Enabled() {
 		e.Str("Method", "ConfirmationHandler").
-			Interface("MessageID", filter.IDFromMsgBatch(result)).
+			Interface("MessageID", filter.FirstIDFromMsgBatch(result)).
 			Msg("First message ID of message batch that was handled successfully")
 	}
 }

@@ -67,14 +67,14 @@ func (mfe th2MsgFieldExtraction) rawMsgFieldValue(msg *p_buff.RawMessage, fieldN
 	}
 }
 
-func IDFromMsgGroup(group *p_buff.MessageGroup) *p_buff.MessageID {
+func FirstIDFromMsgGroup(group *p_buff.MessageGroup) *p_buff.MessageID {
 	if group.Messages[0].GetRawMessage() != nil {
 		return group.Messages[0].GetRawMessage().Metadata.Id
 	} else {
 		return group.Messages[0].GetMessage().Metadata.Id
 	}
 }
-func IDFromMsgBatch(batch *p_buff.MessageGroupBatch) *p_buff.MessageID {
+func FirstIDFromMsgBatch(batch *p_buff.MessageGroupBatch) *p_buff.MessageID {
 	if batch.Groups[0].Messages[0].GetRawMessage() != nil {
 		return batch.Groups[0].Messages[0].GetRawMessage().Metadata.Id
 	} else {

@@ -47,7 +47,7 @@ func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filt
 				if e := dfs.logger.Debug(); e.Enabled() {
 					e.Int("filter N", n+1).
 						Interface("Metadata", flt.Metadata.Filters).
-						Interface("MessageID", IDFromMsgGroup(msgGroup)).
+						Interface("MessageID", FirstIDFromMsgGroup(msgGroup)).
 						Msg("First message ID of MessageGroupBatch that didn't match filter")
 				}
 				break

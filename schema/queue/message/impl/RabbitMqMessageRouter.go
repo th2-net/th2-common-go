@@ -59,7 +59,7 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 		if cmr.filterStrategy.Verify(msgBatch, config.Filters) {
 			if e := cmr.Logger.Debug(); e.Enabled() {
 				e.Str("Pin", pin).
-					Interface("Metadata", filter.IDFromMsgBatch(msgBatch)).
+					Interface("Metadata", filter.FirstIDFromMsgBatch(msgBatch)).
 					Msg("First ID of message batch matched filter")
 			}
 			sender := cmr.getSender(pin)
@@ -70,13 +70,13 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 			}
 			if e := log.Debug(); e.Enabled() {
 				e.Str("sending to pin", pin).
-					Interface("Metadata", filter.IDFromMsgBatch(msgBatch)).
+					Interface("Metadata", filter.FirstIDFromMsgBatch(msgBatch)).
 					Msg("First ID of sent Message batch")
 			}
 		} else {
 			if e := log.Debug(); e.Enabled() {
 				e.Str("Pin", pin).
-					Interface("Metadata", filter.IDFromMsgBatch(msgBatch)).
+					Interface("Metadata", filter.FirstIDFromMsgBatch(msgBatch)).
 					Msg("First ID of message batch didn't match filter")
 			}
 		}
