@@ -78,7 +78,7 @@ func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) error {
 	th2_event_subscribe_total.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
-		cs.Logger.Error().Msgf("No Listener to Handle : %s ", cs.listener)
+		cs.Logger.Error().Msg("No Listener to Handle")
 		return errors.New("no Listener to handle delivery")
 	}
 	handleErr := (*cs.listener).Handle(&delivery, result)
@@ -103,7 +103,7 @@ func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, 
 	var confirmation MQcommon.Confirmation = deliveryConfirm
 
 	if cs.confirmationListener == nil {
-		cs.Logger.Error().Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
+		cs.Logger.Error().Msg("No Confirmation Listener to Handle")
 		return errors.New("no Confirmation Listener to Handle")
 	}
 	handleErr := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
