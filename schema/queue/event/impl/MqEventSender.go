@@ -15,6 +15,7 @@
 package event
 
 import (
+	"errors"
 	p_buff "th2-grpc/th2_grpc_common"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -24,6 +25,10 @@ import (
 	"github.com/th2-net/th2-common-go/schema/metrics"
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"google.golang.org/protobuf/proto"
+)
+
+var (
+	errNullMsg = errors.New("null value for sending")
 )
 
 var th2_event_publish_total = promauto.NewCounterVec(
@@ -46,13 +51,19 @@ type CommonEventSender struct {
 func (sender *CommonEventSender) Send(batch *p_buff.EventBatch) error {
 
 	if batch == nil {
-		sender.Logger.Fatal().Msg("Value for send can't be null")
+		sender.Logger.Error().
+			Str("routingKey", sender.sendQueue).
+			Str("exchange", sender.exchangeName).
+			Msg("Value for send can't be null")
+		return errNullMsg
 	}
 	body, err := proto.Marshal(batch)
 	if err != nil {
-		if err != nil {
-			sender.Logger.Panic().Err(err).Msg("Error during marshaling message into proto event")
-		}
+		sender.Logger.Error().
+			Err(err).
+			Str("routingKey", sender.sendQueue).
+			Str("exchange", sender.exchangeName).
+			Msg("Error during marshaling message into proto event")
 		return err
 	}
 

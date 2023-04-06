@@ -16,6 +16,7 @@
 package message
 
 import (
+	"errors"
 	p_buff "th2-grpc/th2_grpc_common"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -26,6 +27,8 @@ import (
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
 	"google.golang.org/protobuf/proto"
 )
+
+const ErrMsg = "null value for sending"
 
 var th2_message_publish_total = promauto.NewCounterVec(
 	prometheus.CounterOpts{
@@ -52,11 +55,13 @@ type CommonMessageSender struct {
 func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 
 	if batch == nil {
-		sender.Logger.Fatal().Msg("Value for send can't be null")
+		err := errors.New(ErrMsg)
+		sender.Logger.Error().Err(err).Msg("Value for send can't be null")
+		return err
 	}
 	body, err := proto.Marshal(batch)
 	if err != nil {
-		sender.Logger.Panic().Err(err).Msg("Error during marshaling message into proto message")
+		sender.Logger.Error().Err(err).Msg("Error during marshaling message into proto message")
 		return err
 	}
 
@@ -67,4 +72,11 @@ func (sender *CommonMessageSender) Send(batch *p_buff.MessageGroupBatch) error {
 	metrics.UpdateMessageMetrics(batch, th2_message_publish_total, sender.th2Pin)
 
 	return nil
+}
+
+func (sender *CommonMessageSender) SendRaw(data []byte) error {
+	if data == nil {
+		return errors.New("nil raw data")
+	}
+	return sender.ConnManager.Publisher.Publish(data, sender.sendQueue, sender.exchangeName, sender.th2Pin, metrics.MESSAGE_GROUP_TH2_TYPE)
 }

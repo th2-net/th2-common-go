@@ -21,20 +21,17 @@ import (
 	"os"
 )
 
-type MqRouterFilterConfiguration struct{}
+type MessageRouterConfiguration struct {
+	Queues map[string]QueueConfig `json:"queues"`
 
+	Logger zerolog.Logger
+}
 type QueueConfig struct {
 	RoutingKey string                        `json:"name"`
 	QueueName  string                        `json:"queue"`
 	Exchange   string                        `json:"exchange"`
 	Attributes []string                      `json:"attributes"`
 	Filters    []MqRouterFilterConfiguration `json:"filters"`
-}
-
-type MessageRouterConfiguration struct {
-	Queues map[string]QueueConfig `json:"queues"`
-
-	Logger zerolog.Logger
 }
 
 func (mrc *MessageRouterConfiguration) Init(path string) error {
@@ -50,6 +47,7 @@ func (mrc *MessageRouterConfiguration) Init(path string) error {
 	}
 	return nil
 }
+
 func contains(s []string, str string) bool {
 	for _, v := range s {
 		if v == str {
@@ -72,9 +70,9 @@ func (mrc *MessageRouterConfiguration) FindQueuesByAttr(attrs []string) map[stri
 			}
 			if i == (len(containsAttr) - 1) {
 				result[pin] = config
+				mrc.Logger.Debug().Str("Pin", pin).Msg("Queue was found")
 			}
 		}
 	}
-	mrc.Logger.Debug().Msg("Queue was found")
 	return result
 }

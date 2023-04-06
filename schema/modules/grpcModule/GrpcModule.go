@@ -17,13 +17,13 @@ package grpcModule
 
 import (
 	"fmt"
-	"github.com/rs/zerolog"
-	"github.com/th2-net/th2-common-go/schema/common"
-	"github.com/th2-net/th2-common-go/schema/factory"
-	"github.com/th2-net/th2-common-go/schema/grpc/config"
-	"github.com/th2-net/th2-common-go/schema/grpc/impl"
 	"os"
 	"reflect"
+
+	"github.com/rs/zerolog"
+	"github.com/th2-net/th2-common-go/schema/common"
+	"github.com/th2-net/th2-common-go/schema/grpc/config"
+	"github.com/th2-net/th2-common-go/schema/grpc/impl"
 )
 
 const (
@@ -39,27 +39,28 @@ func (m *GrpcModule) GetKey() common.ModuleKey {
 	return grpcModuleKey
 }
 
-func (m *GrpcModule) Close() {
+func (m *GrpcModule) Close() error {
 	m.GrpcRouter.Close()
+	return nil
 }
 
 var grpcModuleKey = common.ModuleKey(GRPC_MODULE_KEY)
 
-func NewGrpcModule(provider common.ConfigProvider) common.Module {
+func NewGrpcModule(provider common.ConfigProvider) (common.Module, error) {
 
 	grpcConfiguration := config.GrpcConfig{ZLogger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 	err := provider.GetConfig(GRPC_CONFIG_FILENAME, &grpcConfiguration)
 	if err != nil {
-		grpcConfiguration.ZLogger.Fatal().Err(err).Send()
+		return nil, err
 	}
 	router := impl.CommonGrpcRouter{Config: grpcConfiguration,
 		ZLogger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
-	return &GrpcModule{GrpcRouter: router}
+	return &GrpcModule{GrpcRouter: router}, nil
 }
 
 type Identity struct{}
 
-func (id *Identity) GetModule(factory *factory.CommonFactory) (*GrpcModule, error) {
+func (id *Identity) GetModule(factory common.CommonFactory) (*GrpcModule, error) {
 	module, err := factory.Get(grpcModuleKey)
 	if err != nil {
 		return nil, err

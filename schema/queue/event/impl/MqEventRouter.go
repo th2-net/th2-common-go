@@ -15,13 +15,15 @@
 package event
 
 import (
-	"github.com/rs/zerolog"
-	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
-	"github.com/th2-net/th2-common-go/schema/queue/event"
-	"log"
+	"errors"
+	"fmt"
 	"os"
 	"sync"
 	p_buff "th2-grpc/th2_grpc_common"
+
+	"github.com/rs/zerolog"
+	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
+	"github.com/th2-net/th2-common-go/schema/queue/event"
 )
 
 type CommonEventRouter struct {
@@ -36,7 +38,7 @@ func (cer *CommonEventRouter) Construct(manager *MQcommon.ConnectionManager) {
 	cer.connManager = manager
 	cer.subscribers = map[string]CommonEventSubscriber{}
 	cer.senders = map[string]CommonEventSender{}
-	cer.Logger.Debug().Msg("CommonEventRouter was initialized")
+	cer.Logger.Trace().Msg("CommonEventRouter was initialized")
 }
 
 func (cer *CommonEventRouter) Close() {
@@ -51,12 +53,13 @@ func (cer *CommonEventRouter) SendAll(EventBatch *p_buff.EventBatch, attributes 
 			sender := cer.getSender(pin)
 			err := sender.Send(EventBatch)
 			if err != nil {
-				cer.Logger.Fatal().Err(err).Send()
+				cer.Logger.Error().Err(err).Send()
 				return err
 			}
 		}
 	} else {
-		cer.Logger.Fatal().Msg("no such queue to send message")
+		cer.Logger.Error().Msg("No such queue to send message")
+		return fmt.Errorf("No such queue to send message")
 	}
 	return nil
 
@@ -67,10 +70,10 @@ func (cer *CommonEventRouter) SubscribeAll(listener *event.EventListener, attrib
 	subscribers := []SubscriberMonitor{}
 	pinsFoundByAttrs := cer.connManager.QConfig.FindQueuesByAttr(attrs)
 	for queuePin, _ := range pinsFoundByAttrs {
-		cer.Logger.Debug().Msgf("Subscribing %s ", queuePin)
+		cer.Logger.Debug().Str("Pin", queuePin).Msg("Subscribing")
 		subscriber, err := cer.subByPin(listener, queuePin)
 		if err != nil {
-			cer.Logger.Fatal().Err(err).Send()
+			cer.Logger.Error().Err(err).Send()
 			return nil, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -81,16 +84,15 @@ func (cer *CommonEventRouter) SubscribeAll(listener *event.EventListener, attrib
 			m.Lock()
 			err := s.subscriber.Start()
 			if err != nil {
-				log.Printf("CONSUMING ERROR : %v \n", err)
 				return SubscriberMonitor{}, err
 			}
 			m.Unlock()
 		}
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
-		cer.Logger.Fatal().Msg("No such subscriber")
+		cer.Logger.Error().Msg("No such subscriber")
 	}
-	return nil, nil
+	return nil, errors.New("no such subscriber")
 }
 
 func (cer *CommonEventRouter) SubscribeAllWithManualAck(listener *event.ConformationEventListener, attributes ...string) (MQcommon.Monitor, error) {
@@ -98,10 +100,10 @@ func (cer *CommonEventRouter) SubscribeAllWithManualAck(listener *event.Conforma
 	subscribers := []SubscriberMonitor{}
 	pinFoundByAttrs := cer.connManager.QConfig.FindQueuesByAttr(attrs)
 	for queuePin, _ := range pinFoundByAttrs {
-		cer.Logger.Debug().Msgf("Subscribing %s ", queuePin)
+		cer.Logger.Debug().Str("Pin", queuePin).Msg("Subscribing with manual ack")
 		subscriber, err := cer.subByPinWithAck(listener, queuePin)
 		if err != nil {
-			cer.Logger.Fatal().Err(err).Send()
+			cer.Logger.Error().Err(err).Send()
 			return SubscriberMonitor{}, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -113,7 +115,6 @@ func (cer *CommonEventRouter) SubscribeAllWithManualAck(listener *event.Conforma
 			m.Lock()
 			err := s.subscriber.ConfirmationStart()
 			if err != nil {
-				log.Printf("CONSUMING ERROR : %v \n", err)
 				return SubscriberMonitor{}, err
 			}
 			m.Unlock()
@@ -121,22 +122,22 @@ func (cer *CommonEventRouter) SubscribeAllWithManualAck(listener *event.Conforma
 
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
-		cer.Logger.Fatal().Msg("No such subscriber")
+		cer.Logger.Error().Msg("No such subscriber")
 	}
-	return SubscriberMonitor{}, nil
+	return SubscriberMonitor{}, errors.New("no such subscriber")
 }
 
 func (cer *CommonEventRouter) subByPin(listener *event.EventListener, pin string) (SubscriberMonitor, error) {
 	subscriber := cer.getSubscriber(pin)
 	subscriber.AddListener(listener)
-	cer.Logger.Debug().Msgf("Getting subscriber monitor for pin %s", pin)
+	cer.Logger.Trace().Str("Pin", pin).Msg("Getting subscriber monitor")
 	return SubscriberMonitor{subscriber: subscriber}, nil
 }
 
 func (cer *CommonEventRouter) subByPinWithAck(listener *event.ConformationEventListener, pin string) (SubscriberMonitor, error) {
 	subscriber := cer.getSubscriber(pin)
 	subscriber.AddConfirmationListener(listener)
-	cer.Logger.Debug().Msgf("Getting subscriber monitor for pin %s", pin)
+	cer.Logger.Trace().Str("Pin", pin).Msg("Getting subscriber(with ack) monitor")
 	return SubscriberMonitor{subscriber: subscriber}, nil
 }
 
@@ -145,13 +146,12 @@ func (cer *CommonEventRouter) getSubscriber(pin string) *CommonEventSubscriber {
 	var result CommonEventSubscriber
 	if _, ok := cer.subscribers[pin]; ok {
 		result = cer.subscribers[pin]
-		cer.Logger.Debug().Msgf("Getting already existing subscriber for pin %s", pin)
 		return &result
 	} else {
 		result = CommonEventSubscriber{connManager: cer.connManager, qConfig: &queueConfig,
 			listener: nil, confirmationListener: nil, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 		cer.subscribers[pin] = result
-		cer.Logger.Debug().Msgf("Created subscriber for pin %s", pin)
+		cer.Logger.Trace().Str("Pin", pin).Msg("Created subscriber")
 		return &result
 	}
 }
@@ -161,13 +161,12 @@ func (cer *CommonEventRouter) getSender(pin string) *CommonEventSender {
 	var result CommonEventSender
 	if _, ok := cer.senders[pin]; ok {
 		result = cer.senders[pin]
-		cer.Logger.Debug().Msgf("Getting already existing sender for pin %s", pin)
 		return &result
 	} else {
 		result = CommonEventSender{ConnManager: cer.connManager, exchangeName: queueConfig.Exchange,
 			sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 		cer.senders[pin] = result
-		cer.Logger.Debug().Msgf("Created sender for pin %s", pin)
+		cer.Logger.Trace().Str("Pin", pin).Msg("Created sender")
 		return &result
 	}
 }

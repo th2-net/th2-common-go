@@ -42,11 +42,12 @@ func (p *PrometheusModule) GetKey() common.ModuleKey {
 	return prometheusModuleKey
 }
 
-func (p *PrometheusModule) Close() {
+func (p *PrometheusModule) Close() error {
 	p.prometheus.Stop()
+	return nil
 }
 
-func NewPrometheusModule(provider common.ConfigProvider) common.Module {
+func NewPrometheusModule(provider common.ConfigProvider) (common.Module, error) {
 	promConfig := metrics.PrometheusConfiguration{Host: "0.0.0.0", Port: "9752"}
 	provider.GetConfig(PROMETHEUS_FILE_NAME, &promConfig)
 	serv := metrics.NewPrometheusServer(promConfig.Host, promConfig.Port)
@@ -69,7 +70,7 @@ func NewPrometheusModule(provider common.ConfigProvider) common.Module {
 		prometheus:       serv,
 		LivenessArbiter:  LivenessArbiter,
 		ReadinessArbiter: ReadinessArbiter,
-	}
+	}, nil
 }
 
 type Identity struct{}

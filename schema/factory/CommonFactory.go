@@ -19,6 +19,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+
 	"os"
 	"path/filepath"
 	"reflect"
@@ -38,10 +39,17 @@ const (
 	PROMETHEUS_FILE_NAME = "prometheus"
 )
 
-type CommonFactory struct {
+type Config struct {
+	ConfigurationsDir string
+	FileExtension     string
+	ExtracArguments   []string
+}
+
+type commonFactory struct {
 	modules     map[common.ModuleKey]common.Module
 	cfgProvider common.ConfigProvider
 	zLogger     zerolog.Logger
+	boxConfig   common.BoxConfig
 }
 
 type ZerologConfig struct {
@@ -79,12 +87,30 @@ func newProvider(configPath string, extension string, args []string) common.Conf
 		files: args, zLogger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
 }
 
-func NewFactory(args ...string) *CommonFactory {
-	configPath := flag.String("config-file-path", configurationPath, "pass path tp=o config file")
+func NewFactory(args ...string) common.CommonFactory {
+	configPath := flag.String("config-file-path", configurationPath, "pass path to config files")
 	extension := flag.String("config-file-extension", jsonExtension, "file extension")
 	flag.Parse()
+	factory, err := NewFromConfig(Config{
+		ConfigurationsDir: *configPath,
+		FileExtension:     *extension,
+		ExtracArguments:   args,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return factory
+}
+
+func NewFromConfig(config Config) (common.CommonFactory, error) {
+	if config.ConfigurationsDir == "" {
+		return nil, fmt.Errorf("configuration directory is empty")
+	}
+	if config.FileExtension == "" {
+		return nil, fmt.Errorf("configurations file extension is empty")
+	}
 	var cfg ZerologConfig
-	p, pErr := properties.LoadFile(filepath.Join(*configPath, "zerolog.properties"), properties.UTF8)
+	p, pErr := properties.LoadFile(filepath.Join(config.ConfigurationsDir, "zerolog.properties"), properties.UTF8)
 	if pErr != nil {
 		log.Error().Err(pErr).Msg("Can't get properties for zerolog")
 	} else {
@@ -96,20 +122,28 @@ func NewFactory(args ...string) *CommonFactory {
 		configureZerolog(&cfg)
 	}
 
-	provider := newProvider(*configPath, *extension, args)
-	cf := &CommonFactory{
+	provider := newProvider(config.ConfigurationsDir, config.FileExtension, config.ExtracArguments)
+	var boxConfig common.BoxConfig
+	if err := provider.GetConfig("box", &boxConfig); err != nil {
+		log.Warn().Err(err).Msg("cannot read box configuration")
+	}
+	cf := &commonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
 		cfgProvider: provider,
 		zLogger:     zerolog.New(os.Stdout).With().Timestamp().Logger(),
+		boxConfig:   boxConfig,
 	}
 	cf.Register(PrometheusModule.NewPrometheusModule)
 
-	return cf
+	return cf, nil
 }
 
-func (cf *CommonFactory) Register(factories ...func(common.ConfigProvider) common.Module) error {
+func (cf *commonFactory) Register(factories ...func(common.ConfigProvider) (common.Module, error)) error {
 	for _, factory := range factories {
-		module := factory(cf.cfgProvider)
+		module, err := factory(cf.cfgProvider)
+		if err != nil {
+			return err
+		}
 		if oldModule, exist := cf.modules[module.GetKey()]; exist {
 			return fmt.Errorf("module %s with key %s already registered", reflect.TypeOf(oldModule), module.GetKey())
 		}
@@ -119,7 +153,7 @@ func (cf *CommonFactory) Register(factories ...func(common.ConfigProvider) commo
 	return nil
 }
 
-func (cf *CommonFactory) Get(key common.ModuleKey) (common.Module, error) {
+func (cf *commonFactory) Get(key common.ModuleKey) (common.Module, error) {
 	if module, exist := cf.modules[key]; !exist {
 		return nil, errors.New("module " + string(key) + " does not exist")
 	} else {
@@ -127,14 +161,27 @@ func (cf *CommonFactory) Get(key common.ModuleKey) (common.Module, error) {
 	}
 }
 
-func (cf *CommonFactory) Close() {
-	for moduleKey, module := range cf.modules {
-		module.Close()
-		cf.zLogger.Info().Msgf("Module %v closed. \n", moduleKey)
-	}
+func (cf *commonFactory) GetLogger(name string) zerolog.Logger {
+	return cf.zLogger.With().Str("component", name).Logger()
 }
 
-func (cf *CommonFactory) GetCustomConfiguration(any interface{}) error {
+func (cf *commonFactory) Close() error {
+	var err error
+	for moduleKey, module := range cf.modules {
+		if err = module.Close(); err == nil {
+			cf.zLogger.Info().Msgf("Module %v closed", moduleKey)
+		} else {
+			cf.zLogger.Error().Err(err).Msgf("Module %v raised error", moduleKey)
+		}
+	}
+	return nil
+}
+
+func (cf *commonFactory) GetCustomConfiguration(any interface{}) error {
 	err := cf.cfgProvider.GetConfig(CUSTOM_FILE_NAME, any)
 	return err
+}
+
+func (cf *commonFactory) GetBoxConfig() common.BoxConfig {
+	return cf.boxConfig
 }

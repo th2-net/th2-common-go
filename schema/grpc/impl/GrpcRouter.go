@@ -18,13 +18,13 @@ package impl
 import (
 	"errors"
 	"fmt"
+	"net"
+
 	"github.com/rs/zerolog"
 	routerInterface "github.com/th2-net/th2-common-go/schema/grpc"
 	"github.com/th2-net/th2-common-go/schema/grpc/config"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"log"
-	"net"
 )
 
 /*

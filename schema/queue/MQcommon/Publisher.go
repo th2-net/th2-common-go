@@ -16,6 +16,8 @@
 package MQcommon
 
 import (
+	"sync"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/zerolog"
@@ -40,37 +42,66 @@ var th2_rabbitmq_message_publish_total = promauto.NewCounterVec(
 )
 
 type Publisher struct {
-	url  string
-	conn *amqp.Connection
+	url      string
+	conn     *amqp.Connection
+	channels map[string]*amqp.Channel
+	mutex    *sync.Mutex
 
 	Logger zerolog.Logger
 }
 
-func (pb *Publisher) connect() {
+func (pb *Publisher) connect() error {
 	conn, err := amqp.Dial(pb.url)
 	if err != nil {
-		pb.Logger.Fatal().Err(err).Send()
+		return err
 	}
 	pb.conn = conn
+	pb.channels = make(map[string]*amqp.Channel)
 	pb.Logger.Debug().Msg("Publisher connected")
+	return nil
 }
 
 func (pb *Publisher) Publish(body []byte, routingKey string, exchange string, th2Pin string, th2Type string) error {
-	ch, err := pb.conn.Channel()
-	if err != nil {
-		pb.Logger.Error().Err(err).Send()
-		return err
-	}
-	defer ch.Close()
+
+	ch, err := pb.getChannel(routingKey)
+
 	publError := ch.Publish(exchange, routingKey, false, false, amqp.Publishing{Body: body})
 	if publError != nil {
-		pb.Logger.Fatal().Err(publError).Send()
-
+		pb.Logger.Error().Err(publError).Send()
 		return err
 	}
-	pb.Logger.Info().Msg(" [x] Sent ")
+	pb.Logger.Trace().Msg("MessageGroupBatch Published")
 	th2_rabbitmq_message_size_publish_bytes.WithLabelValues(th2Pin, th2Type, exchange, routingKey).Add(float64(len(body)))
 	th2_rabbitmq_message_publish_total.WithLabelValues(th2Pin, th2Type, exchange, routingKey).Inc()
 
 	return nil
+}
+
+func (pb *Publisher) getChannel(routingKey string) (*amqp.Channel, error) {
+	var ch *amqp.Channel
+	var err error
+	var exists bool
+	ch, exists = pb.channels[routingKey]
+	if !exists {
+		ch, err = pb.getOrCreateChannel(routingKey)
+	}
+
+	return ch, err
+}
+
+func (pb *Publisher) getOrCreateChannel(routingKey string) (*amqp.Channel, error) {
+	pb.mutex.Lock()
+	defer pb.mutex.Unlock()
+	var ch *amqp.Channel
+	var err error
+	var exists bool
+	ch, exists = pb.channels[routingKey]
+	if !exists {
+		ch, err = pb.conn.Channel()
+		if err != nil {
+			return nil, err
+		}
+		pb.channels[routingKey] = ch
+	}
+	return ch, nil
 }

@@ -11,7 +11,7 @@ PROTOBUF_VERSION=v1.5.2
 
 PROTOC_VERSION=21.12
 
-default: prepare-main-module
+default: prepare-main-module build
 
 configure-go:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
@@ -43,19 +43,13 @@ genrate-grpc-files: prepare-grpc-module configure-go
 		--proto_path=$($@_PROTO_DIR) \
 		$(shell find $($@_PROTO_DIR) -name '*.proto' )
 
-clean-main-module: clean-grpc-module
-	-rm go.work go.work.sum
-	-rm go.mod go.sum
+prepare-main-module: genrate-grpc-files
+	- go work init
+	go work use .
 
-prepare-main-module: clean-main-module genrate-grpc-files
-	go mod init github.com/th2-net/th2-common-go
-	go get -u -t github.com/rs/zerolog@v1.28.0
-	go get -u -t github.com/streadway/amqp@v1.0.0
-	go get -u -t golang.org/x/sys@latest
-	go get -u -t github.com/magiconair/properties
-	go get -u -t github.com/golang/protobuf@$(PROTOBUF_VERSION)
-	go get -u -t github.com/prometheus/client_golang/prometheus
-	go get -u -t github.com/prometheus/client_golang/prometheus/promauto
-	go get -u -t github.com/prometheus/client_golang/prometheus/promhttp 
+build:
+	go vet ./...
+	go build -v -race ./...
 
-	go work init ; go work use .
+test:
+	go test -v ./...

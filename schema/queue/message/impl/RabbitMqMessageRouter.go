@@ -16,20 +16,23 @@
 package message
 
 import (
+	"errors"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/th2-net/th2-common-go/schema/filter"
 	"os"
 	"sync"
 	p_buff "th2-grpc/th2_grpc_common"
 
 	"github.com/th2-net/th2-common-go/schema/queue/MQcommon"
-	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/message"
 )
 
 type CommonMessageRouter struct {
-	connManager *MQcommon.ConnectionManager
-	subscribers map[string]CommonMessageSubscriber
-	senders     map[string]CommonMessageSender
+	connManager    *MQcommon.ConnectionManager
+	subscribers    map[string]CommonMessageSubscriber
+	senders        map[string]CommonMessageSender
+	filterStrategy filter.FilterStrategy
 
 	Logger zerolog.Logger
 }
@@ -38,42 +41,76 @@ func (cmr *CommonMessageRouter) Construct(manager *MQcommon.ConnectionManager) {
 	cmr.connManager = manager
 	cmr.subscribers = map[string]CommonMessageSubscriber{}
 	cmr.senders = map[string]CommonMessageSender{}
-	cmr.Logger.Debug().Msg("CommonMessageRouter was initialized")
+	cmr.filterStrategy = filter.Default
+	cmr.Logger.Trace().Str("Method", "construct").Msg("CommonMessageRouter was initialized")
 }
 
 func (cmr *CommonMessageRouter) Close() {
 	_ = cmr.connManager.Close()
 }
 
-func (cmr *CommonMessageRouter) SendAll(MsgBatch *p_buff.MessageGroupBatch, attributes ...string) error {
+func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attributes ...string) error {
 	attrs := MQcommon.GetSendAttributes(attributes)
 	pinsFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
-	pinsAndMessageGroup := cmr.getMessageGroupWithPins(pinsFoundByAttrs, MsgBatch)
-	if len(pinsAndMessageGroup) != 0 {
-		for pin, messageGroup := range pinsAndMessageGroup {
+	if len(pinsFoundByAttrs) == 0 {
+		cmr.Logger.Error().Msg("No such queue to send message")
+		return nil
+	}
+	for pin, config := range pinsFoundByAttrs {
+		if cmr.filterStrategy.Verify(msgBatch, config.Filters) {
+			if e := cmr.Logger.Debug(); e.Enabled() {
+				e.Str("Pin", pin).
+					Interface("Metadata", filter.FirstIDFromMsgBatch(msgBatch)).
+					Msg("First ID of message batch matched filter")
+			}
 			sender := cmr.getSender(pin)
-			err := sender.Send(messageGroup)
+			err := sender.Send(msgBatch)
 			if err != nil {
-				cmr.Logger.Fatal().Err(err).Send()
+				cmr.Logger.Error().Err(err).Send()
 				return err
 			}
+			if e := log.Debug(); e.Enabled() {
+				e.Str("sending to pin", pin).
+					Interface("Metadata", filter.FirstIDFromMsgBatch(msgBatch)).
+					Msg("First ID of sent Message batch")
+			}
+		} else {
+			if e := log.Debug(); e.Enabled() {
+				e.Str("Pin", pin).
+					Interface("Metadata", filter.FirstIDFromMsgBatch(msgBatch)).
+					Msg("First ID of message batch didn't match filter")
+			}
 		}
-	} else {
-		cmr.Logger.Fatal().Msg("no such queue to send message")
+	}
+	return nil
+}
+
+func (cmr *CommonMessageRouter) SendRawAll(rawData []byte, attributes ...string) error {
+	attrs := MQcommon.GetSendAttributes(attributes)
+	pinsFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
+	if len(pinsFoundByAttrs) == 0 {
+		return errors.New("no such queue to send message")
+	}
+	for pin, _ := range pinsFoundByAttrs {
+		sender := cmr.getSender(pin)
+		err := sender.SendRaw(rawData)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 
 }
 
-func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener *message.ConformationMessageListener, attributes ...string) (MQcommon.Monitor, error) {
+func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener message.ConformationMessageListener, attributes ...string) (MQcommon.Monitor, error) {
 	attrs := MQcommon.GetSubscribeAttributes(attributes)
 	subscribers := []SubscriberMonitor{}
 	pinFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	for queuePin, _ := range pinFoundByAttrs {
-		cmr.Logger.Debug().Msgf("Subscribing %s ", queuePin)
+		cmr.Logger.Debug().Str("Pin", queuePin).Msg("Subscribing with manual ack")
 		subscriber, err := cmr.subByPinWithAck(listener, queuePin)
 		if err != nil {
-			cmr.Logger.Fatal().Err(err).Send()
+			cmr.Logger.Error().Err(err).Send()
 			return SubscriberMonitor{}, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -83,6 +120,7 @@ func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener *message.Conf
 	if len(subscribers) != 0 {
 		for _, s := range subscribers {
 			m.Lock()
+			cmr.Logger.Trace().Str("Pin", s.subscriber.th2Pin).Msg("Start confirmation subscribing of queue")
 			err := s.subscriber.ConfirmationStart()
 			if err != nil {
 				return SubscriberMonitor{}, err
@@ -92,20 +130,19 @@ func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener *message.Conf
 
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
-		cmr.Logger.Fatal().Msg("No such subscriber")
+		return nil, errors.New("no such subscriber")
 	}
-	return SubscriberMonitor{}, nil
 }
 
-func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, attributes ...string) (MQcommon.Monitor, error) {
+func (cmr *CommonMessageRouter) SubscribeAll(listener message.MessageListener, attributes ...string) (MQcommon.Monitor, error) {
 	attrs := MQcommon.GetSubscribeAttributes(attributes)
 	subscribers := []SubscriberMonitor{}
 	pinsFoundByAttrs := cmr.connManager.QConfig.FindQueuesByAttr(attrs)
 	for queuePin, _ := range pinsFoundByAttrs {
-		cmr.Logger.Debug().Msgf("Subscribing %s ", queuePin)
+		cmr.Logger.Debug().Str("Pin", queuePin).Msg("Subscribing")
 		subscriber, err := cmr.subByPin(listener, queuePin)
 		if err != nil {
-			cmr.Logger.Fatal().Err(err).Send()
+			cmr.Logger.Error().Err(err).Send()
 			return nil, err
 		}
 		subscribers = append(subscribers, subscriber)
@@ -114,30 +151,31 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener *message.MessageListener, 
 	if len(subscribers) != 0 {
 		for _, s := range subscribers {
 			m.Lock()
+			cmr.Logger.Trace().Str("Pin", s.subscriber.th2Pin).Msg("Start subscribing of queue")
 			err := s.subscriber.Start()
 			if err != nil {
-				return SubscriberMonitor{}, err
+				cmr.Logger.Error().Err(err).Send()
+				return nil, err
 			}
 			m.Unlock()
 		}
 		return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 	} else {
-		cmr.Logger.Fatal().Msg("No such subscriber")
+		return nil, errors.New("no such subscriber")
 	}
-	return nil, nil
 }
 
-func (cmr *CommonMessageRouter) subByPin(listener *message.MessageListener, pin string) (SubscriberMonitor, error) {
+func (cmr *CommonMessageRouter) subByPin(listener message.MessageListener, pin string) (SubscriberMonitor, error) {
 	subscriber := cmr.getSubscriber(pin)
 	subscriber.AddListener(listener)
-	cmr.Logger.Debug().Msgf("Getting subscriber monitor for pin %s", pin)
+	cmr.Logger.Trace().Str("Pin", pin).Msg("Getting subscriber monitor")
 	return SubscriberMonitor{subscriber: subscriber}, nil
 }
 
-func (cmr *CommonMessageRouter) subByPinWithAck(listener *message.ConformationMessageListener, pin string) (SubscriberMonitor, error) {
+func (cmr *CommonMessageRouter) subByPinWithAck(listener message.ConformationMessageListener, pin string) (SubscriberMonitor, error) {
 	subscriber := cmr.getSubscriber(pin)
 	subscriber.AddConfirmationListener(listener)
-	cmr.Logger.Debug().Msgf("Getting subscriber monitor for pin %s", pin)
+	cmr.Logger.Trace().Str("Pin", pin).Msg("Getting subscriber monitor")
 	return SubscriberMonitor{subscriber: subscriber}, nil
 }
 
@@ -146,13 +184,12 @@ func (cmr *CommonMessageRouter) getSubscriber(pin string) *CommonMessageSubscrib
 	var result CommonMessageSubscriber
 	if _, ok := cmr.subscribers[pin]; ok {
 		result = cmr.subscribers[pin]
-		cmr.Logger.Debug().Msgf("Getting already existing subscriber for pin %s", pin)
 		return &result
 	} else {
 		result = CommonMessageSubscriber{connManager: cmr.connManager, qConfig: &queueConfig,
-			listener: nil, confirmationListener: nil, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+			listener: nil, confirmationListener: nil, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Str("component", "rabbitmq_message_subscriber").Timestamp().Logger()}
 		cmr.subscribers[pin] = result
-		cmr.Logger.Debug().Msgf("Created subscriber for pin %s", pin)
+		cmr.Logger.Trace().Str("Pin", pin).Msg("Created subscriber")
 		return &result
 	}
 }
@@ -162,30 +199,12 @@ func (cmr *CommonMessageRouter) getSender(pin string) *CommonMessageSender {
 	var result CommonMessageSender
 	if _, ok := cmr.senders[pin]; ok {
 		result = cmr.senders[pin]
-		cmr.Logger.Debug().Msgf("Getting already existing sender for pin %s", pin)
 		return &result
 	} else {
 		result = CommonMessageSender{ConnManager: cmr.connManager, exchangeName: queueConfig.Exchange,
-			sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+			sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Str("component", "rabbitmq_message_sender").Timestamp().Logger()}
 		cmr.senders[pin] = result
-		cmr.Logger.Debug().Msgf("Created sender for pin %s", pin)
+		cmr.Logger.Trace().Str("Pin", pin).Msg("Created sender")
 		return &result
 	}
-}
-
-func (cmr *CommonMessageRouter) getMessageGroupWithPins(queue map[string]configuration.QueueConfig, message *p_buff.MessageGroupBatch) map[string]*p_buff.MessageGroupBatch {
-	//Here will be added filter handling
-	result := make(map[string]*p_buff.MessageGroupBatch)
-	for pin, _ := range queue {
-
-		msgBatch := p_buff.MessageGroupBatch{}
-		for _, messageGroup := range message.Groups {
-			//doing filtering based on queue filters on message_group
-			msgBatch.Groups = append(msgBatch.Groups, messageGroup)
-		}
-
-		result[pin] = &msgBatch
-	}
-	return result
-
 }

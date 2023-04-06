@@ -16,6 +16,8 @@
 package message
 
 import (
+	"errors"
+	"github.com/th2-net/th2-common-go/schema/filter"
 	"os"
 	p_buff "th2-grpc/th2_grpc_common"
 
@@ -47,50 +49,70 @@ var th2_message_subscribe_total = promauto.NewCounterVec(
 type CommonMessageSubscriber struct {
 	connManager          *MQcommon.ConnectionManager
 	qConfig              *configuration.QueueConfig
-	listener             *message.MessageListener
-	confirmationListener *message.ConformationMessageListener
+	listener             message.MessageListener
+	confirmationListener message.ConformationMessageListener
 	th2Pin               string
 
 	Logger zerolog.Logger
 }
 
-func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) {
+func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) error {
+	if cs.listener == nil {
+		return errors.New("no Listener to handle")
+	}
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
+		return err
 	}
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
-		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
+		cs.Logger.Error().Str("Method", "Handler").Msgf("No Listener to Handle : %s ", cs.listener)
+		return errors.New("no Listener to handle delivery")
 	}
 	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
-	handleErr := (*cs.listener).Handle(&delivery, result)
+	handleErr := cs.listener.Handle(&delivery, result)
 	if handleErr != nil {
-		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
+		cs.Logger.Error().Err(handleErr).Str("Method", "Handler").Msg("Can't Handle")
+		return handleErr
 	}
-	cs.Logger.Debug().Msg("Successfully Handled")
+	if e := cs.Logger.Debug(); e.Enabled() {
+		e.Str("Method", "Handler").
+			Interface("MessageID", filter.FirstIDFromMsgBatch(result)).
+			Msgf("First message ID of message batch that handled successfully")
+	}
+	return nil
 }
 
-func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, timer *prometheus.Timer) {
+func (cs *CommonMessageSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, timer *prometheus.Timer) error {
+	if cs.confirmationListener == nil {
+		return errors.New("no Confirmation Listener to Handle")
+	}
 	result := &p_buff.MessageGroupBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
+		cs.Logger.Error().Err(err).Str("Method", "ConfirmationHandler").Msg("Can't unmarshal proto")
+		return nil
 	}
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	deliveryConfirm := MQcommon.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), Timer: timer}
 	var confirmation MQcommon.Confirmation = deliveryConfirm
-
 	if cs.confirmationListener == nil {
-		cs.Logger.Fatal().Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
+		cs.Logger.Error().Str("Method", "ConfirmationHandler").Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
+		return errors.New("no Confirmation Listener to Handle")
 	}
 	metrics.UpdateMessageMetrics(result, th2_message_subscribe_total, cs.th2Pin)
-	handleErr := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
+	handleErr := cs.confirmationListener.Handle(&delivery, result, &confirmation)
 	if handleErr != nil {
-		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
+		cs.Logger.Error().Err(handleErr).Str("Method", "ConfirmationHandler").Msg("Can't Handle")
+		return handleErr
 	}
-	cs.Logger.Debug().Msg("Successfully Handled")
+	if e := cs.Logger.Debug(); e.Enabled() {
+		e.Str("Method", "ConfirmationHandler").
+			Interface("MessageID", filter.FirstIDFromMsgBatch(result)).
+			Msg("First message ID of message batch that was handled successfully")
+	}
+	return nil
 }
 
 func (cs *CommonMessageSubscriber) Start() error {
@@ -114,17 +136,17 @@ func (cs *CommonMessageSubscriber) ConfirmationStart() error {
 func (cs *CommonMessageSubscriber) RemoveListener() {
 	cs.listener = nil
 	cs.confirmationListener = nil
-	cs.Logger.Info().Msg("Removed listeners")
+	cs.Logger.Trace().Msg("Removed listeners")
 }
 
-func (cs *CommonMessageSubscriber) AddListener(listener *message.MessageListener) {
+func (cs *CommonMessageSubscriber) AddListener(listener message.MessageListener) {
 	cs.listener = listener
-	cs.Logger.Debug().Msg("Added listener")
+	cs.Logger.Trace().Msg("Added listener")
 }
 
-func (cs *CommonMessageSubscriber) AddConfirmationListener(listener *message.ConformationMessageListener) {
+func (cs *CommonMessageSubscriber) AddConfirmationListener(listener message.ConformationMessageListener) {
 	cs.confirmationListener = listener
-	cs.Logger.Debug().Msg("Added confirmation listener")
+	cs.Logger.Trace().Msg("Added confirmation listener")
 }
 
 type SubscriberMonitor struct {
@@ -133,7 +155,7 @@ type SubscriberMonitor struct {
 
 func (sub SubscriberMonitor) Unsubscribe() error {
 	if sub.subscriber.listener != nil {
-		err := (*sub.subscriber.listener).OnClose()
+		err := sub.subscriber.listener.OnClose()
 		if err != nil {
 			return err
 		}
@@ -141,7 +163,7 @@ func (sub SubscriberMonitor) Unsubscribe() error {
 	}
 
 	if sub.subscriber.confirmationListener != nil {
-		err := (*sub.subscriber.confirmationListener).OnClose()
+		err := sub.subscriber.confirmationListener.OnClose()
 		if err != nil {
 			return err
 		}

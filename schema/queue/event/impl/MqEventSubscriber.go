@@ -15,6 +15,7 @@
 package event
 
 import (
+	"errors"
 	"os"
 	p_buff "th2-grpc/th2_grpc_common"
 
@@ -28,6 +29,10 @@ import (
 	"github.com/th2-net/th2-common-go/schema/queue/configuration"
 	"github.com/th2-net/th2-common-go/schema/queue/event"
 	"google.golang.org/protobuf/proto"
+)
+
+var (
+	errNoListener = errors.New("no listener to handle delivery")
 )
 
 var th2_event_subscribe_total = promauto.NewCounterVec(
@@ -66,29 +71,47 @@ func (cs *CommonEventSubscriber) ConfirmationStart() error {
 	//use th2Pin for metrics
 }
 
-func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) {
+func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) error {
 	result := &p_buff.EventBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
+		cs.Logger.Error().
+			Err(err).
+			Str("routingKey", msgDelivery.RoutingKey).
+			Str("exchange", msgDelivery.Exchange).
+			Msg("Can't unmarshal proto")
+		return err
 	}
 	th2_event_subscribe_total.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
-		cs.Logger.Fatal().Msgf("No Listener to Handle : %s ", cs.listener)
+		cs.Logger.Error().
+			Str("routingKey", msgDelivery.RoutingKey).
+			Str("exchange", msgDelivery.Exchange).
+			Msg("No Listener to Handle")
+		return errNoListener
 	}
 	handleErr := (*cs.listener).Handle(&delivery, result)
 	if handleErr != nil {
-		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
+		cs.Logger.Error().Err(handleErr).
+			Str("routingKey", msgDelivery.RoutingKey).
+			Str("exchange", msgDelivery.Exchange).
+			Msg("Can't Handle")
+		return handleErr
 	}
-	cs.Logger.Debug().Msg("Successfully Handled")
+	cs.Logger.Debug().
+		Str("routingKey", msgDelivery.RoutingKey).
+		Str("exchange", msgDelivery.Exchange).
+		Msg("Successfully Handled")
+	return nil
 }
 
-func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, timer *prometheus.Timer) {
+func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, timer *prometheus.Timer) error {
 	result := &p_buff.EventBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Fatal().Err(err).Msg("Can't unmarshal proto")
+		cs.Logger.Error().Err(err).Msg("Can't unmarshal proto")
+		return err
 	}
 	th2_event_subscribe_total.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
@@ -96,29 +119,32 @@ func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, 
 	var confirmation MQcommon.Confirmation = deliveryConfirm
 
 	if cs.confirmationListener == nil {
-		cs.Logger.Fatal().Msgf("No Confirmation Listener to Handle : %s ", cs.confirmationListener)
+		cs.Logger.Error().Msg("No Confirmation Listener to Handle")
+		return errors.New("no Confirmation Listener to Handle")
 	}
 	handleErr := (*cs.confirmationListener).Handle(&delivery, result, &confirmation)
 	if handleErr != nil {
-		cs.Logger.Fatal().Err(handleErr).Msg("Can't Handle")
+		cs.Logger.Error().Err(handleErr).Msg("Can't Handle")
+		return handleErr
 	}
 	cs.Logger.Debug().Msg("Successfully Handled")
+	return nil
 }
 
 func (cs *CommonEventSubscriber) RemoveListener() {
 	cs.listener = nil
 	cs.confirmationListener = nil
-	cs.Logger.Info().Msg("Removed listeners")
+	cs.Logger.Trace().Msg("Removed listeners")
 }
 
 func (cs *CommonEventSubscriber) AddListener(listener *event.EventListener) {
 	cs.listener = listener
-	cs.Logger.Debug().Msg("Added listener")
+	cs.Logger.Trace().Msg("Added listener")
 }
 
 func (cs *CommonEventSubscriber) AddConfirmationListener(listener *event.ConformationEventListener) {
 	cs.confirmationListener = listener
-	cs.Logger.Debug().Msg("Added confirmation listener")
+	cs.Logger.Trace().Msg("Added confirmation listener")
 }
 
 type SubscriberMonitor struct {
