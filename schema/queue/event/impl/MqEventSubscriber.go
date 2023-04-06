@@ -72,8 +72,7 @@ func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) error {
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
 		cs.Logger.Error().Err(err).Msg("Can't unmarshal proto")
-		//Maybe it is better to return err itself?
-		return errors.New("can't unmarshal proto")
+		return err
 	}
 	th2_event_subscribe_total.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
