@@ -31,6 +31,10 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+var (
+	errNoListener = errors.New("no listener to handle delivery")
+)
+
 var th2_event_subscribe_total = promauto.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: "th2_event_subscribe_total",
@@ -71,21 +75,34 @@ func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) error {
 	result := &p_buff.EventBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Error().Err(err).Msg("Can't unmarshal proto")
+		cs.Logger.Error().
+			Err(err).
+			Str("routingKey", msgDelivery.RoutingKey).
+			Str("exchange", msgDelivery.Exchange).
+			Msg("Can't unmarshal proto")
 		return err
 	}
 	th2_event_subscribe_total.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := MQcommon.Delivery{Redelivered: msgDelivery.Redelivered}
 	if cs.listener == nil {
-		cs.Logger.Error().Msg("No Listener to Handle")
-		return errors.New("no Listener to handle delivery")
+		cs.Logger.Error().
+			Str("routingKey", msgDelivery.RoutingKey).
+			Str("exchange", msgDelivery.Exchange).
+			Msg("No Listener to Handle")
+		return errNoListener
 	}
 	handleErr := (*cs.listener).Handle(&delivery, result)
 	if handleErr != nil {
-		cs.Logger.Error().Err(handleErr).Msg("Can't Handle")
+		cs.Logger.Error().Err(handleErr).
+			Str("routingKey", msgDelivery.RoutingKey).
+			Str("exchange", msgDelivery.Exchange).
+			Msg("Can't Handle")
 		return handleErr
 	}
-	cs.Logger.Debug().Msg("Successfully Handled")
+	cs.Logger.Debug().
+		Str("routingKey", msgDelivery.RoutingKey).
+		Str("exchange", msgDelivery.Exchange).
+		Msg("Successfully Handled")
 	return nil
 }
 
