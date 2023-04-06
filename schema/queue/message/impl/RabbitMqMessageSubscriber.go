@@ -78,7 +78,7 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) error {
 	}
 	if e := cs.Logger.Debug(); e.Enabled() {
 		e.Str("Method", "Handler").
-			Fields(filter.FirstIDFromMsgBatch(result)).
+			Interface("MessageID", filter.FirstIDFromMsgBatch(result)).
 			Msgf("First message ID of message batch that handled successfully")
 	}
 	return nil
