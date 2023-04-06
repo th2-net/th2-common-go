@@ -20,6 +20,6 @@ jobs:
         run: make prepare-main-module
       
       - name: Build sources
-        run: go build -v -race ./...
+        run: make build
       - name: Check sources
-        run: go test -v ./...
+        run: make test

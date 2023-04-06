@@ -11,7 +11,7 @@ PROTOBUF_VERSION=v1.5.2
 
 PROTOC_VERSION=21.12
 
-default: prepare-main-module
+default: prepare-main-module build
 
 configure-go:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
@@ -46,3 +46,10 @@ genrate-grpc-files: prepare-grpc-module configure-go
 prepare-main-module: genrate-grpc-files
 	- go work init
 	go work use .
+
+build:
+	go vet ./...
+	go build -v -race ./...
+
+test:
+	go test -v ./...
