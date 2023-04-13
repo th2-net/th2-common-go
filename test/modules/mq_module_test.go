@@ -11,20 +11,18 @@ import (
 	"testing/fstest"
 )
 
+const (
+	containerName = "rabbitmq-container-test"
+	mqPort        = "5672"
+)
+
 func TestCanRegisterMqModule(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
 		return
 	}
 	host, port, err := startContainer(t)
-	connectionCfg := fmt.Sprintf(`{
-	  "host":"%s",
-	  "vHost": "",
-	  "port": "%s",
-	  "username": "guest",
-	  "password": "guest",
-	  "exchangeName": "amq.direct"
-	}`, host, port.Port())
+	connectionCfg := connectionConfiguration(host, port)
 
 	mqCfg := `{
 	  "queues": {
@@ -64,16 +62,30 @@ func TestCanRegisterMqModule(t *testing.T) {
 	}
 }
 
+func connectionConfiguration(host string, port nat.Port) string {
+	connectionCfg := fmt.Sprintf(`{
+	  "host":"%s",
+	  "vHost": "",
+	  "port": "%d",
+	  "username": "guest",
+	  "password": "guest",
+	  "exchangeName": "amq.direct"
+	}`, host, port.Int())
+	return connectionCfg
+}
+
 func startContainer(t *testing.T) (string, nat.Port, error) {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
+		Name:         containerName,
 		Image:        "rabbitmq:3.10",
-		ExposedPorts: []string{"5672"},
+		ExposedPorts: []string{mqPort},
 		WaitingFor:   wait.ForLog("Server startup complete"),
 	}
 	rabbit, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
+		Reuse:            true,
 	})
 	if err != nil {
 		t.Fatal("cannot create container", err)
@@ -88,7 +100,7 @@ func startContainer(t *testing.T) (string, nat.Port, error) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	port, err := rabbit.MappedPort(ctx, "5672")
+	port, err := rabbit.MappedPort(ctx, mqPort)
 	if err != nil {
 		t.Fatal(err)
 	}

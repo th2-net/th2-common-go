@@ -43,7 +43,6 @@ const (
 type Config struct {
 	ConfigurationsDir string
 	FileExtension     string
-	ExtraArguments    []string
 }
 
 type commonFactory struct {
@@ -83,14 +82,13 @@ func configureZerolog(cfg *ZerologConfig) {
 
 }
 
-func New(args ...string) common.Factory {
+func New() common.Factory {
 	configPath := flag.String("config-file-path", configurationPath, "pass path to config files")
 	extension := flag.String("config-file-extension", jsonExtension, "file extension")
 	flag.Parse()
 	factory, err := NewFromConfig(Config{
 		ConfigurationsDir: *configPath,
 		FileExtension:     *extension,
-		ExtraArguments:    args,
 	})
 	if err != nil {
 		panic(err)
@@ -108,10 +106,9 @@ func NewFromConfig(config Config) (common.Factory, error) {
 	loadZeroLogConfig(config)
 
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
-	provider := newFileProvider(
+	provider := NewFileProvider(
 		config.ConfigurationsDir,
 		config.FileExtension,
-		config.ExtraArguments,
 		logger.With().Str(ComponentLoggerKey, "file_provider").Logger(),
 	)
 	var boxConfig common.BoxConfig

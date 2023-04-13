@@ -18,78 +18,57 @@ package factory
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"github.com/th2-net/th2-common-go/pkg/common"
-	"os"
-	"path/filepath"
-	"strings"
-
 	"github.com/rs/zerolog"
+	"github.com/th2-net/th2-common-go/pkg/common"
+	"io/fs"
+	"os"
 )
 
 var (
 	ResourceNotFound = errors.New("resource not found")
 )
 
-func newFileProvider(configPath string, extension string, args []string, logger zerolog.Logger) common.ConfigProvider {
+func NewFileProvider(configPath string, extension string, logger zerolog.Logger) common.ConfigProvider {
+	return NewFileProviderForFS(
+		os.DirFS(configPath),
+		extension,
+		logger,
+	)
+}
+
+func NewFileProviderForFS(fs fs.FS, extension string, logger zerolog.Logger) common.ConfigProvider {
 	return &fileConfigProvider{
-		configurationPath: configPath,
-		fileExtension:     extension,
-		files:             args,
-		zLogger:           &logger,
+		configFS:      fs,
+		fileExtension: extension,
+		zLogger:       &logger,
 	}
 }
 
 type fileConfigProvider struct {
-	configurationPath string
-	fileExtension     string
-	files             []string
-	zLogger           *zerolog.Logger
-}
-
-func (cfd *fileConfigProvider) getPath(resourceName string) (string, error) {
-	if len(cfd.files) == 0 {
-		path := filepath.Join(cfd.configurationPath, fmt.Sprint(resourceName, cfd.fileExtension))
-		return path, nil
-	}
-	for _, filePath := range cfd.files {
-		directory, file := filepath.Split(filePath)
-		if directory != "" {
-			fileName := file
-			if strings.Contains(file, ".") {
-				fileName = strings.Split(file, ".")[0]
-			}
-			if fileName == resourceName {
-				path, err := filepath.Abs(fmt.Sprint(filePath, cfd.fileExtension))
-				if err != nil {
-					return "", err
-				}
-				return path, nil
-			}
-		} else {
-			if filePath == resourceName {
-				path := filepath.Join(cfd.configurationPath, fmt.Sprint(resourceName, cfd.fileExtension))
-				return path, nil
-			}
-		}
-	}
-	return "", fmt.Errorf("%s %w", resourceName, ResourceNotFound)
+	configFS      fs.FS
+	fileExtension string
+	zLogger       *zerolog.Logger
 }
 
 func (cfd *fileConfigProvider) GetConfig(resourceName string, target interface{}) error {
-	path, err := cfd.getPath(resourceName)
+	stat, err := fs.Stat(cfd.configFS, resourceName+cfd.fileExtension)
 	if err != nil {
-		return err
+		if errors.Is(err, fs.ErrNotExist) {
+			return ResourceNotFound
+		} else {
+			return err
+		}
 	}
+	fileName := stat.Name()
 	cfd.zLogger.Debug().
 		Str("resource", resourceName).
-		Str("file", path).
+		Str("file", fileName).
 		Msg("reading from file")
-	fileContentBytes, fileReadErr := os.ReadFile(path)
+	fileContentBytes, fileReadErr := fs.ReadFile(cfd.configFS, fileName)
 	if fileReadErr != nil {
 		cfd.zLogger.Error().Err(fileReadErr).
 			Str("resource", resourceName).
-			Str("file", path).
+			Str("file", fileName).
 			Msg("file couldn't be read")
 		return fileReadErr
 	}
@@ -97,7 +76,7 @@ func (cfd *fileConfigProvider) GetConfig(resourceName string, target interface{}
 	content := string(fileContentBytes)
 	cfd.zLogger.Info().
 		Str("resource", resourceName).
-		Str("file", path).
+		Str("file", fileName).
 		Msg(content)
 	content = os.ExpandEnv(content)
 	err = json.Unmarshal([]byte(content), target)
@@ -106,7 +85,7 @@ func (cfd *fileConfigProvider) GetConfig(resourceName string, target interface{}
 		cfd.zLogger.Error().
 			Err(err).
 			Str("resource", resourceName).
-			Str("file", path).
+			Str("file", fileName).
 			Msg("deserialization error")
 		return err
 	}
