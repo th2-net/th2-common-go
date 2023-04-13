@@ -21,5 +21,5 @@ import (
 )
 
 type Strategy interface {
-	Verify(messages *p_buff.MessageGroupBatch, filters []mqFilter.MqRouterFilterConfiguration) bool
+	Verify(messages *p_buff.MessageGroupBatch, filters []mqFilter.FilterConfiguration) bool
 }

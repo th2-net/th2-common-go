@@ -40,7 +40,7 @@ var (
 	}
 )
 
-type MqRouterFilterConfiguration struct {
+type FilterConfiguration struct {
 	Metadata FilterSpec `json:"metadata"`
 	Message  FilterSpec `json:"message"`
 }

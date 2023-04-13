@@ -20,36 +20,9 @@ type RouterConfig struct {
 }
 
 type DestinationConfig struct {
-	RoutingKey string                        `json:"name"`
-	QueueName  string                        `json:"queue"`
-	Exchange   string                        `json:"exchange"`
-	Attributes []string                      `json:"attributes"`
-	Filters    []MqRouterFilterConfiguration `json:"filters"`
-}
-
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
-	return false
-
-}
-
-func (mrc *RouterConfig) FindQueuesByAttr(attrs []string) map[string]DestinationConfig {
-	result := make(map[string]DestinationConfig)
-	for pin, config := range mrc.Queues {
-		match := true
-		for _, attr := range attrs {
-			if !contains(config.Attributes, attr) {
-				match = false
-				break
-			}
-		}
-		if match {
-			result[pin] = config
-		}
-	}
-	return result
+	RoutingKey string                `json:"name"`
+	QueueName  string                `json:"queue"`
+	Exchange   string                `json:"exchange"`
+	Attributes []string              `json:"attributes"`
+	Filters    []FilterConfiguration `json:"filters"`
 }

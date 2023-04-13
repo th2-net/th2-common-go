@@ -31,7 +31,7 @@ type defaultFilterStrategy struct {
 
 var Default Strategy = defaultFilterStrategy{logger: zerolog.New(os.Stdout).With().Str("component", "default_filter_strategy").Timestamp().Logger()}
 
-func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filters []mqFilter.MqRouterFilterConfiguration) bool {
+func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filters []mqFilter.FilterConfiguration) bool {
 	// returns true if MessageGroupBatch entirely matches at least one filter(any) from list of filters in the queueConfig,
 	// returns true if filters are not at all
 	// returns false otherwise
@@ -65,7 +65,7 @@ func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filt
 	}
 	return false
 }
-func (dfs defaultFilterStrategy) CheckValues(msgGroup *p_buff.MessageGroup, filter mqFilter.MqRouterFilterConfiguration) bool {
+func (dfs defaultFilterStrategy) CheckValues(msgGroup *p_buff.MessageGroup, filter mqFilter.FilterConfiguration) bool {
 	// return true if all messages match all simple filters (metadata in this case)
 	// return false if at least one message doesn't match any simple filter
 	for _, anyMessage := range msgGroup.Messages {
