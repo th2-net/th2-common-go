@@ -33,7 +33,7 @@ prepare-grpc-module: clean-grpc-module
 	- go work init
 	go work use ./$(MODULE_DIR)
 
-genrate-grpc-files: prepare-grpc-module configure-go
+generate-grpc-files: prepare-grpc-module configure-go
 	$(eval $@_PROTO_DIR := $(shell go list -m -f '{{.Dir}}' $(TH2_GRPC_COMMON_URL))/$(SRC_MAIN_PROTO_DIR))
 	protoc \
 		--go_out=$(MODULE_DIR) \
@@ -43,7 +43,7 @@ genrate-grpc-files: prepare-grpc-module configure-go
 		--proto_path=$($@_PROTO_DIR) \
 		$(shell find $($@_PROTO_DIR) -name '*.proto' )
 
-prepare-main-module: genrate-grpc-files
+prepare-main-module: generate-grpc-files
 	- go work init
 	go work use .
 
@@ -51,5 +51,5 @@ build:
 	go vet ./...
 	go build -v -race ./...
 
-test:
+run-test:
 	go test -v ./...
