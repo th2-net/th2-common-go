@@ -56,12 +56,12 @@ func (cer *CommonEventRouter) Close() error {
 }
 
 func (cer *CommonEventRouter) SendAll(EventBatch *p_buff.EventBatch, attributes ...string) error {
-	pinsFoundByAttrs := common.FindSendQueuesByAttr(cer.config, attributes)
+	pinsFoundByAttrs := common.FindSendEventQueuesByAttr(cer.config, attributes)
 	if len(pinsFoundByAttrs) == 0 {
 		cer.Logger.Error().
 			Any("attributes", attributes).
 			Msg("No such queue to send message")
-		return fmt.Errorf("no such pin with attr (%s) to send message", attributes)
+		return fmt.Errorf("no pin found for specified attributes: %v", attributes)
 	}
 	for pin, _ := range pinsFoundByAttrs {
 		sender := cer.getSender(pin)
@@ -76,7 +76,7 @@ func (cer *CommonEventRouter) SendAll(EventBatch *p_buff.EventBatch, attributes 
 }
 
 func (cer *CommonEventRouter) SubscribeAll(listener event.Listener, attributes ...string) (queue.Monitor, error) {
-	pinsFoundByAttrs := common.FindSubscribeQueuesByAttr(cer.config, attributes)
+	pinsFoundByAttrs := common.FindSubscribeEventQueuesByAttr(cer.config, attributes)
 	var subscribers []SubscriberMonitor
 	for queuePin, _ := range pinsFoundByAttrs {
 		cer.Logger.Debug().Str("Pin", queuePin).Msg("Subscribing")
@@ -105,7 +105,7 @@ func (cer *CommonEventRouter) SubscribeAll(listener event.Listener, attributes .
 }
 
 func (cer *CommonEventRouter) SubscribeAllWithManualAck(listener event.ConformationListener, attributes ...string) (queue.Monitor, error) {
-	pinFoundByAttrs := common.FindSubscribeQueuesByAttr(cer.config, attributes)
+	pinFoundByAttrs := common.FindSubscribeEventQueuesByAttr(cer.config, attributes)
 	var subscribers []SubscriberMonitor
 	for queuePin, _ := range pinFoundByAttrs {
 		cer.Logger.Debug().Str("Pin", queuePin).Msg("Subscribing with manual ack")

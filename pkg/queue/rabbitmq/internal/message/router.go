@@ -17,6 +17,7 @@ package message
 
 import (
 	"errors"
+	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/th2-net/th2-common-go/pkg/queue"
@@ -61,8 +62,10 @@ func (cmr *CommonMessageRouter) Close() error {
 func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attributes ...string) error {
 	pinsFoundByAttrs := common.FindSendQueuesByAttr(cmr.config, attributes)
 	if len(pinsFoundByAttrs) == 0 {
-		cmr.Logger.Error().Msg("No such queue to send message")
-		return nil
+		cmr.Logger.Error().
+			Strs("attributes", attributes).
+			Msg("No such queue to send message")
+		return fmt.Errorf("no pin found for specified attributes: %v", attributes)
 	}
 	for pin, config := range pinsFoundByAttrs {
 		if !cmr.filterStrategy.Verify(msgBatch, config.Filters) {
@@ -96,7 +99,7 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 func (cmr *CommonMessageRouter) SendRawAll(rawData []byte, attributes ...string) error {
 	pinsFoundByAttrs := common.FindSendQueuesByAttr(cmr.config, attributes)
 	if len(pinsFoundByAttrs) == 0 {
-		return errors.New("no such queue to send message")
+		return fmt.Errorf("no pin found for specified attributes: %v", attributes)
 	}
 	for pin, _ := range pinsFoundByAttrs {
 		sender := cmr.getSender(pin)

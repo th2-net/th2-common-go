@@ -22,23 +22,38 @@ import (
 const (
 	SubscribeAttribute = "subscribe"
 	SendAttribute      = "publish"
+	EventAttribute     = "event"
 )
 
 func FindSendQueuesByAttr(mrc *queue.RouterConfig, attrs []string) map[string]queue.DestinationConfig {
-	return findQueueByAttr(mrc, SendAttribute, attrs)
+	return findQueueByAttr(mrc, attrs, SendAttribute)
 }
 
 func FindSubscribeQueuesByAttr(mrc *queue.RouterConfig, attrs []string) map[string]queue.DestinationConfig {
-	return findQueueByAttr(mrc, SubscribeAttribute, attrs)
+	return findQueueByAttr(mrc, attrs, SubscribeAttribute)
 }
 
-func findQueueByAttr(mrc *queue.RouterConfig, extraAttr string, attrs []string) map[string]queue.DestinationConfig {
+func FindSendEventQueuesByAttr(mrc *queue.RouterConfig, attrs []string) map[string]queue.DestinationConfig {
+	return findQueueByAttr(mrc, attrs, SendAttribute, EventAttribute)
+}
+
+func FindSubscribeEventQueuesByAttr(mrc *queue.RouterConfig, attrs []string) map[string]queue.DestinationConfig {
+	return findQueueByAttr(mrc, attrs, SubscribeAttribute, EventAttribute)
+}
+
+func findQueueByAttr(mrc *queue.RouterConfig, attrs []string, extraAttr ...string) map[string]queue.DestinationConfig {
 	result := make(map[string]queue.DestinationConfig)
 	for pin, config := range mrc.Queues {
-		if !contains(config.Attributes, extraAttr) {
+		match := true
+		for _, extra := range extraAttr {
+			if !contains(config.Attributes, extra) {
+				match = false
+				break
+			}
+		}
+		if !match {
 			continue
 		}
-		match := true
 		for _, attr := range attrs {
 			if !contains(config.Attributes, attr) {
 				match = false

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package modules
+package internal
 
 import (
 	"encoding/json"

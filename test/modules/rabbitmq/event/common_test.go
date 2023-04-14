@@ -13,37 +13,27 @@
  * limitations under the License.
  */
 
-package modules
+package message
 
 import (
-	"github.com/th2-net/th2-common-go/pkg/modules/prometheus"
-	"testing"
-	"testing/fstest"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	grpcCommon "th2-grpc/th2_grpc_common"
 )
 
-func TestCanRegisterPrometheus(t *testing.T) {
-	cfg := `
-	{
-		"enabled": false,
-		"host": "0.0.0.0",
-		"port": "9752"
-	}
-	`
-	factory := CreateTestFactory(fstest.MapFS{
-		"prometheus": &fstest.MapFile{
-			Data: []byte(cfg),
+func createBatch() *grpcCommon.EventBatch {
+	return &grpcCommon.EventBatch{
+		Events: []*grpcCommon.Event{
+			{
+				Id:             &grpcCommon.EventID{Id: "eventId"},
+				Name:           "TestEvent",
+				Type:           "TestType",
+				ParentId:       &grpcCommon.EventID{Id: "parentId"},
+				Status:         grpcCommon.EventStatus_FAILED,
+				StartTimestamp: timestamppb.Now(),
+				EndTimestamp:   timestamppb.Now(),
+				Body:           []byte(`[{}]`),
+			},
 		},
-	})
-
-	if err := factory.Register(prometheus.NewModule); err != nil {
-		t.Fatal(err)
-	}
-
-	mod, err := prometheus.ModuleID.GetModule(factory)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if mod == nil {
-		t.Fatal("module is nil")
+		ParentEventId: &grpcCommon.EventID{Id: "batchParentId"},
 	}
 }

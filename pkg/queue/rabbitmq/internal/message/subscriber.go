@@ -67,10 +67,6 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) error {
 		return err
 	}
 	delivery := queue.Delivery{Redelivered: msgDelivery.Redelivered}
-	if cs.listener == nil {
-		cs.Logger.Error().Str("Method", "Handler").Msgf("No Listener to Handle : %s ", cs.listener)
-		return errors.New("no Listener to handle delivery")
-	}
 	metrics.UpdateMessageMetrics(result, th2MessageSubscribeTotal, cs.th2Pin)
 	handleErr := cs.listener.Handle(delivery, result)
 	if handleErr != nil {

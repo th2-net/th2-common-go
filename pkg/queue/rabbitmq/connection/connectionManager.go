@@ -16,7 +16,7 @@
 package connection
 
 import (
-	"errors"
+	"fmt"
 	"github.com/rs/zerolog"
 	"os"
 )
@@ -25,13 +25,16 @@ type Manager struct {
 	Publisher *Publisher
 	Consumer  *Consumer
 
-	Logger *zerolog.Logger
+	Logger zerolog.Logger
 }
 
-func NewConnectionManager(url string, logger *zerolog.Logger) (Manager, error) {
-	if url == "" {
-		return Manager{}, errors.New("url is not set")
-	}
+func NewConnectionManager(connConfiguration Config, logger zerolog.Logger) (Manager, error) {
+	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s",
+		connConfiguration.Username,
+		connConfiguration.Password,
+		connConfiguration.Host,
+		connConfiguration.Port,
+		connConfiguration.VHost)
 	publisher, err := NewPublisher(url, zerolog.New(os.Stdout).With().Str("component", "publisher").Timestamp().Logger())
 	if err != nil {
 		return Manager{}, err

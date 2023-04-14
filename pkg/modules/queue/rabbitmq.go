@@ -16,7 +16,6 @@
 package queue
 
 import (
-	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/pkg/common"
 	"github.com/th2-net/th2-common-go/pkg/queue"
@@ -56,14 +55,8 @@ func NewRabbitMq(
 	connConfiguration connection.Config,
 	queueConfiguration queue.RouterConfig,
 ) (Module, error) {
-	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s",
-		connConfiguration.Username,
-		connConfiguration.Password,
-		connConfiguration.Host,
-		connConfiguration.Port,
-		connConfiguration.VHost)
 	managerLogger := zerolog.New(os.Stdout).With().Timestamp().Logger()
-	connectionManager, err := connection.NewConnectionManager(url, &managerLogger)
+	connectionManager, err := connection.NewConnectionManager(connConfiguration, managerLogger)
 	if err != nil {
 		return nil, err
 	}

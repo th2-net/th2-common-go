@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	github.com/IGLOU-EU/go-wildcard v1.0.3
-	github.com/docker/go-connections v0.4.0
 	github.com/magiconair/properties v1.8.7
 	github.com/prometheus/client_golang v1.14.0
 	github.com/rs/zerolog v1.29.0
@@ -26,6 +25,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v23.0.1+incompatible // indirect
+	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

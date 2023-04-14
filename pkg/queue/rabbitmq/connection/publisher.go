@@ -78,8 +78,9 @@ func (pb *Publisher) Publish(body []byte, routingKey string, exchange string, th
 		pb.Logger.Error().Err(publError).Send()
 		return err
 	}
-	pb.Logger.Trace().Msg("MessageGroupBatch Published")
-	th2RabbitmqMessageSizePublishBytes.WithLabelValues(th2Pin, th2Type, exchange, routingKey).Add(float64(len(body)))
+	bodySize := len(body)
+	pb.Logger.Trace().Int("size", bodySize).Msg("data published")
+	th2RabbitmqMessageSizePublishBytes.WithLabelValues(th2Pin, th2Type, exchange, routingKey).Add(float64(bodySize))
 	th2RabbitmqMessagePublishTotal.WithLabelValues(th2Pin, th2Type, exchange, routingKey).Inc()
 
 	return nil

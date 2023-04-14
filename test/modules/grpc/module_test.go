@@ -13,10 +13,11 @@
  * limitations under the License.
  */
 
-package modules
+package grpc
 
 import (
 	"github.com/th2-net/th2-common-go/pkg/modules/grpc"
+	"github.com/th2-net/th2-common-go/test/modules/internal"
 	"testing"
 	"testing/fstest"
 )
@@ -30,7 +31,7 @@ func TestCanRegisterGrpc(t *testing.T) {
 		}
 	}
     `
-	factory := CreateTestFactory(fstest.MapFS{
+	factory := internal.CreateTestFactory(fstest.MapFS{
 		"grpc": &fstest.MapFile{
 			Data: []byte(cfg),
 		},

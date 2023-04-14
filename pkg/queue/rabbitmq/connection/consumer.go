@@ -106,6 +106,11 @@ func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, ha
 			Msg("start handling messages")
 		for d := range msgs {
 			timer := prometheus.NewTimer(th2RabbitmqMessageProcessDurationSeconds.WithLabelValues(th2Pin, th2Type, queueName))
+			cns.Logger.Trace().
+				Str("exchange", d.Exchange).
+				Str("routing", d.RoutingKey).
+				Int("bodySize", len(d.Body)).
+				Msg("receive delivery")
 			if err := handler(d); err != nil {
 				cns.Logger.Error().
 					Err(err).
