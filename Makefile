@@ -26,7 +26,6 @@ prepare-grpc-module: clean-grpc-module
 
 	cd $(MODULE_DIR) \
 		&& go get -u -t $(TH2_GRPC_COMMON_URL) \
-		&& go get -u -t github.com/golang/protobuf@$(PROTOBUF_VERSION) \
 		&& go get -u -t google.golang.org/protobuf@v1.26.0 \
 		&& go get -u -t github.com/google/go-cmp@v0.5.9
 
@@ -42,6 +41,7 @@ generate-grpc-files: prepare-grpc-module configure-go
 		--go-grpc_opt=paths=source_relative \
 		--proto_path=$($@_PROTO_DIR) \
 		$(shell find $($@_PROTO_DIR) -name '*.proto' )
+	cd $(MODULE_NAME) && go mod tidy
 
 prepare-main-module: generate-grpc-files
 	- go work init
