@@ -20,8 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/th2-net/th2-common-go/pkg/queue"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq"
-	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/connection"
-	"github.com/th2-net/th2-common-go/test/modules/rabbitmq/internal"
+	rabbitmqSupport "github.com/th2-net/th2-common-go/test/modules/rabbitmq"
 	"google.golang.org/protobuf/proto"
 	"os"
 	"testing"
@@ -35,14 +34,9 @@ func TestMessageRouterSendAll(t *testing.T) {
 		t.Skip("do not run containers in short run")
 		return
 	}
-	config := internal.StartMq(t, "test")
+	config := rabbitmqSupport.StartMq(t, "test")
 
-	manager, err := connection.NewConnectionManager(config, logger)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer manager.Close()
-	conn, err := internal.RawAmqp(t, config, true)
+	conn, err := rabbitmqSupport.RawAmqp(t, config, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +48,7 @@ func TestMessageRouterSendAll(t *testing.T) {
 	conn.BindQueue(config, queue1, routingKey1)
 	conn.BindQueue(config, queue2, routingKey2)
 
-	router := rabbitmq.NewMessageRouter(&manager, &queue.RouterConfig{
+	router, _, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"publish-pin1": {
 				Exchange:   config.ExchangeName,
@@ -67,7 +61,11 @@ func TestMessageRouterSendAll(t *testing.T) {
 				Attributes: []string{"publish", "test"},
 			},
 		},
-	}, logger)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close()
 
 	originalBatch := createBatch()
 	deliveries1 := conn.Consume(queue1)
@@ -78,7 +76,7 @@ func TestMessageRouterSendAll(t *testing.T) {
 			t.Fatal("cannot send batch", err)
 		}
 
-		internal.CheckReceiveDelivery(t, deliveries1, originalBatch)
+		rabbitmqSupport.CheckReceiveDelivery(t, deliveries1, originalBatch)
 	})
 	t.Run("all pins", func(t *testing.T) {
 		err = router.SendAll(originalBatch, "test")
@@ -86,8 +84,8 @@ func TestMessageRouterSendAll(t *testing.T) {
 			t.Fatal("cannot send batch", err)
 		}
 
-		internal.CheckReceiveDelivery(t, deliveries1, originalBatch)
-		internal.CheckReceiveDelivery(t, deliveries2, originalBatch)
+		rabbitmqSupport.CheckReceiveDelivery(t, deliveries1, originalBatch)
+		rabbitmqSupport.CheckReceiveDelivery(t, deliveries2, originalBatch)
 	})
 }
 
@@ -96,15 +94,9 @@ func TestMessageRouterSendAllReportErrorInNoPinMatch(t *testing.T) {
 		t.Skip("do not run containers in short run")
 		return
 	}
-	config := internal.StartMq(t, "test")
+	config := rabbitmqSupport.StartMq(t, "test")
 
-	manager, err := connection.NewConnectionManager(config, logger)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer manager.Close()
-
-	router := rabbitmq.NewMessageRouter(&manager, &queue.RouterConfig{
+	router, _, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"publish-pin1": {
 				Exchange:   config.ExchangeName,
@@ -117,7 +109,11 @@ func TestMessageRouterSendAllReportErrorInNoPinMatch(t *testing.T) {
 				Attributes: []string{"subscribe", "test2"},
 			},
 		},
-	}, logger)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close()
 
 	originalBatch := createBatch()
 
@@ -147,14 +143,9 @@ func TestMessageRouterSendRaw(t *testing.T) {
 		t.Skip("do not run containers in short run")
 		return
 	}
-	config := internal.StartMq(t, "test")
+	config := rabbitmqSupport.StartMq(t, "test")
 
-	manager, err := connection.NewConnectionManager(config, logger)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer manager.Close()
-	conn, err := internal.RawAmqp(t, config, true)
+	conn, err := rabbitmqSupport.RawAmqp(t, config, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +157,7 @@ func TestMessageRouterSendRaw(t *testing.T) {
 	conn.BindQueue(config, queue1, routingKey1)
 	conn.BindQueue(config, queue2, routingKey2)
 
-	router := rabbitmq.NewMessageRouter(&manager, &queue.RouterConfig{
+	router, _, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"publish-pin1": {
 				Exchange:   config.ExchangeName,
@@ -179,7 +170,11 @@ func TestMessageRouterSendRaw(t *testing.T) {
 				Attributes: []string{"publish", "test"},
 			},
 		},
-	}, logger)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close()
 
 	originalData := []byte("hello")
 	deliveries1 := conn.Consume(queue1)
@@ -190,7 +185,7 @@ func TestMessageRouterSendRaw(t *testing.T) {
 			t.Fatal("cannot send batch", err)
 		}
 
-		internal.CheckReceiveBytes(t, deliveries1, originalData)
+		rabbitmqSupport.CheckReceiveBytes(t, deliveries1, originalData)
 	})
 	t.Run("all pins", func(t *testing.T) {
 		err = router.SendRawAll(originalData, "test")
@@ -198,8 +193,8 @@ func TestMessageRouterSendRaw(t *testing.T) {
 			t.Fatal("cannot send batch", err)
 		}
 
-		internal.CheckReceiveBytes(t, deliveries1, originalData)
-		internal.CheckReceiveBytes(t, deliveries2, originalData)
+		rabbitmqSupport.CheckReceiveBytes(t, deliveries1, originalData)
+		rabbitmqSupport.CheckReceiveBytes(t, deliveries2, originalData)
 	})
 }
 
@@ -208,15 +203,9 @@ func TestMessageRouterSendRawReportErrorInNoPinMatch(t *testing.T) {
 		t.Skip("do not run containers in short run")
 		return
 	}
-	config := internal.StartMq(t, "test")
+	config := rabbitmqSupport.StartMq(t, "test")
 
-	manager, err := connection.NewConnectionManager(config, logger)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer manager.Close()
-
-	router := rabbitmq.NewMessageRouter(&manager, &queue.RouterConfig{
+	router, _, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"publish-pin1": {
 				Exchange:   config.ExchangeName,
@@ -229,7 +218,11 @@ func TestMessageRouterSendRawReportErrorInNoPinMatch(t *testing.T) {
 				Attributes: []string{"subscribe", "test2"},
 			},
 		},
-	}, logger)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close()
 
 	testData := []struct {
 		attribute   string
@@ -257,14 +250,9 @@ func TestMessageRouterSubscribeAll(t *testing.T) {
 		t.Skip("do not run containers in short run")
 		return
 	}
-	config := internal.StartMq(t, "test")
+	config := rabbitmqSupport.StartMq(t, "test")
 
-	manager, err := connection.NewConnectionManager(config, logger)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer manager.Close()
-	conn, err := internal.RawAmqp(t, config, true)
+	conn, err := rabbitmqSupport.RawAmqp(t, config, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -280,7 +268,7 @@ func TestMessageRouterSubscribeAll(t *testing.T) {
 	conn.BindQueue(config, queue2, key2)
 	conn.BindQueue(config, queue3, key3)
 
-	router := rabbitmq.NewMessageRouter(&manager, &queue.RouterConfig{
+	router, _, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"sub-pin1": {
 				Exchange:   config.ExchangeName,
@@ -298,13 +286,17 @@ func TestMessageRouterSubscribeAll(t *testing.T) {
 				Attributes: []string{"subscribe", "unique"},
 			},
 		},
-	}, logger)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close()
 
 	originalBatch := createBatch()
 	data, err := proto.Marshal(originalBatch)
 
 	deliveries1 := make(chan *grpcCommon.MessageGroupBatch, 1)
-	mon1, err := router.SubscribeAll(&internal.GenericListener[grpcCommon.MessageGroupBatch]{
+	mon1, err := router.SubscribeAll(&rabbitmqSupport.GenericListener[grpcCommon.MessageGroupBatch]{
 		Channel: deliveries1,
 	}, "common")
 	if err != nil {
@@ -312,7 +304,7 @@ func TestMessageRouterSubscribeAll(t *testing.T) {
 	}
 	defer mon1.Unsubscribe()
 	deliveries2 := make(chan *grpcCommon.MessageGroupBatch, 1)
-	mon2, err := router.SubscribeAll(&internal.GenericListener[grpcCommon.MessageGroupBatch]{
+	mon2, err := router.SubscribeAll(&rabbitmqSupport.GenericListener[grpcCommon.MessageGroupBatch]{
 		Channel: deliveries2,
 	}, "unique")
 	if err != nil {
@@ -322,14 +314,14 @@ func TestMessageRouterSubscribeAll(t *testing.T) {
 
 	t.Run("single_queue", func(t *testing.T) {
 		conn.Publish(config, key3, data)
-		internal.CheckReceiveBatch(t, deliveries2, originalBatch)
+		rabbitmqSupport.CheckReceiveBatch(t, deliveries2, originalBatch)
 	})
 	t.Run("multiple_queue", func(t *testing.T) {
 		conn.Publish(config, key1, data)
-		internal.CheckReceiveBatch(t, deliveries1, originalBatch)
+		rabbitmqSupport.CheckReceiveBatch(t, deliveries1, originalBatch)
 
 		conn.Publish(config, key2, data)
-		internal.CheckReceiveBatch(t, deliveries1, originalBatch)
+		rabbitmqSupport.CheckReceiveBatch(t, deliveries1, originalBatch)
 	})
 }
 
@@ -338,14 +330,9 @@ func TestMessageRouterSubscribeAllWithAck(t *testing.T) {
 		t.Skip("do not run containers in short run")
 		return
 	}
-	config := internal.StartMq(t, "test")
+	config := rabbitmqSupport.StartMq(t, "test")
 
-	manager, err := connection.NewConnectionManager(config, logger)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer manager.Close()
-	conn, err := internal.RawAmqp(t, config, true)
+	conn, err := rabbitmqSupport.RawAmqp(t, config, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -361,7 +348,7 @@ func TestMessageRouterSubscribeAllWithAck(t *testing.T) {
 	conn.BindQueue(config, queue2, key2)
 	conn.BindQueue(config, queue3, key3)
 
-	router := rabbitmq.NewMessageRouter(&manager, &queue.RouterConfig{
+	router, _, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"sub-pin1": {
 				Exchange:   config.ExchangeName,
@@ -379,24 +366,28 @@ func TestMessageRouterSubscribeAllWithAck(t *testing.T) {
 				Attributes: []string{"subscribe", "unique"},
 			},
 		},
-	}, logger)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close()
 
 	originalBatch := createBatch()
 	data, err := proto.Marshal(originalBatch)
 
 	deliveries1 := make(chan *grpcCommon.MessageGroupBatch, 1)
-	mon1, err := router.SubscribeAllWithManualAck(&internal.GenericManualListener[grpcCommon.MessageGroupBatch]{
+	mon1, err := router.SubscribeAllWithManualAck(&rabbitmqSupport.GenericManualListener[grpcCommon.MessageGroupBatch]{
 		Channel:        deliveries1,
-		OnConfirmation: internal.Confirm,
+		OnConfirmation: rabbitmqSupport.Confirm,
 	}, "common")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer mon1.Unsubscribe()
 	deliveries2 := make(chan *grpcCommon.MessageGroupBatch, 1)
-	mon2, err := router.SubscribeAllWithManualAck(&internal.GenericManualListener[grpcCommon.MessageGroupBatch]{
+	mon2, err := router.SubscribeAllWithManualAck(&rabbitmqSupport.GenericManualListener[grpcCommon.MessageGroupBatch]{
 		Channel:        deliveries2,
-		OnConfirmation: internal.Confirm,
+		OnConfirmation: rabbitmqSupport.Confirm,
 	}, "unique")
 	if err != nil {
 		t.Fatal(err)
@@ -405,14 +396,14 @@ func TestMessageRouterSubscribeAllWithAck(t *testing.T) {
 
 	t.Run("single_queue", func(t *testing.T) {
 		conn.Publish(config, key3, data)
-		internal.CheckReceiveBatch(t, deliveries2, originalBatch)
+		rabbitmqSupport.CheckReceiveBatch(t, deliveries2, originalBatch)
 	})
 	t.Run("multiple_queue", func(t *testing.T) {
 		conn.Publish(config, key1, data)
-		internal.CheckReceiveBatch(t, deliveries1, originalBatch)
+		rabbitmqSupport.CheckReceiveBatch(t, deliveries1, originalBatch)
 
 		conn.Publish(config, key2, data)
-		internal.CheckReceiveBatch(t, deliveries1, originalBatch)
+		rabbitmqSupport.CheckReceiveBatch(t, deliveries1, originalBatch)
 	})
 }
 
@@ -421,15 +412,9 @@ func TestMessageRouterSubscribeAllReportErrorInNoPinMatch(t *testing.T) {
 		t.Skip("do not run containers in short run")
 		return
 	}
-	config := internal.StartMq(t, "test")
+	config := rabbitmqSupport.StartMq(t, "test")
 
-	manager, err := connection.NewConnectionManager(config, logger)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer manager.Close()
-
-	router := rabbitmq.NewMessageRouter(&manager, &queue.RouterConfig{
+	router, _, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"sub-pin": {
 				Exchange:   config.ExchangeName,
@@ -442,7 +427,11 @@ func TestMessageRouterSubscribeAllReportErrorInNoPinMatch(t *testing.T) {
 				Attributes: []string{"publish", "test2"},
 			},
 		},
-	}, logger)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close()
 
 	testData := []struct {
 		attribute   string
@@ -459,7 +448,7 @@ func TestMessageRouterSubscribeAllReportErrorInNoPinMatch(t *testing.T) {
 	}
 	for _, tt := range testData {
 		t.Run(tt.description, func(t *testing.T) {
-			_, err := router.SubscribeAll(&internal.GenericListener[grpcCommon.MessageGroupBatch]{}, tt.attribute)
+			_, err := router.SubscribeAll(&rabbitmqSupport.GenericListener[grpcCommon.MessageGroupBatch]{}, tt.attribute)
 			assert.ErrorContains(t, err, "no such subscriber")
 		})
 	}
@@ -470,15 +459,9 @@ func TestMessageRouterSubscribeAllWithManualAckReportErrorInNoPinMatch(t *testin
 		t.Skip("do not run containers in short run")
 		return
 	}
-	config := internal.StartMq(t, "test")
+	config := rabbitmqSupport.StartMq(t, "test")
 
-	manager, err := connection.NewConnectionManager(config, logger)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer manager.Close()
-
-	router := rabbitmq.NewMessageRouter(&manager, &queue.RouterConfig{
+	router, _, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"sub-pin": {
 				Exchange:   config.ExchangeName,
@@ -491,7 +474,11 @@ func TestMessageRouterSubscribeAllWithManualAckReportErrorInNoPinMatch(t *testin
 				Attributes: []string{"publish", "test2"},
 			},
 		},
-	}, logger)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer manager.Close()
 
 	testData := []struct {
 		attribute   string
@@ -508,7 +495,7 @@ func TestMessageRouterSubscribeAllWithManualAckReportErrorInNoPinMatch(t *testin
 	}
 	for _, tt := range testData {
 		t.Run(tt.description, func(t *testing.T) {
-			_, err := router.SubscribeAllWithManualAck(&internal.GenericManualListener[grpcCommon.MessageGroupBatch]{}, tt.attribute)
+			_, err := router.SubscribeAllWithManualAck(&rabbitmqSupport.GenericManualListener[grpcCommon.MessageGroupBatch]{}, tt.attribute)
 			assert.ErrorContains(t, err, "no such subscriber")
 		})
 	}

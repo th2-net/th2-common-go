@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"github.com/th2-net/th2-common-go/pkg/modules/queue"
 	"github.com/th2-net/th2-common-go/test/modules/internal"
-	rabbitInternal "github.com/th2-net/th2-common-go/test/modules/rabbitmq/internal"
 	"testing"
 	"testing/fstest"
 )
@@ -29,7 +28,7 @@ func TestCanRegisterMqModule(t *testing.T) {
 		t.Skip("do not run containers in short run")
 		return
 	}
-	cfg := rabbitInternal.StartMq(t, "amq.direct")
+	cfg := StartMq(t, "amq.direct")
 	connectionCfg, err := json.Marshal(cfg)
 	if err != nil {
 		t.Fatal(err)

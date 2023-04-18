@@ -18,6 +18,7 @@ package connection
 import (
 	"fmt"
 	"github.com/rs/zerolog"
+	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/connection"
 	"os"
 )
 
@@ -28,7 +29,7 @@ type Manager struct {
 	Logger zerolog.Logger
 }
 
-func NewConnectionManager(connConfiguration Config, logger zerolog.Logger) (Manager, error) {
+func NewConnectionManager(connConfiguration connection.Config, logger zerolog.Logger) (Manager, error) {
 	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s",
 		connConfiguration.Username,
 		connConfiguration.Password,

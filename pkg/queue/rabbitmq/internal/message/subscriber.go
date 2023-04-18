@@ -19,8 +19,8 @@ import (
 	"errors"
 	"github.com/th2-net/th2-common-go/pkg/queue"
 	"github.com/th2-net/th2-common-go/pkg/queue/filter"
-	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/connection"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal"
+	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
 	"os"
 	p_buff "th2-grpc/th2_grpc_common"
 

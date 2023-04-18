@@ -13,34 +13,32 @@
  * limitations under the License.
  */
 
-package connection_test
+package connection
 
 import (
 	"github.com/rs/zerolog"
-	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
-	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/connection"
-	"github.com/th2-net/th2-common-go/test/modules/rabbitmq/internal"
+	"github.com/th2-net/th2-common-go/test/modules/rabbitmq"
 	"os"
 	"testing"
 	"time"
 )
 
-var logger = zerolog.New(os.Stdout).With().Str("test_type", "consumer").Logger()
+var publisherLogger = zerolog.New(os.Stdout).With().Str("test_type", "publisher").Logger()
 
-func TestConsumer_Consume(t *testing.T) {
+func TestPublisher(t *testing.T) {
 	if testing.Short() {
 		t.Skip("do not run containers in short run")
 		return
 	}
-	config := internal.StartMq(t, "test")
+	config := rabbitmq.StartMq(t, "test")
 
-	manager, err := connection.NewConnectionManager(config, logger)
+	manager, err := NewConnectionManager(config, publisherLogger)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer manager.Close()
-	conn, err := internal.RawAmqp(t, config, true)
+	conn, err := rabbitmq.RawAmqp(t, config, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,22 +47,15 @@ func TestConsumer_Consume(t *testing.T) {
 	routingKey := "test-publish"
 	conn.BindQueue(config, queue, routingKey)
 
-	deliveries := make(chan []byte, 1)
-	err = manager.Consumer.Consume(queue.Name, "pin", "test", func(delivery amqp.Delivery) error {
-		deliveries <- delivery.Body
-		close(deliveries)
-		return nil
-	})
+	err = manager.Publisher.Publish([]byte("hello"), routingKey, config.ExchangeName, "test", "msg")
 	if err != nil {
-		t.Fatal("cannot start consuming")
+		t.Fatal("cannot publish message")
 	}
 
-	conn.Publish(config, routingKey, []byte("hello"))
-
 	select {
-	case d := <-deliveries:
-		assert.Equal(t, "hello", string(d))
+	case d := <-conn.Consume(queue):
+		assert.Equal(t, "hello", string(d.Body))
 	case <-time.After(1 * time.Second):
-		t.Fatal("didn't receive the data withing 1 second")
+		t.Fatal("didn't receive any delivery during 1 second")
 	}
 }

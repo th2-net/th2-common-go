@@ -50,7 +50,7 @@ type fileConfigProvider struct {
 	zLogger       *zerolog.Logger
 }
 
-func (cfd *fileConfigProvider) GetConfig(resourceName string, target interface{}) error {
+func (cfd *fileConfigProvider) GetConfig(resourceName string, target any) error {
 	stat, err := fs.Stat(cfd.configFS, resourceName+cfd.fileExtension)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
