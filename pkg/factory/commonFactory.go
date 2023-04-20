@@ -36,8 +36,6 @@ const (
 	configurationPath = "/var/th2/config/"
 	jsonExtension     = ".json"
 	customFileName    = "custom"
-
-	ComponentLoggerKey = "component"
 )
 
 type Config struct {
@@ -109,7 +107,7 @@ func NewFromConfig(config Config) (common.Factory, error) {
 	provider := NewFileProvider(
 		config.ConfigurationsDir,
 		config.FileExtension,
-		logger.With().Str(ComponentLoggerKey, "file_provider").Logger(),
+		logger.With().Str(common.ComponentLoggerKey, "file_provider").Logger(),
 	)
 	var boxConfig common.BoxConfig
 	if err := provider.GetConfig("box", &boxConfig); err != nil {

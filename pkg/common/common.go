@@ -21,6 +21,8 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const ComponentLoggerKey = "component"
+
 type BoxConfig struct {
 	Name string `json:"boxName"`
 	Book string `json:"bookName"`
