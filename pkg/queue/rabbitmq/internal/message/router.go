@@ -158,17 +158,39 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener message.Listener, attribut
 	if len(subscribers) == 0 {
 		return nil, errors.New("no such subscriber")
 	}
-	// TODO: mutex here does not make any sense
-	var m sync.Mutex
 	for _, s := range subscribers {
-		m.Lock()
 		cmr.Logger.Trace().Str("Pin", s.subscriber.th2Pin).Msg("Start subscribing of queue")
 		err := s.subscriber.Start()
 		if err != nil {
 			cmr.Logger.Error().Err(err).Send()
 			return nil, err
 		}
-		m.Unlock()
+	}
+	return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
+}
+
+func (cmr *CommonMessageRouter) SubscribeRawAll(listener message.RawListener, attributes ...string) (queue.Monitor, error) {
+	pinFoundByAttrs := common.FindSubscribeQueuesByAttr(cmr.config, attributes)
+	var subscribers []SubscriberMonitor
+	for queuePin, _ := range pinFoundByAttrs {
+		cmr.Logger.Debug().Str("Pin", queuePin).Msg("Subscribing")
+		subscriber, err := cmr.subByPinRaw(listener, queuePin)
+		if err != nil {
+			cmr.Logger.Error().Err(err).Send()
+			return nil, err
+		}
+		subscribers = append(subscribers, subscriber)
+	}
+	if len(subscribers) == 0 {
+		return nil, errors.New("no such subscriber")
+	}
+	for _, s := range subscribers {
+		cmr.Logger.Trace().Str("Pin", s.subscriber.th2Pin).Msg("Start subscribing of queue")
+		err := s.subscriber.StartRaw()
+		if err != nil {
+			cmr.Logger.Error().Err(err).Send()
+			return nil, err
+		}
 	}
 	return MultiplySubscribeMonitor{subscriberMonitors: subscribers}, nil
 }
@@ -176,6 +198,13 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener message.Listener, attribut
 func (cmr *CommonMessageRouter) subByPin(listener message.Listener, pin string) (SubscriberMonitor, error) {
 	subscriber := cmr.getSubscriber(pin)
 	subscriber.SetListener(listener)
+	cmr.Logger.Trace().Str("Pin", pin).Msg("Getting subscriber monitor")
+	return SubscriberMonitor{subscriber: subscriber}, nil
+}
+
+func (cmr *CommonMessageRouter) subByPinRaw(listener message.RawListener, pin string) (SubscriberMonitor, error) {
+	subscriber := cmr.getSubscriber(pin)
+	subscriber.SetRawListener(listener)
 	cmr.Logger.Trace().Str("Pin", pin).Msg("Getting subscriber monitor")
 	return SubscriberMonitor{subscriber: subscriber}, nil
 }

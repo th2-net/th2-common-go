@@ -52,6 +52,7 @@ type CommonMessageSubscriber struct {
 	qConfig              *queue.DestinationConfig
 	listener             message.Listener
 	confirmationListener message.ConformationListener
+	rawListener          message.RawListener
 	th2Pin               string
 
 	Logger zerolog.Logger
@@ -77,6 +78,25 @@ func (cs *CommonMessageSubscriber) Handler(msgDelivery amqp.Delivery) error {
 		e.Str("Method", "Handler").
 			Interface("MessageID", filter.FirstIDFromMsgBatch(result)).
 			Msgf("First message ID of message batch that handled successfully")
+	}
+	return nil
+}
+
+func (cs *CommonMessageSubscriber) HandlerRaw(msgDelivery amqp.Delivery) error {
+	listener := cs.rawListener
+	if listener == nil {
+		return errors.New("no Listener to handle")
+	}
+	delivery := queue.Delivery{Redelivered: msgDelivery.Redelivered}
+	handleErr := listener.Handle(delivery, msgDelivery.Body)
+	if handleErr != nil {
+		cs.Logger.Error().Err(handleErr).Str("Method", "HandlerRaw").Msg("Can't Handle")
+		return handleErr
+	}
+	if e := cs.Logger.Debug(); e.Enabled() {
+		e.Str("Method", "HandlerRaw").
+			Bytes("Data", msgDelivery.Body).
+			Msgf("Batch has been processed")
 	}
 	return nil
 }
@@ -121,6 +141,15 @@ func (cs *CommonMessageSubscriber) Start() error {
 	//use th2Pin for metrics
 }
 
+func (cs *CommonMessageSubscriber) StartRaw() error {
+	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, metrics.MessageGroupTh2Type, cs.HandlerRaw)
+	if err != nil {
+		return err
+	}
+	return nil
+	//use th2Pin for metrics
+}
+
 func (cs *CommonMessageSubscriber) ConfirmationStart() error {
 	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, metrics.MessageGroupTh2Type, cs.ConfirmationHandler)
 	if err != nil {
@@ -139,6 +168,11 @@ func (cs *CommonMessageSubscriber) RemoveListener() {
 func (cs *CommonMessageSubscriber) SetListener(listener message.Listener) {
 	cs.listener = listener
 	cs.Logger.Trace().Msg("set listener")
+}
+
+func (cs *CommonMessageSubscriber) SetRawListener(listener message.RawListener) {
+	cs.rawListener = listener
+	cs.Logger.Trace().Msg("set raw listener")
 }
 
 func (cs *CommonMessageSubscriber) AddConfirmationListener(listener message.ConformationListener) {

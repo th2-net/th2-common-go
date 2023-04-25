@@ -25,6 +25,7 @@ type Router interface {
 	SendAll(batch *p_buff.MessageGroupBatch, attributes ...string) error
 	SendRawAll(payload []byte, attributes ...string) error
 	SubscribeAll(listener Listener, attributes ...string) (queue.Monitor, error)
+	SubscribeRawAll(listener RawListener, attributes ...string) (queue.Monitor, error)
 	SubscribeAllWithManualAck(listener ConformationListener, attributes ...string) (queue.Monitor, error)
 	io.Closer
 }

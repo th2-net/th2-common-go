@@ -29,3 +29,8 @@ type ConformationListener interface {
 	queue.CloseListener
 	Handle(delivery queue.Delivery, batch *p_buff.MessageGroupBatch, confirm queue.Confirmation) error
 }
+
+type RawListener interface {
+	queue.CloseListener
+	Handle(delivery queue.Delivery, data []byte) error
+}
