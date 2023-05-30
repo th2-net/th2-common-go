@@ -23,9 +23,7 @@ import (
 	"github.com/th2-net/th2-common-go/pkg/queue/filter"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
-	"io"
 	"os"
-	"sync"
 	p_buff "th2-grpc/th2_grpc_common"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -53,13 +51,6 @@ var th2MessageSubscribeTotal = promauto.NewCounterVec(
 
 var DoubleStartError = errors.New("the subscription already started")
 
-type subscriberType = int
-
-const (
-	autoSubscriber subscriberType = iota
-	manualSubscriber
-)
-
 type contentType = int
 
 const (
@@ -71,23 +62,17 @@ func newSubscriber(
 	manager *connection.Manager,
 	config *queue.DestinationConfig,
 	pinName string,
-	subscriberType subscriberType,
+	subscriberType internal.SubscriberType,
 	contentType contentType,
-) (Subscriber, error) {
+) (internal.Subscriber, error) {
 	logger := zerolog.New(os.Stdout).With().
 		Str(common.ComponentLoggerKey, "rabbitmq_message_subscriber").
 		Timestamp().
 		Logger()
-	base := commonMessageSubscriber{
-		connManager: manager,
-		qConfig:     config,
-		th2Pin:      pinName,
-		lock:        &sync.RWMutex{},
-	}
 	baseHandler := baseMessageHandler{&logger, pinName}
 	switch subscriberType {
-	case autoSubscriber:
-		var handler handler
+	case internal.AutoSubscriberType:
+		var handler internal.AutoHandler
 		switch contentType {
 		case parsedContentType:
 			handler = &messageHandler{
@@ -100,12 +85,9 @@ func newSubscriber(
 		default:
 			return nil, fmt.Errorf("unknown content type: %d", contentType)
 		}
-		return &messageSubscriber{
-			commonMessageSubscriber: base,
-			handler:                 handler,
-		}, nil
-	case manualSubscriber:
-		var handler confirmationHandler
+		return internal.NewAutoSubscriber(manager, config, pinName, handler, metrics.MessageGroupTh2Type), nil
+	case internal.ManualSubscriberType:
+		var handler internal.ConfirmationHandler
 		switch contentType {
 		case parsedContentType:
 			handler = &confirmationMessageHandler{
@@ -116,10 +98,7 @@ func newSubscriber(
 		default:
 			return nil, fmt.Errorf("unknown content type: %d", contentType)
 		}
-		return &confirmationMessageSubscriber{
-			commonMessageSubscriber: base,
-			handler:                 handler,
-		}, nil
+		return internal.NewManualSubscriber(manager, config, pinName, handler, metrics.MessageGroupTh2Type), nil
 	default:
 		return nil, fmt.Errorf("unsupported subscriber type: %d", subscriberType)
 	}
@@ -170,64 +149,6 @@ func (cs *messageHandler) Close() error {
 	}
 	cs.listener = nil
 	return listener.OnClose()
-}
-
-type commonMessageSubscriber struct {
-	connManager *connection.Manager
-	qConfig     *queue.DestinationConfig
-	th2Pin      string
-
-	lock    *sync.RWMutex
-	started bool
-}
-
-func (cs *commonMessageSubscriber) Pin() string {
-	return cs.th2Pin
-}
-
-type handler interface {
-	Handle(delivery amqp.Delivery) error
-	io.Closer
-}
-
-type confirmationHandler interface {
-	Handle(delivery amqp.Delivery, timer *prometheus.Timer) error
-	io.Closer
-}
-
-type Subscriber interface {
-	IsStarted() bool
-	Start() error
-	Pin() string
-	io.Closer
-}
-
-type AutoSubscriber interface {
-	Subscriber
-	getHandler() handler
-}
-
-type ManualSubscriber interface {
-	Subscriber
-	getHandler() confirmationHandler
-}
-
-type messageSubscriber struct {
-	commonMessageSubscriber
-	handler handler
-}
-
-func (cs *messageSubscriber) getHandler() handler {
-	return cs.handler
-}
-
-type confirmationMessageSubscriber struct {
-	commonMessageSubscriber
-	handler confirmationHandler
-}
-
-func (cs *confirmationMessageSubscriber) getHandler() confirmationHandler {
-	return cs.handler
 }
 
 func (cs *messageHandler) Handle(msgDelivery amqp.Delivery) error {
@@ -304,50 +225,6 @@ func (cs *confirmationMessageHandler) Handle(msgDelivery amqp.Delivery, timer *p
 	return nil
 }
 
-func (cs *messageSubscriber) Start() error {
-	cs.lock.Lock()
-	defer cs.lock.Unlock()
-	if cs.started {
-		return DoubleStartError
-	}
-	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, metrics.MessageGroupTh2Type, cs.handler.Handle)
-	if err != nil {
-		return err
-	}
-	cs.started = true
-	return nil
-	//use th2Pin for metrics
-}
-
-func (cs *messageSubscriber) Close() error {
-	return cs.handler.Close()
-}
-
-func (cs *confirmationMessageSubscriber) Start() error {
-	cs.lock.Lock()
-	defer cs.lock.Unlock()
-	if cs.started {
-		return DoubleStartError
-	}
-	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, metrics.MessageGroupTh2Type, cs.handler.Handle)
-	if err != nil {
-		return err
-	}
-	cs.started = true
-	return nil
-	//use th2Pin for metrics
-}
-
-func (cs *confirmationMessageSubscriber) Close() error {
-	return cs.handler.Close()
-}
-
-func (cs *commonMessageSubscriber) IsStarted() bool {
-	cs.lock.RLock()
-	defer cs.lock.RUnlock()
-	return cs.started
-}
-
 func (cs *messageHandler) SetListener(listener message.Listener) {
 	cs.listener = listener
 	cs.logger.Trace().Msg("set listener")
@@ -361,36 +238,4 @@ func (cs *rawMessageHandler) SetListener(listener message.RawListener) {
 func (cs *confirmationMessageHandler) SetListener(listener message.ConformationListener) {
 	cs.listener = listener
 	cs.logger.Trace().Msg("Added confirmation listener")
-}
-
-type SubscriberMonitor struct {
-	subscriber Subscriber
-}
-
-func (sub SubscriberMonitor) Unsubscribe() error {
-
-	err := sub.subscriber.Close()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-type MultiplySubscribeMonitor struct {
-	subscriberMonitors []SubscriberMonitor
-}
-
-func (sub MultiplySubscribeMonitor) Unsubscribe() error {
-	var errs []error
-	for _, subM := range sub.subscriberMonitors {
-		err := subM.Unsubscribe()
-		if err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if len(errs) != 0 {
-		return fmt.Errorf("errors during unsubsribing: %v", errs)
-	}
-	return nil
 }
