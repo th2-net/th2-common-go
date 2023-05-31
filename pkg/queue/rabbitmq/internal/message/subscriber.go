@@ -49,8 +49,6 @@ var th2MessageSubscribeTotal = promauto.NewCounterVec(
 	},
 )
 
-var DoubleStartError = errors.New("the subscription already started")
-
 type contentType = int
 
 const (
@@ -152,7 +150,8 @@ func (cs *messageHandler) Close() error {
 }
 
 func (cs *messageHandler) Handle(msgDelivery amqp.Delivery) error {
-	if cs.listener == nil {
+	listener := cs.listener
+	if listener == nil {
 		return errors.New("no Listener to handle")
 	}
 	result := &p_buff.MessageGroupBatch{}
@@ -162,7 +161,7 @@ func (cs *messageHandler) Handle(msgDelivery amqp.Delivery) error {
 	}
 	delivery := queue.Delivery{Redelivered: msgDelivery.Redelivered}
 	metrics.UpdateMessageMetrics(result, th2MessageSubscribeTotal, cs.th2Pin)
-	handleErr := cs.listener.Handle(delivery, result)
+	handleErr := listener.Handle(delivery, result)
 	if handleErr != nil {
 		cs.logger.Error().Err(handleErr).Str("Method", "Handler").Msg("Can't Handle")
 		return handleErr
@@ -195,7 +194,8 @@ func (cs *rawMessageHandler) Handle(msgDelivery amqp.Delivery) error {
 }
 
 func (cs *confirmationMessageHandler) Handle(msgDelivery amqp.Delivery, timer *prometheus.Timer) error {
-	if cs.listener == nil {
+	listener := cs.listener
+	if listener == nil {
 		return errors.New("no Confirmation Listener to Handle")
 	}
 	result := &p_buff.MessageGroupBatch{}
@@ -207,12 +207,8 @@ func (cs *confirmationMessageHandler) Handle(msgDelivery amqp.Delivery, timer *p
 	delivery := queue.Delivery{Redelivered: msgDelivery.Redelivered}
 	deliveryConfirm := internal.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), Timer: timer}
 
-	if cs.listener == nil {
-		cs.logger.Error().Str("Method", "ConfirmationHandler").Msgf("No Confirmation Listener to Handle : %s ", cs.listener)
-		return errors.New("no Confirmation Listener to Handle")
-	}
 	metrics.UpdateMessageMetrics(result, th2MessageSubscribeTotal, cs.th2Pin)
-	handleErr := cs.listener.Handle(delivery, result, &deliveryConfirm)
+	handleErr := listener.Handle(delivery, result, &deliveryConfirm)
 	if handleErr != nil {
 		cs.logger.Error().Err(handleErr).Str("Method", "ConfirmationHandler").Msg("Can't Handle")
 		return handleErr
