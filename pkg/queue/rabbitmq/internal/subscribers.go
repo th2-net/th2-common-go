@@ -269,3 +269,21 @@ func StartAll(subscribers []SubscriberMonitor, logger *zerolog.Logger) error {
 	}
 	return nil
 }
+
+func AsAutoSubscriber(subscriber Subscriber, pin string) (AutoSubscriber, error) {
+	autoSubscriber, ok := subscriber.(AutoSubscriber)
+	if !ok {
+		return nil, fmt.Errorf("subscriber with different type %T is subscribed to pin %s",
+			subscriber, pin)
+	}
+	return autoSubscriber, nil
+}
+
+func AsManualSubscriber(subscriber Subscriber, pin string) (ManualSubscriber, error) {
+	manualSubscriber, ok := subscriber.(ManualSubscriber)
+	if !ok {
+		return nil, fmt.Errorf("subscriber with different type %T is subscribed to pin %s",
+			subscriber, pin)
+	}
+	return manualSubscriber, nil
+}

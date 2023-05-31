@@ -120,6 +120,9 @@ func (cmr *CommonMessageRouter) SubscribeAllWithManualAck(listener message.Confo
 	subscribers, err := cmr.subscribeAll(pinFoundByAttrs, func(router *CommonMessageRouter, pinName string) (internal.SubscriberMonitor, error) {
 		return router.subByPinWithAck(listener, pinName)
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	if len(subscribers) == 0 {
 		return nil, errors.New("no such subscriber")
@@ -141,6 +144,9 @@ func (cmr *CommonMessageRouter) SubscribeAll(listener message.Listener, attribut
 	subscribers, err := cmr.subscribeAll(pinFoundByAttrs, func(router *CommonMessageRouter, pinName string) (internal.SubscriberMonitor, error) {
 		return router.subByPin(listener, pinName)
 	})
+	if err != nil {
+		return nil, err
+	}
 	if len(subscribers) == 0 {
 		return nil, errors.New("no such subscriber")
 	}
@@ -188,7 +194,7 @@ func (cmr *CommonMessageRouter) subByPin(listener message.Listener, pin string) 
 	if err != nil {
 		return nil, err
 	}
-	autoSubscriber, err := asAutoSubscriber(subscriber, pin)
+	autoSubscriber, err := internal.AsAutoSubscriber(subscriber, pin)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +213,7 @@ func (cmr *CommonMessageRouter) subByPinRaw(listener message.RawListener, pin st
 	if err != nil {
 		return nil, err
 	}
-	autoSubscriber, err := asAutoSubscriber(subscriber, pin)
+	autoSubscriber, err := internal.AsAutoSubscriber(subscriber, pin)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +232,7 @@ func (cmr *CommonMessageRouter) subByPinWithAck(listener message.ConformationLis
 	if err != nil {
 		return nil, err
 	}
-	manualSubscriber, err := asManualSubscriber(subscriber, pin)
+	manualSubscriber, err := internal.AsManualSubscriber(subscriber, pin)
 	if err != nil {
 		return nil, err
 	}
@@ -238,24 +244,6 @@ func (cmr *CommonMessageRouter) subByPinWithAck(listener message.ConformationLis
 	handler.SetListener(listener)
 	cmr.Logger.Trace().Str("Pin", pin).Msg("Getting subscriber monitor")
 	return internal.MonitorFor(subscriber), nil
-}
-
-func asAutoSubscriber(subscriber internal.Subscriber, pin string) (internal.AutoSubscriber, error) {
-	autoSubscriber, ok := subscriber.(internal.AutoSubscriber)
-	if !ok {
-		return nil, fmt.Errorf("subscriber with different type %T is subscribed to pin %s",
-			subscriber, pin)
-	}
-	return autoSubscriber, nil
-}
-
-func asManualSubscriber(subscriber internal.Subscriber, pin string) (internal.ManualSubscriber, error) {
-	manualSubscriber, ok := subscriber.(internal.ManualSubscriber)
-	if !ok {
-		return nil, fmt.Errorf("subscriber with different type %T is subscribed to pin %s",
-			subscriber, pin)
-	}
-	return manualSubscriber, nil
 }
 
 func (cmr *CommonMessageRouter) getSubscriber(pin string, subscriberType internal.SubscriberType, contentType contentType) (internal.Subscriber, error) {

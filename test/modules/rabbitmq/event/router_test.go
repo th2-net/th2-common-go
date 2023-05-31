@@ -16,6 +16,7 @@
 package message
 
 import (
+	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/th2-net/th2-common-go/pkg/queue"
@@ -359,7 +360,7 @@ func TestEventRouterSubscribeAllReportErrorInNoPinMatch(t *testing.T) {
 	for _, tt := range testData {
 		t.Run(tt.description, func(t *testing.T) {
 			_, err := router.SubscribeAll(&rabbitmqSupport.GenericListener[grpcCommon.EventBatch]{}, tt.attribute)
-			assert.ErrorContains(t, err, "no such subscriber")
+			assert.ErrorContains(t, err, fmt.Sprintf("no pin found for attributes [%s]", tt.attribute))
 		})
 	}
 }
@@ -415,7 +416,7 @@ func TestEventRouterSubscribeAllWithManualAckReportErrorInNoPinMatch(t *testing.
 	for _, tt := range testData {
 		t.Run(tt.description, func(t *testing.T) {
 			_, err := router.SubscribeAllWithManualAck(&rabbitmqSupport.GenericManualListener[grpcCommon.EventBatch]{}, tt.attribute)
-			assert.ErrorContains(t, err, "no such subscriber")
+			assert.ErrorContains(t, err, fmt.Sprintf("no pin found for attributes [%s]", tt.attribute))
 		})
 	}
 }

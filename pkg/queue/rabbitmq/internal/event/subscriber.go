@@ -17,6 +17,8 @@ package event
 
 import (
 	"errors"
+	"fmt"
+	"github.com/th2-net/th2-common-go/pkg/common"
 	"github.com/th2-net/th2-common-go/pkg/queue"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
@@ -45,39 +47,84 @@ var th2EventSubscribeTotal = promauto.NewCounterVec(
 	[]string{metrics.DefaultTh2PinLabelName},
 )
 
-type CommonEventSubscriber struct {
-	connManager          *connection.Manager
-	qConfig              *queue.DestinationConfig
-	listener             event.Listener
-	confirmationListener event.ConformationListener
-	th2Pin               string
-
-	Logger zerolog.Logger
-}
-
-func (cs *CommonEventSubscriber) Start() error {
-	err := cs.connManager.Consumer.Consume(cs.qConfig.QueueName, cs.th2Pin, metrics.EventTh2Type, cs.Handler)
-	if err != nil {
-		return err
+func newSubscriber(
+	manager *connection.Manager,
+	config *queue.DestinationConfig,
+	pinName string,
+	subscriberType internal.SubscriberType,
+) (internal.Subscriber, error) {
+	logger := zerolog.New(os.Stdout).With().
+		Str(common.ComponentLoggerKey, "rabbitmq_event_subscriber").
+		Timestamp().
+		Logger()
+	baseHandler := baseEventHandler{&logger, pinName}
+	switch subscriberType {
+	case internal.AutoSubscriberType:
+		return internal.NewAutoSubscriber(
+			manager,
+			config,
+			pinName,
+			&autoEventHandler{baseEventHandler: baseHandler},
+			metrics.EventTh2Type,
+		), nil
+	case internal.ManualSubscriberType:
+		return internal.NewManualSubscriber(
+			manager,
+			config,
+			pinName,
+			&confirmationEventHandler{baseEventHandler: baseHandler},
+			metrics.EventTh2Type,
+		), nil
 	}
-	return nil
-	//use th2Pin for metrics
+	return nil, fmt.Errorf("unsupported subscriber type: %d", subscriberType)
 }
 
-func (cs *CommonEventSubscriber) ConfirmationStart() error {
-	err := cs.connManager.Consumer.ConsumeWithManualAck(cs.qConfig.QueueName, cs.th2Pin, metrics.EventTh2Type, cs.ConfirmationHandler)
-	if err != nil {
-		return err
+type baseEventHandler struct {
+	logger *zerolog.Logger
+	th2Pin string
+}
+
+type autoEventHandler struct {
+	baseEventHandler
+	listener event.Listener
+}
+
+func (cs *autoEventHandler) Close() error {
+	listener := cs.listener
+	if listener == nil {
+		return nil
 	}
-	return nil
-	//use th2Pin for metrics
+	cs.listener = nil
+	return listener.OnClose()
 }
 
-func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) error {
+type confirmationEventHandler struct {
+	baseEventHandler
+	listener event.ConformationListener
+}
+
+func (cs *confirmationEventHandler) Close() error {
+	listener := cs.listener
+	if listener == nil {
+		return nil
+	}
+	cs.listener = nil
+	return listener.OnClose()
+}
+
+func (cs *autoEventHandler) Handle(msgDelivery amqp.Delivery) error {
+	listener := cs.listener
+	if listener == nil {
+		cs.logger.Error().
+			Str("routingKey", msgDelivery.RoutingKey).
+			Str("exchange", msgDelivery.Exchange).
+			Msg("No Listener to Handle")
+		return errNoListener
+	}
 	result := &p_buff.EventBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Error().
+		cs.logger.Error().
 			Err(err).
 			Str("routingKey", msgDelivery.RoutingKey).
 			Str("exchange", msgDelivery.Exchange).
@@ -86,33 +133,32 @@ func (cs *CommonEventSubscriber) Handler(msgDelivery amqp.Delivery) error {
 	}
 	th2EventSubscribeTotal.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := queue.Delivery{Redelivered: msgDelivery.Redelivered}
-	if cs.listener == nil {
-		cs.Logger.Error().
-			Str("routingKey", msgDelivery.RoutingKey).
-			Str("exchange", msgDelivery.Exchange).
-			Msg("No Listener to Handle")
-		return errNoListener
-	}
-	handleErr := (cs.listener).Handle(delivery, result)
+	handleErr := listener.Handle(delivery, result)
 	if handleErr != nil {
-		cs.Logger.Error().Err(handleErr).
+		cs.logger.Error().Err(handleErr).
 			Str("routingKey", msgDelivery.RoutingKey).
 			Str("exchange", msgDelivery.Exchange).
 			Msg("Can't Handle")
 		return handleErr
 	}
-	cs.Logger.Debug().
+	cs.logger.Debug().
 		Str("routingKey", msgDelivery.RoutingKey).
 		Str("exchange", msgDelivery.Exchange).
 		Msg("Successfully Handled")
 	return nil
 }
 
-func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, timer *prometheus.Timer) error {
+func (cs *confirmationEventHandler) Handle(msgDelivery amqp.Delivery, timer *prometheus.Timer) error {
+	listener := cs.listener
+	if listener == nil {
+		cs.logger.Error().Msg("No Confirmation Listener to Handle")
+		return errors.New("no Confirmation Listener to Handle")
+	}
+
 	result := &p_buff.EventBatch{}
 	err := proto.Unmarshal(msgDelivery.Body, result)
 	if err != nil {
-		cs.Logger.Error().Err(err).Msg("Can't unmarshal proto")
+		cs.logger.Error().Err(err).Msg("Can't unmarshal proto")
 		return err
 	}
 	th2EventSubscribeTotal.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
@@ -120,68 +166,21 @@ func (cs *CommonEventSubscriber) ConfirmationHandler(msgDelivery amqp.Delivery, 
 	deliveryConfirm := internal.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), Timer: timer}
 	var confirmation queue.Confirmation = &deliveryConfirm
 
-	if cs.confirmationListener == nil {
-		cs.Logger.Error().Msg("No Confirmation Listener to Handle")
-		return errors.New("no Confirmation Listener to Handle")
-	}
-	handleErr := (cs.confirmationListener).Handle(delivery, result, confirmation)
+	handleErr := listener.Handle(delivery, result, confirmation)
 	if handleErr != nil {
-		cs.Logger.Error().Err(handleErr).Msg("Can't Handle")
+		cs.logger.Error().Err(handleErr).Msg("Can't Handle")
 		return handleErr
 	}
-	cs.Logger.Debug().Msg("Successfully Handled")
+	cs.logger.Debug().Msg("Successfully Handled")
 	return nil
 }
 
-func (cs *CommonEventSubscriber) RemoveListener() {
-	cs.listener = nil
-	cs.confirmationListener = nil
-	cs.Logger.Trace().Msg("Removed listeners")
-}
-
-func (cs *CommonEventSubscriber) AddListener(listener event.Listener) {
+func (cs *autoEventHandler) SetListener(listener event.Listener) {
 	cs.listener = listener
-	cs.Logger.Trace().Msg("Added listener")
+	cs.logger.Trace().Msg("set listener")
 }
 
-func (cs *CommonEventSubscriber) AddConfirmationListener(listener event.ConformationListener) {
-	cs.confirmationListener = listener
-	cs.Logger.Trace().Msg("Added confirmation listener")
-}
-
-type SubscriberMonitor struct {
-	subscriber *CommonEventSubscriber
-}
-
-func (sub SubscriberMonitor) Unsubscribe() error {
-	if sub.subscriber.listener != nil {
-		err := (sub.subscriber.listener).OnClose()
-		if err != nil {
-			return err
-		}
-		sub.subscriber.RemoveListener()
-	}
-
-	if sub.subscriber.confirmationListener != nil {
-		err := (sub.subscriber.confirmationListener).OnClose()
-		if err != nil {
-			return err
-		}
-		sub.subscriber.RemoveListener()
-	}
-	return nil
-}
-
-type MultiplySubscribeMonitor struct {
-	subscriberMonitors []SubscriberMonitor
-}
-
-func (sub MultiplySubscribeMonitor) Unsubscribe() error {
-	for _, subM := range sub.subscriberMonitors {
-		err := subM.Unsubscribe()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (cs *confirmationEventHandler) SetListener(listener event.ConformationListener) {
+	cs.listener = listener
+	cs.logger.Trace().Msg("set confirmation listener")
 }
