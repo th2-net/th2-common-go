@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/zerolog"
 	"github.com/streadway/amqp"
 	"github.com/th2-net/th2-common-go/pkg/queue"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
@@ -225,6 +226,46 @@ func (sub MultiplySubscribeMonitor) Unsubscribe() error {
 	}
 	if len(errs) != 0 {
 		return fmt.Errorf("errors during unsubsribing: %v", errs)
+	}
+	return nil
+}
+
+func SubscribeAll[T any](
+	router T,
+	pinFoundByAttrs map[string]queue.DestinationConfig,
+	logger *zerolog.Logger,
+	subscribeFunc func(router T, pinName string) (SubscriberMonitor, error),
+) ([]SubscriberMonitor, error) {
+	subscribers := make([]SubscriberMonitor, 0, len(pinFoundByAttrs))
+	for queuePin, _ := range pinFoundByAttrs {
+		logger.Debug().Str("Pin", queuePin).Msg("Subscribing")
+		subscriber, err := subscribeFunc(router, queuePin)
+		if err != nil {
+			logger.Error().Err(err).Str("Pin", queuePin).Msg("cannot subscribe")
+			return nil, err
+		}
+		subscribers = append(subscribers, subscriber)
+	}
+	return subscribers, nil
+}
+
+func StartAll(subscribers []SubscriberMonitor, logger *zerolog.Logger) error {
+	for _, s := range subscribers {
+		logger.Trace().Str("Pin", s.GetSubscriber().Pin()).Msg("Start subscribing of queue")
+		if s.GetSubscriber().IsStarted() {
+			logger.Trace().Str("Pin", s.GetSubscriber().Pin()).Msg("subscriber already started")
+			continue
+		}
+		err := s.GetSubscriber().Start()
+		if err != nil {
+			if err == DoubleStartError {
+				logger.Info().Str("Pin", s.GetSubscriber().Pin()).Msg("already started")
+				continue
+			}
+			logger.Error().Err(err).Str("Pin", s.GetSubscriber().Pin()).
+				Msg("cannot start subscriber")
+			return err
+		}
 	}
 	return nil
 }

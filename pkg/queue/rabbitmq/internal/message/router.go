@@ -176,38 +176,11 @@ func (cmr *CommonMessageRouter) subscribeAll(
 	pinFoundByAttrs map[string]queue.DestinationConfig,
 	subscribeFunc func(router *CommonMessageRouter, pinName string) (internal.SubscriberMonitor, error),
 ) ([]internal.SubscriberMonitor, error) {
-	subscribers := make([]internal.SubscriberMonitor, 0, len(pinFoundByAttrs))
-	for queuePin, _ := range pinFoundByAttrs {
-		cmr.Logger.Debug().Str("Pin", queuePin).Msg("Subscribing")
-		subscriber, err := subscribeFunc(cmr, queuePin)
-		if err != nil {
-			cmr.Logger.Error().Err(err).Str("Pin", queuePin).Msg("cannot subscribe")
-			return nil, err
-		}
-		subscribers = append(subscribers, subscriber)
-	}
-	return subscribers, nil
+	return internal.SubscribeAll(cmr, pinFoundByAttrs, &cmr.Logger, subscribeFunc)
 }
 
 func (cmr *CommonMessageRouter) startAll(subscribers []internal.SubscriberMonitor) error {
-	for _, s := range subscribers {
-		cmr.Logger.Trace().Str("Pin", s.GetSubscriber().Pin()).Msg("Start subscribing of queue")
-		if s.GetSubscriber().IsStarted() {
-			cmr.Logger.Trace().Str("Pin", s.GetSubscriber().Pin()).Msg("subscriber already started")
-			continue
-		}
-		err := s.GetSubscriber().Start()
-		if err != nil {
-			if err == DoubleStartError {
-				cmr.Logger.Info().Str("Pin", s.GetSubscriber().Pin()).Msg("already started")
-				continue
-			}
-			cmr.Logger.Error().Err(err).Str("Pin", s.GetSubscriber().Pin()).
-				Msg("cannot start subscriber")
-			return err
-		}
-	}
-	return nil
+	return internal.StartAll(subscribers, &cmr.Logger)
 }
 
 func (cmr *CommonMessageRouter) subByPin(listener message.Listener, pin string) (internal.SubscriberMonitor, error) {
