@@ -61,16 +61,24 @@ type ZerologConfig struct {
 }
 
 func configureZerolog(cfg *ZerologConfig) {
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if strings.ToLower(cfg.Level) == "debug" {
+	switch level := strings.ToLower(cfg.Level); level {
+	case "trace":
+		zerolog.SetGlobalLevel(zerolog.TraceLevel)
+	case "debug":
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	} else if strings.ToLower(cfg.Level) == "warn" {
+	case "info":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "warn":
 		zerolog.SetGlobalLevel(zerolog.WarnLevel)
-	} else if strings.ToLower(cfg.Level) == "error" {
+	case "error":
 		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
-	} else if strings.ToLower(cfg.Level) == "fatal" {
+	case "fatal":
 		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+	default:
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		log.Warn().Msgf("'%s' log level is unknown. 'INFO' log level is used instead", level)
 	}
+
 	zerolog.TimeFieldFormat = cfg.TimeFormat
 	zerolog.TimestampFieldName = cfg.TimeField
 	zerolog.LevelFieldName = cfg.LevelField
