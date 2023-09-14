@@ -32,6 +32,8 @@ import (
 const (
 	containerName = "rabbitmq-connection-test"
 	mqPort        = "5672"
+	TestBook      = "test_book"
+	TestScope     = "test_scope"
 )
 
 func StartMq(t *testing.T, exchange string) connection.Config {

@@ -16,8 +16,17 @@ jobs:
       - name: Install protoc
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler && protoc --version
         
-      - name: Init repository
-        run: make prepare-main-module
+      - name: Check gRPC generated files not manually changed
+        shell: bash
+        run: |
+          make prepare-grpc-module
+          CHANGED=$(git diff --name-only ./pkg/common/grpc/**/*.go | wc -l)
+          if [ "${CHANGED}" -ne "0" ]; then
+            git diff ./pkg/common/grpc/**/*.go
+            echo "Committed Protobuf files do not match the newly generated. Please, regenerate Protobuf and commit changes"
+            exit 1
+          fi
+
       
       - name: Build sources
         run: make build

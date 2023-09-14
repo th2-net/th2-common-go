@@ -19,11 +19,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/th2-net/th2-common-go/pkg/common"
+	p_buff "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
 	"github.com/th2-net/th2-common-go/pkg/queue"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
 	"os"
-	p_buff "th2-grpc/th2_grpc_common"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"

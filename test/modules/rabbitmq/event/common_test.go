@@ -16,22 +16,27 @@
 package message
 
 import (
+	grpcCommon "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
+	"github.com/th2-net/th2-common-go/test/modules/rabbitmq"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	grpcCommon "th2-grpc/th2_grpc_common"
 )
 
 func createBatch() *grpcCommon.EventBatch {
 	return &grpcCommon.EventBatch{
 		Events: []*grpcCommon.Event{
 			{
-				Id:             &grpcCommon.EventID{Id: "eventId"},
-				Name:           "TestEvent",
-				Type:           "TestType",
-				ParentId:       &grpcCommon.EventID{Id: "parentId"},
-				Status:         grpcCommon.EventStatus_FAILED,
-				StartTimestamp: timestamppb.Now(),
-				EndTimestamp:   timestamppb.Now(),
-				Body:           []byte(`[{}]`),
+				Id: &grpcCommon.EventID{
+					BookName:       rabbitmq.TestBook,
+					Scope:          rabbitmq.TestScope,
+					Id:             "eventId",
+					StartTimestamp: timestamppb.Now(),
+				},
+				Name:         "TestEvent",
+				Type:         "TestType",
+				ParentId:     &grpcCommon.EventID{Id: "parentId"},
+				Status:       grpcCommon.EventStatus_FAILED,
+				EndTimestamp: timestamppb.Now(),
+				Body:         []byte(`[{}]`),
 			},
 		},
 		ParentEventId: &grpcCommon.EventID{Id: "batchParentId"},

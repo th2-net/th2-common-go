@@ -16,8 +16,9 @@
 package message
 
 import (
+	grpcCommon "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
+	"github.com/th2-net/th2-common-go/test/modules/rabbitmq"
 	"google.golang.org/protobuf/types/known/timestamppb"
-	grpcCommon "th2-grpc/th2_grpc_common"
 )
 
 func createBatch() *grpcCommon.MessageGroupBatch {
@@ -30,8 +31,8 @@ func createBatch() *grpcCommon.MessageGroupBatch {
 							RawMessage: &grpcCommon.RawMessage{
 								Body: []byte("hello"),
 								Metadata: &grpcCommon.RawMessageMetadata{
-									Timestamp: timestamppb.Now(),
 									Id: &grpcCommon.MessageID{
+										BookName: rabbitmq.TestBook,
 										ConnectionId: &grpcCommon.ConnectionID{
 											SessionAlias: "alias",
 											SessionGroup: "group",
@@ -39,6 +40,7 @@ func createBatch() *grpcCommon.MessageGroupBatch {
 										Direction:   grpcCommon.Direction_FIRST,
 										Sequence:    42,
 										Subsequence: []uint32{1},
+										Timestamp:   timestamppb.Now(),
 									},
 									Properties: map[string]string{
 										"prop": "value",

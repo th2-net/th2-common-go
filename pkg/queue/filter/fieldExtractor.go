@@ -16,7 +16,7 @@
 package filter
 
 import (
-	p_buff "th2-grpc/th2_grpc_common"
+	p_buff "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
 )
 
 type th2MsgFieldExtraction struct{}

@@ -19,13 +19,13 @@ import (
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	grpcCommon "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
 	"github.com/th2-net/th2-common-go/pkg/queue"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq"
 	rabbitmqSupport "github.com/th2-net/th2-common-go/test/modules/rabbitmq"
 	"google.golang.org/protobuf/proto"
 	"os"
 	"testing"
-	grpcCommon "th2-grpc/th2_grpc_common"
 )
 
 var logger = zerolog.New(os.Stdout).With().Str("test_type", "message_router").Logger()

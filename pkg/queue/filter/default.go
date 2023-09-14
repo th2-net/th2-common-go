@@ -18,9 +18,9 @@ package filter
 import (
 	"github.com/IGLOU-EU/go-wildcard"
 	"github.com/rs/zerolog"
+	p_buff "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
 	mqFilter "github.com/th2-net/th2-common-go/pkg/queue"
 	"os"
-	p_buff "th2-grpc/th2_grpc_common"
 )
 
 type defaultFilterStrategy struct {
