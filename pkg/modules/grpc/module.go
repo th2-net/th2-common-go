@@ -18,10 +18,9 @@ package grpc
 import (
 	"fmt"
 	"github.com/th2-net/th2-common-go/pkg/grpc"
-	"os"
+	"github.com/th2-net/th2-common-go/pkg/log"
 	"reflect"
 
-	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/pkg/common"
 )
 
@@ -55,7 +54,7 @@ var grpcModuleKey = common.ModuleKey(moduleKey)
 
 func NewModule(provider common.ConfigProvider) (common.Module, error) {
 
-	grpcConfiguration := grpc.Config{ZLogger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+	grpcConfiguration := grpc.Config{ZLogger: log.ForComponent("grpc_config")}
 	err := provider.GetConfig(configFilename, &grpcConfiguration)
 	if err != nil {
 		return nil, err
@@ -66,7 +65,7 @@ func NewModule(provider common.ConfigProvider) (common.Module, error) {
 func New(config grpc.Config) (Module, error) {
 	router := grpc.NewRouter(
 		config,
-		zerolog.New(os.Stdout).With().Timestamp().Logger(),
+		log.ForComponent("grpc_router"),
 	)
 	return &impl{router: router}, nil
 }

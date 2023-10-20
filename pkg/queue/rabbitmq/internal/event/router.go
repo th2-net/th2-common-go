@@ -18,15 +18,14 @@ package event
 import (
 	"errors"
 	"fmt"
-	p_buff "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
-	"github.com/th2-net/th2-common-go/pkg/queue"
-	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal"
-	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
-	"os"
-
 	"github.com/rs/zerolog"
+	p_buff "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
+	"github.com/th2-net/th2-common-go/pkg/log"
+	"github.com/th2-net/th2-common-go/pkg/queue"
 	"github.com/th2-net/th2-common-go/pkg/queue/common"
 	"github.com/th2-net/th2-common-go/pkg/queue/event"
+	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal"
+	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
 )
 
 type CommonEventRouter struct {
@@ -180,7 +179,7 @@ func (cer *CommonEventRouter) getSender(pin string) *CommonEventSender {
 		return result
 	}
 	result = &CommonEventSender{ConnManager: cer.connManager, exchangeName: queueConfig.Exchange,
-		sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger()}
+		sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: log.ForComponent("event_sender")}
 	cer.senders[pin] = result
 	cer.Logger.Trace().Str("Pin", pin).Msg("Created sender")
 	return result

@@ -18,17 +18,15 @@ package message
 import (
 	"errors"
 	"fmt"
-	"github.com/th2-net/th2-common-go/pkg/common"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/rs/zerolog"
 	p_buff "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
+	"github.com/th2-net/th2-common-go/pkg/log"
 	"github.com/th2-net/th2-common-go/pkg/queue"
 	"github.com/th2-net/th2-common-go/pkg/queue/filter"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
-	"os"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/rs/zerolog"
 
 	"github.com/streadway/amqp"
 	"github.com/th2-net/th2-common-go/pkg/metrics"
@@ -63,10 +61,7 @@ func newSubscriber(
 	subscriberType internal.SubscriberType,
 	contentType contentType,
 ) (internal.Subscriber, error) {
-	logger := zerolog.New(os.Stdout).With().
-		Str(common.ComponentLoggerKey, "rabbitmq_message_subscriber").
-		Timestamp().
-		Logger()
+	logger := log.ForComponent("rabbitmq_message_subscriber")
 	baseHandler := baseMessageHandler{&logger, pinName}
 	switch subscriberType {
 	case internal.AutoSubscriberType:
@@ -205,7 +200,7 @@ func (cs *confirmationMessageHandler) Handle(msgDelivery amqp.Delivery, timer *p
 		return nil
 	}
 	delivery := queue.Delivery{Redelivered: msgDelivery.Redelivered}
-	deliveryConfirm := internal.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), Timer: timer}
+	deliveryConfirm := internal.DeliveryConfirmation{Delivery: &msgDelivery, Logger: log.ForComponent("confirmation"), Timer: timer}
 
 	metrics.UpdateMessageMetrics(result, th2MessageSubscribeTotal, cs.th2Pin)
 	handleErr := listener.Handle(delivery, result, &deliveryConfirm)

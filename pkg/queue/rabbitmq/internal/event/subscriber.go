@@ -18,16 +18,14 @@ package event
 import (
 	"errors"
 	"fmt"
-	"github.com/th2-net/th2-common-go/pkg/common"
-	p_buff "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
-	"github.com/th2-net/th2-common-go/pkg/queue"
-	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal"
-	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
-	"os"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/zerolog"
+	p_buff "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
+	"github.com/th2-net/th2-common-go/pkg/log"
+	"github.com/th2-net/th2-common-go/pkg/queue"
+	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal"
+	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
 
 	"github.com/streadway/amqp"
 	"github.com/th2-net/th2-common-go/pkg/metrics"
@@ -53,10 +51,7 @@ func newSubscriber(
 	pinName string,
 	subscriberType internal.SubscriberType,
 ) (internal.Subscriber, error) {
-	logger := zerolog.New(os.Stdout).With().
-		Str(common.ComponentLoggerKey, "rabbitmq_event_subscriber").
-		Timestamp().
-		Logger()
+	logger := log.ForComponent("rabbitmq_event_subscriber")
 	baseHandler := baseEventHandler{&logger, pinName}
 	switch subscriberType {
 	case internal.AutoSubscriberType:
@@ -163,7 +158,7 @@ func (cs *confirmationEventHandler) Handle(msgDelivery amqp.Delivery, timer *pro
 	}
 	th2EventSubscribeTotal.WithLabelValues(cs.th2Pin).Add(float64(len(result.Events)))
 	delivery := queue.Delivery{Redelivered: msgDelivery.Redelivered}
-	deliveryConfirm := internal.DeliveryConfirmation{Delivery: &msgDelivery, Logger: zerolog.New(os.Stdout).With().Timestamp().Logger(), Timer: timer}
+	deliveryConfirm := internal.DeliveryConfirmation{Delivery: &msgDelivery, Logger: log.ForComponent("confirmation"), Timer: timer}
 	var confirmation queue.Confirmation = &deliveryConfirm
 
 	handleErr := listener.Handle(delivery, result, confirmation)

@@ -18,8 +18,8 @@ package connection
 import (
 	"fmt"
 	"github.com/rs/zerolog"
+	"github.com/th2-net/th2-common-go/pkg/log"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/connection"
-	"os"
 )
 
 type Manager struct {
@@ -36,11 +36,11 @@ func NewConnectionManager(connConfiguration connection.Config, logger zerolog.Lo
 		connConfiguration.Host,
 		connConfiguration.Port,
 		connConfiguration.VHost)
-	publisher, err := NewPublisher(url, zerolog.New(os.Stdout).With().Str("component", "publisher").Timestamp().Logger())
+	publisher, err := NewPublisher(url, log.ForComponent("publisher"))
 	if err != nil {
 		return Manager{}, err
 	}
-	consumer, err := NewConsumer(url, zerolog.New(os.Stdout).With().Str("component", "consumer").Timestamp().Logger())
+	consumer, err := NewConsumer(url, log.ForComponent("consumer"))
 	if err != nil {
 		if pubErr := publisher.Close(); pubErr != nil {
 			logger.Err(pubErr).

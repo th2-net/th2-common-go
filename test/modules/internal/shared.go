@@ -20,8 +20,8 @@ import (
 	"errors"
 	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/pkg/common"
+	"github.com/th2-net/th2-common-go/pkg/log"
 	"io/fs"
-	"os"
 )
 
 func CreateTestFactory(fileSystem fs.FS) common.Factory {
@@ -72,7 +72,7 @@ func (d *dummyFactory) Get(key common.ModuleKey) (common.Module, error) {
 }
 
 func (d *dummyFactory) GetLogger(name string) zerolog.Logger {
-	return zerolog.New(os.Stdout).With().Str("name", name).Logger()
+	return log.ForComponent(name)
 }
 
 func (d *dummyFactory) GetCustomConfiguration(any any) error {

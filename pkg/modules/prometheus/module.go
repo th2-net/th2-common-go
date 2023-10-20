@@ -18,9 +18,8 @@ package prometheus
 import (
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog"
+	"github.com/th2-net/th2-common-go/pkg/log"
 	"github.com/th2-net/th2-common-go/pkg/metrics/prometheus"
-	"os"
 	"reflect"
 
 	"github.com/th2-net/th2-common-go/pkg/common"
@@ -66,9 +65,8 @@ func (p *module) Close() error {
 func NewModule(provider common.ConfigProvider) (common.Module, error) {
 	promConfig := prometheus.Configuration{Host: "0.0.0.0", Port: 9752}
 	if err := provider.GetConfig(configFileName, &promConfig); err != nil {
-		logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
+		logger := log.ForComponent("prometheus")
 		logger.Warn().
-			Str(common.ComponentLoggerKey, "prometheus").
 			Err(err).
 			Msg("cannot read config. create with default parameters")
 	}
