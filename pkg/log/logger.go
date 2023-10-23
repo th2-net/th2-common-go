@@ -40,20 +40,27 @@ type ZerologConfig struct {
 func ConfigureZerolog(cfg *ZerologConfig) {
 	switch level := strings.ToLower(cfg.Level); level {
 	case "trace":
-		log.Level(zerolog.TraceLevel)
+		logger = logger.Level(zerolog.TraceLevel)
+		break
 	case "debug":
-		log.Level(zerolog.DebugLevel)
+		logger = logger.Level(zerolog.DebugLevel)
+		break
 	case "info":
-		log.Level(zerolog.InfoLevel)
+		logger = logger.Level(zerolog.InfoLevel)
+		break
 	case "warn":
-		log.Level(zerolog.WarnLevel)
+		logger = logger.Level(zerolog.WarnLevel)
+		break
 	case "error":
-		log.Level(zerolog.ErrorLevel)
+		logger = logger.Level(zerolog.ErrorLevel)
+		break
 	case "fatal":
-		log.Level(zerolog.FatalLevel)
+		logger = logger.Level(zerolog.FatalLevel)
+		break
 	default:
-		log.Level(zerolog.InfoLevel)
+		logger = logger.Level(zerolog.InfoLevel)
 		log.Warn().Msgf("'%s' log level is unknown. 'INFO' log level is used instead", level)
+		break
 	}
 
 	zerolog.TimeFieldFormat = cfg.TimeFormat
