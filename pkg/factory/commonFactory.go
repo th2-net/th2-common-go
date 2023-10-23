@@ -19,17 +19,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-
-	"os"
-	"path/filepath"
-	"reflect"
-	"strings"
+	"github.com/rs/zerolog"
+	"github.com/th2-net/th2-common-go/pkg/log"
 
 	"github.com/magiconair/properties"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"github.com/th2-net/th2-common-go/pkg/common"
 	"github.com/th2-net/th2-common-go/pkg/modules/prometheus"
+	"path/filepath"
+	"reflect"
 )
 
 const (
@@ -48,44 +45,6 @@ type commonFactory struct {
 	cfgProvider common.ConfigProvider
 	zLogger     zerolog.Logger
 	boxConfig   common.BoxConfig
-}
-
-type ZerologConfig struct {
-	Level      string `properties:"global_level,default=info"`
-	Sampling   bool   `properties:"disable_sampling,default=false"`
-	TimeField  string `properties:"time_field,default=time"`
-	TimeFormat string `properties:"time_format, default=2006-01-02 15:04:05.000"`
-	LevelField string `properties:"level_field, default=level"`
-	MsgField   string `properties:"message_field, default=message"`
-	ErrorField string `properties:"error_field, default=error"`
-}
-
-func configureZerolog(cfg *ZerologConfig) {
-	switch level := strings.ToLower(cfg.Level); level {
-	case "trace":
-		zerolog.SetGlobalLevel(zerolog.TraceLevel)
-	case "debug":
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	case "info":
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	case "warn":
-		zerolog.SetGlobalLevel(zerolog.WarnLevel)
-	case "error":
-		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
-	case "fatal":
-		zerolog.SetGlobalLevel(zerolog.FatalLevel)
-	default:
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-		log.Warn().Msgf("'%s' log level is unknown. 'INFO' log level is used instead", level)
-	}
-
-	zerolog.TimeFieldFormat = cfg.TimeFormat
-	zerolog.TimestampFieldName = cfg.TimeField
-	zerolog.LevelFieldName = cfg.LevelField
-	zerolog.MessageFieldName = cfg.MsgField
-	zerolog.ErrorFieldName = cfg.ErrorField
-	zerolog.DisableSampling(cfg.Sampling)
-
 }
 
 func New() common.Factory {
@@ -111,20 +70,18 @@ func NewFromConfig(config Config) (common.Factory, error) {
 	}
 	loadZeroLogConfig(config)
 
-	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
 	provider := NewFileProvider(
 		config.ConfigurationsDir,
 		config.FileExtension,
-		logger.With().Str(common.ComponentLoggerKey, "file_provider").Logger(),
+		log.ForComponent("file_provider"),
 	)
 	var boxConfig common.BoxConfig
 	if err := provider.GetConfig("box", &boxConfig); err != nil {
-		log.Warn().Err(err).Msg("cannot read box configuration")
+		log.Global().Warn().Err(err).Msg("cannot read box configuration")
 	}
 	cf := &commonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
 		cfgProvider: provider,
-		zLogger:     logger,
 		boxConfig:   boxConfig,
 	}
 	err := cf.Register(prometheus.NewModule)
@@ -136,19 +93,19 @@ func NewFromConfig(config Config) (common.Factory, error) {
 }
 
 func loadZeroLogConfig(config Config) {
-	var cfg ZerologConfig
+	var cfg log.ZerologConfig
 	p, pErr := properties.LoadFile(filepath.Join(config.ConfigurationsDir, "zerolog.properties"), properties.UTF8)
 	if pErr != nil {
-		log.Error().Err(pErr).Msg("Can't get properties for zerolog")
+		log.Global().Debug().Err(pErr).Msg("Can't get properties for zerolog")
 		return
 	}
 	if err := p.Decode(&cfg); err != nil {
-		log.Error().Err(pErr).Msg("Can't decode properties into zerolog configuration structure")
+		log.Global().Error().Err(pErr).Msg("Can't decode properties into zerolog configuration structure")
 		return
 	}
-	log.Info().Msg("Loggers will be configured via zerolog.properties file")
+	log.Global().Info().Msg("Loggers will be configured via zerolog.properties file")
 
-	configureZerolog(&cfg)
+	log.ConfigureZerolog(&cfg)
 }
 
 func (cf *commonFactory) Register(factories ...func(common.ConfigProvider) (common.Module, error)) error {

@@ -19,8 +19,8 @@ import (
 	"github.com/IGLOU-EU/go-wildcard"
 	"github.com/rs/zerolog"
 	p_buff "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
+	"github.com/th2-net/th2-common-go/pkg/log"
 	mqFilter "github.com/th2-net/th2-common-go/pkg/queue"
-	"os"
 )
 
 type defaultFilterStrategy struct {
@@ -29,7 +29,7 @@ type defaultFilterStrategy struct {
 	logger zerolog.Logger
 }
 
-var Default Strategy = defaultFilterStrategy{logger: zerolog.New(os.Stdout).With().Str("component", "default_filter_strategy").Timestamp().Logger()}
+var Default Strategy = defaultFilterStrategy{logger: log.ForComponent("default_filter_strategy")}
 
 func (dfs defaultFilterStrategy) Verify(messages *p_buff.MessageGroupBatch, filters []mqFilter.FilterConfiguration) bool {
 	// returns true if MessageGroupBatch entirely matches at least one filter(any) from list of filters in the queueConfig,

@@ -17,7 +17,7 @@ package rabbitmq
 
 import (
 	"github.com/rs/zerolog"
-	"github.com/th2-net/th2-common-go/pkg/common"
+	"github.com/th2-net/th2-common-go/pkg/log"
 	"github.com/th2-net/th2-common-go/pkg/queue"
 	"github.com/th2-net/th2-common-go/pkg/queue/event"
 	"github.com/th2-net/th2-common-go/pkg/queue/message"
@@ -26,25 +26,18 @@ import (
 	eventImpl "github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/event"
 	messageImpl "github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/message"
 	"io"
-	"os"
 )
 
 func NewRouters(
 	connection connection.Config,
 	config *queue.RouterConfig,
 ) (messageRouter message.Router, eventRouter event.Router, closer io.Closer, err error) {
-	manager, err := internal.NewConnectionManager(connection, zerolog.New(os.Stdout).With().
-		Timestamp().
-		Str(common.ComponentLoggerKey, "connection_manager").Logger())
+	manager, err := internal.NewConnectionManager(connection, log.ForComponent("connection_manager"))
 	if err != nil {
 		return
 	}
-	messageRouter = newMessageRouter(&manager, config, zerolog.New(os.Stdout).With().
-		Timestamp().
-		Str(common.ComponentLoggerKey, "message_router").Logger())
-	eventRouter = newEventRouter(&manager, config, zerolog.New(os.Stdout).With().
-		Timestamp().
-		Str(common.ComponentLoggerKey, "event_router").Logger())
+	messageRouter = newMessageRouter(&manager, config, log.ForComponent("message_router"))
+	eventRouter = newEventRouter(&manager, config, log.ForComponent("event_router"))
 	closer = &manager
 	return
 }

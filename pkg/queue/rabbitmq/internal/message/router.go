@@ -19,16 +19,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	p_buff "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
+	"github.com/th2-net/th2-common-go/pkg/log"
 	"github.com/th2-net/th2-common-go/pkg/queue"
+	"github.com/th2-net/th2-common-go/pkg/queue/common"
 	"github.com/th2-net/th2-common-go/pkg/queue/filter"
+	"github.com/th2-net/th2-common-go/pkg/queue/message"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
-	"os"
-
-	"github.com/th2-net/th2-common-go/pkg/queue/common"
-	"github.com/th2-net/th2-common-go/pkg/queue/message"
 )
 
 type CommonMessageRouter struct {
@@ -69,7 +67,7 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 	}
 	for pin, config := range pinsFoundByAttrs {
 		if !cmr.filterStrategy.Verify(msgBatch, config.Filters) {
-			if e := log.Debug(); e.Enabled() {
+			if e := cmr.Logger.Debug(); e.Enabled() {
 				e.Str("Pin", pin).
 					Interface("Metadata", filter.FirstIDFromMsgBatch(msgBatch)).
 					Msg("First ID of message batch didn't match filter")
@@ -87,7 +85,7 @@ func (cmr *CommonMessageRouter) SendAll(msgBatch *p_buff.MessageGroupBatch, attr
 			cmr.Logger.Error().Err(err).Send()
 			return err
 		}
-		if e := log.Debug(); e.Enabled() {
+		if e := cmr.Logger.Debug(); e.Enabled() {
 			e.Str("sending to pin", pin).
 				Interface("Metadata", filter.FirstIDFromMsgBatch(msgBatch)).
 				Msg("First ID of sent Message batch")
@@ -272,7 +270,7 @@ func (cmr *CommonMessageRouter) getSender(pin string) *CommonMessageSender {
 		return result
 	}
 	result = &CommonMessageSender{ConnManager: cmr.connManager, exchangeName: queueConfig.Exchange,
-		sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: zerolog.New(os.Stdout).With().Str("component", "rabbitmq_message_sender").Timestamp().Logger()}
+		sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: log.ForComponent("rabbitmq_message_sender")}
 	cmr.senders[pin] = result
 	cmr.Logger.Trace().Str("Pin", pin).Msg("Created sender")
 	return result
