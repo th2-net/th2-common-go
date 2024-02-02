@@ -28,7 +28,7 @@ import (
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
 
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/th2-net/th2-common-go/pkg/metrics"
 	"github.com/th2-net/th2-common-go/pkg/queue/message"
 	"google.golang.org/protobuf/proto"

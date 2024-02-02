@@ -16,8 +16,8 @@
 package connection
 
 import (
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/rs/zerolog"
-	"github.com/streadway/amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/th2-net/th2-common-go/test/modules/rabbitmq"
 	"os"
