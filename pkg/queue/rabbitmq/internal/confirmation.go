@@ -17,8 +17,8 @@ package internal
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/rs/zerolog"
-	"github.com/streadway/amqp"
 )
 
 type DeliveryConfirmation struct {
