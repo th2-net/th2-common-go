@@ -1,4 +1,4 @@
-# th2 common library GO (1.0.0)
+# th2 common library GO (1.2.0)
 
 ## Usage
 
@@ -89,6 +89,13 @@ The `CommonFactory` reads a message's router configuration from the `mq.json` fi
 ```
 
 ## Release notes
+
+### 1.2.0
+
+#### Dependencies
+
++ Deprecated `streadway/amqp` dependency was replaced with `rabbitmq/amqp091-go`.
+  NOTE: this should not be visible to end users as the MQ is only used internally.
 
 ### 1.0.0
 
