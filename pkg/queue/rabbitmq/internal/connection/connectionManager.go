@@ -60,10 +60,25 @@ func NewConnectionManager(connConfiguration connection.Config, logger zerolog.Lo
 }
 
 func (manager *Manager) ListenForBlockingNotifications() {
-	consumerNotifications := manager.Consumer.registerBlockingListener(make(chan amqp.Blocking, 1))
-	publisherNotifications := manager.Publisher.registerBlockingListener(make(chan amqp.Blocking, 1))
 	var run = true
+	var consumerClosed = true
+	var publisherClosed = true
+
+	var publisherNotifications <-chan amqp.Blocking
+	var consumerNotifications <-chan amqp.Blocking
 	for run {
+		// We try to reinitialize the listeners on each iteration
+		// because in case of connection problems
+		// the connections for publisher and consumer will be recreated.
+		// Old channels will be closed and never receive a new value
+		if publisherClosed {
+			publisherNotifications = manager.Publisher.registerBlockingListener(make(chan amqp.Blocking, 1))
+			publisherClosed = false
+		}
+		if consumerClosed {
+			consumerNotifications = manager.Consumer.registerBlockingListener(make(chan amqp.Blocking, 1))
+			consumerClosed = false
+		}
 		select {
 		case <-manager.closed:
 			manager.Logger.Info().Msg("stop listening for blocking notifications")
@@ -71,7 +86,8 @@ func (manager *Manager) ListenForBlockingNotifications() {
 			break
 		case consumerBlocked, ok := <-consumerNotifications:
 			if !ok {
-				continue
+				consumerClosed = true
+				break
 			}
 			manager.Logger.Warn().
 				Str("reason", consumerBlocked.Reason).
@@ -79,7 +95,8 @@ func (manager *Manager) ListenForBlockingNotifications() {
 				Msg("received blocked notification for consumer")
 		case publisherBlocked, ok := <-publisherNotifications:
 			if !ok {
-				continue
+				publisherClosed = true
+				break
 			}
 			manager.Logger.Warn().
 				Str("reason", publisherBlocked.Reason).
