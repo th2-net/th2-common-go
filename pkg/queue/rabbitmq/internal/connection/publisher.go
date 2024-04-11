@@ -16,6 +16,7 @@
 package connection
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -73,7 +74,9 @@ func (pb *Publisher) Publish(body []byte, routingKey string, exchange string, th
 
 	ch, err := pb.getChannel(routingKey)
 
-	publError := ch.Publish(exchange, routingKey, false, false, amqp.Publishing{Body: body})
+	// Ideally, the context should be passed from outside
+	// but this is breaking API change and we cannot do that
+	publError := ch.PublishWithContext(context.Background(), exchange, routingKey, false, false, amqp.Publishing{Body: body})
 	if publError != nil {
 		pb.Logger.Error().Err(publError).Send()
 		return err
