@@ -70,6 +70,10 @@ func NewPublisher(url string, logger zerolog.Logger) (Publisher, error) {
 	}, nil
 }
 
+func (pb *Publisher) registerBlockingListener(blocking chan amqp.Blocking) <-chan amqp.Blocking {
+	return pb.conn.NotifyBlocked(blocking)
+}
+
 func (pb *Publisher) Publish(body []byte, routingKey string, exchange string, th2Pin string, th2Type string) error {
 
 	ch, err := pb.getChannel(routingKey)

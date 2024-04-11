@@ -17,6 +17,7 @@ package connection
 
 import (
 	"fmt"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/pkg/log"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/connection"
@@ -27,6 +28,7 @@ type Manager struct {
 	Consumer  *Consumer
 
 	Logger zerolog.Logger
+	closed chan struct{}
 }
 
 func NewConnectionManager(connConfiguration connection.Config, logger zerolog.Logger) (Manager, error) {
@@ -52,10 +54,45 @@ func NewConnectionManager(connConfiguration connection.Config, logger zerolog.Lo
 		Publisher: &publisher,
 		Consumer:  &consumer,
 		Logger:    logger,
+		// capacity is one to avoid blocking close call
+		closed: make(chan struct{}, 1),
 	}, nil
 }
 
+func (manager *Manager) ListenForBlockingNotifications() {
+	consumerNotifications := manager.Consumer.registerBlockingListener(make(chan amqp.Blocking, 1))
+	publisherNotifications := manager.Publisher.registerBlockingListener(make(chan amqp.Blocking, 1))
+	var run = true
+	for run {
+		select {
+		case <-manager.closed:
+			manager.Logger.Info().Msg("stop listening for blocking notifications")
+			run = false
+			break
+		case consumerBlocked, ok := <-consumerNotifications:
+			if !ok {
+				continue
+			}
+			manager.Logger.Warn().
+				Str("reason", consumerBlocked.Reason).
+				Bool("active", consumerBlocked.Active).
+				Msg("received blocked notification for consumer")
+		case publisherBlocked, ok := <-publisherNotifications:
+			if !ok {
+				continue
+			}
+			manager.Logger.Warn().
+				Str("reason", publisherBlocked.Reason).
+				Bool("active", publisherBlocked.Active).
+				Msg("received blocked notification for publisher")
+		}
+	}
+}
+
 func (manager *Manager) Close() error {
+	manager.closed <- struct{}{}
+	close(manager.closed)
+
 	err := manager.Publisher.Close()
 	if err != nil {
 		manager.Logger.Error().Err(err).Msg("cannot close publisher")

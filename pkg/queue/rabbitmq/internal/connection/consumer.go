@@ -65,6 +65,10 @@ func NewConsumer(url string, logger zerolog.Logger) (Consumer, error) {
 	}, nil
 }
 
+func (cns *Consumer) registerBlockingListener(blocking chan amqp.Blocking) <-chan amqp.Blocking {
+	return cns.conn.NotifyBlocked(blocking)
+}
+
 func (cns *Consumer) Close() error {
 	return cns.conn.Close()
 }

@@ -36,6 +36,7 @@ func NewRouters(
 	if err != nil {
 		return
 	}
+	go manager.ListenForBlockingNotifications()
 	messageRouter = newMessageRouter(&manager, config, log.ForComponent("message_router"))
 	eventRouter = newEventRouter(&manager, config, log.ForComponent("event_router"))
 	closer = &manager
