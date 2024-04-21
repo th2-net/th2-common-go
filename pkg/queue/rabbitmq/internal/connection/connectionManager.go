@@ -38,11 +38,11 @@ func NewConnectionManager(connConfiguration connection.Config, logger zerolog.Lo
 		connConfiguration.Host,
 		connConfiguration.Port,
 		connConfiguration.VHost)
-	publisher, err := NewPublisher(url, log.ForComponent("publisher"))
+	publisher, err := NewPublisher(url, connConfiguration, log.ForComponent("publisher"))
 	if err != nil {
 		return Manager{}, err
 	}
-	consumer, err := NewConsumer(url, log.ForComponent("consumer"))
+	consumer, err := NewConsumer(url, connConfiguration, log.ForComponent("consumer"))
 	if err != nil {
 		if pubErr := publisher.Close(); pubErr != nil {
 			logger.Err(pubErr).
@@ -50,12 +50,14 @@ func NewConnectionManager(connConfiguration connection.Config, logger zerolog.Lo
 		}
 		return Manager{}, err
 	}
+	go publisher.runConnectionRoutine()
+	// TODO: run consumer connection routine
 	return Manager{
 		Publisher: &publisher,
 		Consumer:  &consumer,
 		Logger:    logger,
 		// capacity is one to avoid blocking close call
-		closed: make(chan struct{}, 1),
+		closed: make(chan struct{}),
 	}, nil
 }
 
@@ -107,7 +109,6 @@ func (manager *Manager) ListenForBlockingNotifications() {
 }
 
 func (manager *Manager) Close() error {
-	manager.closed <- struct{}{}
 	close(manager.closed)
 
 	err := manager.Publisher.Close()

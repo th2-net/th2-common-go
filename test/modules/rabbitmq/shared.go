@@ -31,7 +31,7 @@ import (
 
 const (
 	containerName = "rabbitmq-connection-test"
-	mqPort        = "5672"
+	MqPort        = "5672"
 	TestBook      = "test_book"
 	TestScope     = "test_scope"
 )
@@ -42,31 +42,22 @@ func StartMq(t *testing.T, exchange string) connection.Config {
 
 func StartMqWithContainerName(t *testing.T, containerName, exchange string) connection.Config {
 	ctx := context.Background()
-	req := testcontainers.ContainerRequest{
-		Name:         containerName,
-		Image:        "rabbitmq:3.10",
-		ExposedPorts: []string{mqPort},
-		WaitingFor:   wait.ForLog("Server startup complete"),
-	}
-	rabbit, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-		Reuse:            containerName != "",
-	})
-	if err != nil {
-		t.Fatal("cannot create container", err)
-	}
+	rabbit := CreateMqContainer(ctx, t, containerName, MqPort)
 	t.Cleanup(func() {
 		err := rabbit.Terminate(ctx)
 		if err != nil {
 			t.Logf("cannot stop rabbitmq container: %v", err)
 		}
 	})
+	return GetConfigForContainer(ctx, t, rabbit, exchange)
+}
+
+func GetConfigForContainer(ctx context.Context, t *testing.T, rabbit testcontainers.Container, exchange string) connection.Config {
 	host, err := rabbit.Host(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	port, err := rabbit.MappedPort(ctx, mqPort)
+	port, err := rabbit.MappedPort(ctx, MqPort)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,6 +68,24 @@ func StartMqWithContainerName(t *testing.T, containerName, exchange string) conn
 		Username:     "guest",
 		Password:     "guest",
 	}
+}
+
+func CreateMqContainer(ctx context.Context, t *testing.T, containerName string, port string) testcontainers.Container {
+	req := testcontainers.ContainerRequest{
+		Name:         containerName,
+		Image:        "rabbitmq:3.10",
+		ExposedPorts: []string{port},
+		WaitingFor:   wait.ForLog("Server startup complete"),
+	}
+	rabbit, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+		Reuse:            containerName != "",
+	})
+	if err != nil {
+		t.Fatal("cannot create container", err)
+	}
+	return rabbit
 }
 
 type RawAmqpHolder struct {
@@ -155,12 +164,27 @@ func (h RawAmqpHolder) BindQueue(connCfg connection.Config, queue amqp.Queue, bi
 
 func (h RawAmqpHolder) Publish(connCfg connection.Config, routingKey string, data []byte) {
 
-	err := h.ch.Publish(connCfg.ExchangeName, routingKey, true, false, amqp.Publishing{
+	err := h.ch.PublishWithContext(context.Background(), connCfg.ExchangeName, routingKey, true, false, amqp.Publishing{
 		Body: data,
 	})
 	if err != nil {
 		h.t.Fatal("cannot publish", err)
 	}
+}
+
+func (h RawAmqpHolder) GetQueue(t *testing.T, name string) amqp.Queue {
+	q, err := h.ch.QueueDeclarePassive(
+		name,
+		false, // durable
+		false, // auto delete
+		false, // exclusive
+		false,
+		nil,
+	)
+	if err != nil {
+		t.Fatal("cannot get queue", err)
+	}
+	return q
 }
 
 func (h RawAmqpHolder) Consume(queue amqp.Queue) <-chan amqp.Delivery {

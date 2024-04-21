@@ -22,6 +22,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/pkg/metrics"
+	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/connection"
 )
 
 var th2RabbitmqMessageSizeSubscribeBytes = promauto.NewCounterVec(
@@ -48,7 +49,7 @@ type Consumer struct {
 	Logger   zerolog.Logger
 }
 
-func NewConsumer(url string, logger zerolog.Logger) (Consumer, error) {
+func NewConsumer(url string, configuration connection.Config, logger zerolog.Logger) (Consumer, error) {
 	if url == "" {
 		return Consumer{}, errors.New("url is empty")
 	}
@@ -96,7 +97,7 @@ func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, ha
 	)
 	if consErr != nil {
 		cns.Logger.Error().
-			Err(err).
+			Err(consErr).
 			Str("method", "consume").
 			Str("queue", queueName).
 			Msg("Consuming error")

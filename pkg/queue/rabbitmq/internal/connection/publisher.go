@@ -18,13 +18,12 @@ package connection
 import (
 	"context"
 	"errors"
-	"sync"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/pkg/metrics"
+	connCfg "github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/connection"
 )
 
 var th2RabbitmqMessageSizePublishBytes = promauto.NewCounterVec(
@@ -44,39 +43,32 @@ var th2RabbitmqMessagePublishTotal = promauto.NewCounterVec(
 )
 
 type Publisher struct {
-	url      string
-	conn     *amqp.Connection
-	channels map[string]*amqp.Channel
-	mutex    *sync.Mutex
-
+	*connectionHolder
 	Logger zerolog.Logger
 }
 
-func NewPublisher(url string, logger zerolog.Logger) (Publisher, error) {
+func NewPublisher(url string, configuration connCfg.Config, logger zerolog.Logger) (Publisher, error) {
 	if url == "" {
 		return Publisher{}, errors.New("url is not set")
 	}
-	conn, err := amqp.Dial(url)
-	if err != nil {
-		return Publisher{}, err
+	publisher := Publisher{
+		Logger: logger,
 	}
+	c, err := newConnection(url, "publisher", logger, nil, nil)
+	if err != nil {
+		return publisher, err
+	}
+	publisher.connectionHolder = c
 	logger.Debug().Msg("Publisher connected")
-	return Publisher{
-		url:      url,
-		conn:     conn,
-		channels: make(map[string]*amqp.Channel),
-		mutex:    &sync.Mutex{},
-		Logger:   logger,
-	}, nil
-}
-
-func (pb *Publisher) registerBlockingListener(blocking chan amqp.Blocking) <-chan amqp.Blocking {
-	return pb.conn.NotifyBlocked(blocking)
+	return publisher, nil
 }
 
 func (pb *Publisher) Publish(body []byte, routingKey string, exchange string, th2Pin string, th2Type string) error {
 
 	ch, err := pb.getChannel(routingKey)
+	if err != nil {
+		return err
+	}
 
 	// Ideally, the context should be passed from outside
 	// but this is breaking API change and we cannot do that
@@ -94,34 +86,5 @@ func (pb *Publisher) Publish(body []byte, routingKey string, exchange string, th
 }
 
 func (pb *Publisher) Close() error {
-	return pb.conn.Close()
-}
-
-func (pb *Publisher) getChannel(routingKey string) (*amqp.Channel, error) {
-	var ch *amqp.Channel
-	var err error
-	var exists bool
-	ch, exists = pb.channels[routingKey]
-	if !exists {
-		ch, err = pb.getOrCreateChannel(routingKey)
-	}
-
-	return ch, err
-}
-
-func (pb *Publisher) getOrCreateChannel(routingKey string) (*amqp.Channel, error) {
-	pb.mutex.Lock()
-	defer pb.mutex.Unlock()
-	var ch *amqp.Channel
-	var err error
-	var exists bool
-	ch, exists = pb.channels[routingKey]
-	if !exists {
-		ch, err = pb.conn.Channel()
-		if err != nil {
-			return nil, err
-		}
-		pb.channels[routingKey] = ch
-	}
-	return ch, nil
+	return pb.connectionHolder.Close()
 }
