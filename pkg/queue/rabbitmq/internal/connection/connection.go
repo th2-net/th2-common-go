@@ -137,7 +137,7 @@ func (c *connectionHolder) registerBlockingListener(blocking chan amqp.Blocking)
 
 func dial(url string, name string) (*amqp.Connection, error) {
 	properties := amqp.NewConnectionProperties()
-	properties["connection_name"] = name
+	properties.SetClientConnectionName(name)
 	conn, err := amqp.DialConfig(url, amqp.Config{
 		Heartbeat:  30 * time.Second,
 		Locale:     "en_US",
