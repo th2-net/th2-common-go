@@ -17,6 +17,7 @@ package connection
 
 import (
 	"errors"
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -43,80 +44,67 @@ var th2RabbitmqMessageProcessDurationSeconds = promauto.NewHistogramVec(
 )
 
 type Consumer struct {
-	url      string
-	conn     *amqp.Connection
-	channels map[string]*amqp.Channel
-	Logger   zerolog.Logger
+	*connectionHolder
+	Logger zerolog.Logger
 }
 
 func NewConsumer(url string, configuration connection.Config, logger zerolog.Logger) (Consumer, error) {
 	if url == "" {
 		return Consumer{}, errors.New("url is empty")
 	}
-	conn, err := amqp.Dial(url)
-	if err != nil {
-		return Consumer{}, err
+	consumer := Consumer{
+		Logger: logger,
 	}
+	conn, err := newConnection(url, "consumer", logger, nil, nil)
+	if err != nil {
+		return consumer, err
+	}
+	consumer.connectionHolder = conn
 	logger.Debug().Msg("Consumer connected")
-	return Consumer{
-		url:      url,
-		conn:     conn,
-		channels: make(map[string]*amqp.Channel),
-		Logger:   logger,
-	}, nil
-}
-
-func (cns *Consumer) registerBlockingListener(blocking chan amqp.Blocking) <-chan amqp.Blocking {
-	return cns.conn.NotifyBlocked(blocking)
-}
-
-func (cns *Consumer) Close() error {
-	return cns.conn.Close()
+	return consumer, nil
 }
 
 func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, handler func(delivery amqp.Delivery) error) error {
-	ch, err := cns.conn.Channel()
-	if err != nil {
-		cns.Logger.Error().
-			Err(err).
-			Str("queue", queueName).
-			Msg("cannot open channel")
-		return err
-	}
-	cns.channels[queueName] = ch
-
-	msgs, consErr := ch.Consume(
-		queueName, // queue
-		// TODO: we need to provide a name that will help to identify the component
-		"",    // consumer
-		true,  // auto-ack
-		false, // exclusive
-		false, // no-local
-		false, // no-wait
-		nil,   // args
+	return cns.consume(
+		queueName, th2Pin, th2Type, cns.consumeWithAutoAck, "consume",
+		func(delivery amqp.Delivery, timer *prometheus.Timer) error {
+			defer timer.ObserveDuration()
+			return handler(delivery)
+		},
 	)
-	if consErr != nil {
-		cns.Logger.Error().
-			Err(consErr).
-			Str("method", "consume").
-			Str("queue", queueName).
-			Msg("Consuming error")
-		return consErr
+}
+
+func (cns *Consumer) ConsumeWithManualAck(queueName string, th2Pin string, th2Type string, handler func(msgDelivery amqp.Delivery, timer *prometheus.Timer) error) error {
+	return cns.consume(
+		queueName, th2Pin, th2Type, cns.consumeWithManualAck, "consumeWithManualAck",
+		func(delivery amqp.Delivery, timer *prometheus.Timer) error {
+			return handler(delivery, timer)
+		},
+	)
+}
+
+func (cns *Consumer) consume(queueName string, th2Pin string, th2Type string,
+	subscriptionProducer func(queueName string, methodName string) (*amqp.Channel, <-chan amqp.Delivery, error),
+	methodName string, handler func(delivery amqp.Delivery, timer *prometheus.Timer) error) error {
+	ch, msgs, err := subscriptionProducer(queueName, methodName)
+	if err != nil {
+		return err
 	}
 
 	go func() {
 		cns.Logger.Debug().
-			Str("method", "consume").
+			Str("method", methodName).
 			Str("queue", queueName).
 			Msg("start handling messages")
-		for d := range msgs {
+		running := true
+		handleDelivery := func(d amqp.Delivery) {
 			timer := prometheus.NewTimer(th2RabbitmqMessageProcessDurationSeconds.WithLabelValues(th2Pin, th2Type, queueName))
 			cns.Logger.Trace().
 				Str("exchange", d.Exchange).
 				Str("routing", d.RoutingKey).
 				Int("bodySize", len(d.Body)).
 				Msg("receive delivery")
-			if err := handler(d); err != nil {
+			if err := handler(d, timer); err != nil {
 				cns.Logger.Error().
 					Err(err).
 					Str("exchange", d.Exchange).
@@ -124,11 +112,53 @@ func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, ha
 					Int("bodySize", len(d.Body)).
 					Msg("Cannot handle delivery")
 			}
-			timer.ObserveDuration()
 			th2RabbitmqMessageSizeSubscribeBytes.WithLabelValues(th2Pin, th2Type, queueName).Add(float64(len(d.Body)))
 		}
+		deliveries := msgs
+		chErrors := ch.NotifyClose(make(chan *amqp.Error))
+		for running {
+			select {
+			case _, ok := <-cns.done:
+				if !ok {
+					running = false
+					// drain messages
+					for d := range deliveries {
+						handleDelivery(d)
+					}
+				}
+			case chErr, ok := <-chErrors:
+				if !ok {
+					break
+				}
+				cns.Logger.Error().
+					Err(chErr).
+					Str("queue", queueName).
+					Msg("consumer error")
+				// drain messages
+				for d := range deliveries {
+					handleDelivery(d)
+				}
+				ch, deliveries, err = subscriptionProducer(queueName, methodName)
+				if err != nil {
+					if !errors.Is(err, amqp.ErrClosed) {
+						break
+					}
+					// TODO: decide what to do in this case
+					panic(fmt.Sprintf("failure during consumer %s recovery: %v", methodName, err))
+				}
+				chErrors = ch.NotifyClose(make(chan *amqp.Error))
+				cns.Logger.Info().
+					Str("queue", queueName).
+					Msg("consumer channel recovered")
+			case d, ok := <-deliveries:
+				if !ok {
+					break
+				}
+				handleDelivery(d)
+			}
+		}
 		cns.Logger.Debug().
-			Str("method", "consume").
+			Str("method", methodName).
 			Str("queue", queueName).
 			Msg("stop handling messages")
 	}()
@@ -136,55 +166,45 @@ func (cns *Consumer) Consume(queueName string, th2Pin string, th2Type string, ha
 	return nil
 }
 
-func (cns *Consumer) ConsumeWithManualAck(queueName string, th2Pin string, th2Type string, handler func(msgDelivery amqp.Delivery, timer *prometheus.Timer) error) error {
-	ch, err := cns.conn.Channel()
+func (cns *Consumer) consumeWithManualAck(queueName string, methodName string) (*amqp.Channel, <-chan amqp.Delivery, error) {
+	return cns.consumeFromQueue(queueName, methodName, false)
+}
+
+func (cns *Consumer) consumeWithAutoAck(queueName string, methodName string) (*amqp.Channel, <-chan amqp.Delivery, error) {
+	return cns.consumeFromQueue(queueName, methodName, true)
+}
+
+func (cns *Consumer) consumeFromQueue(queueName string, methodName string, autoAck bool) (*amqp.Channel, <-chan amqp.Delivery, error) {
+	ch, err := cns.getChannel(queueName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	msgs, err := cns.startConsuming(ch, queueName, autoAck, methodName)
+	if err != nil {
+		return nil, nil, err
+	}
+	return ch, msgs, nil
+}
+
+func (cns *Consumer) startConsuming(ch *amqp.Channel, queueName string, autoAck bool, methodName string) (<-chan amqp.Delivery, error) {
+	msgs, err := ch.Consume(
+		queueName, // queue
+		// TODO: we need to provide a name that will help to identify the component
+		"",      // consumer
+		autoAck, // auto-ack
+		false,   // exclusive
+		false,   // no-local
+		false,   // no-wait
+		nil,     // args
+	)
 	if err != nil {
 		cns.Logger.Error().
 			Err(err).
+			Str("method", methodName).
 			Str("queue", queueName).
-			Msg("cannot open channel")
-		return err
+			Msg("consuming error")
+		return nil, err
 	}
-	cns.channels[queueName] = ch
-	msgs, consErr := ch.Consume(
-		queueName, // queue
-		"",        // consumer
-		false,     // auto-ack
-		false,     // exclusive
-		false,     // no-local
-		false,     // no-wait
-		nil,       // args
-	)
-	if consErr != nil {
-		cns.Logger.Error().
-			Err(err).
-			Str("method", "consumeWithManualAck").
-			Str("queue", queueName).
-			Msg("Consuming error")
-		return consErr
-	}
-	go func() {
-		cns.Logger.Debug().
-			Str("method", "consumeWithManualAck").
-			Str("queue", queueName).
-			Msg("start handling messages")
-		for d := range msgs {
-			timer := prometheus.NewTimer(th2RabbitmqMessageProcessDurationSeconds.WithLabelValues(th2Pin, th2Type, queueName))
-			if err := handler(d, timer); err != nil {
-				cns.Logger.Error().
-					Err(err).
-					Str("exchange", d.Exchange).
-					Str("routing", d.RoutingKey).
-					Int("bodySize", len(d.Body)).
-					Msg("cannot handle delivery")
-			}
-			th2RabbitmqMessageSizeSubscribeBytes.WithLabelValues(th2Pin, th2Type, queueName).Add(float64(len(d.Body)))
-		}
-		cns.Logger.Debug().
-			Str("method", "consumeWithManualAck").
-			Str("queue", queueName).
-			Msg("stop handling messages")
-	}()
-
-	return nil
+	return msgs, nil
 }

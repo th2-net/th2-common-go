@@ -18,6 +18,7 @@ package message
 import (
 	"context"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"github.com/th2-net/th2-common-go/pkg/queue"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/connection"
@@ -106,6 +107,98 @@ func TestPublisherReconnects(t *testing.T) {
 	defer conn.Close()
 	data := conn.Consume(conn.GetQueue(t, "test1"))
 	rabbitmqSupport.CheckReceiveBytes(t, data, []byte("hello2"))
+}
+
+func TestConsumerReconnects(t *testing.T) {
+	if testing.Short() {
+		t.Skip("do not run containers in short run")
+		return
+	}
+	containerName := fmt.Sprintf("reconnect-test-%d", time.Now().UTC().UnixNano())
+	ctx := context.Background()
+	port := fmt.Sprintf("%d:%s", 9900, rabbitmqSupport.MqPort)
+	container := rabbitmqSupport.CreateMqContainer(ctx, t, containerName, port)
+	err := container.Start(ctx)
+	if err != nil {
+		t.Fatal("cannot start container:", err)
+	}
+	t.Cleanup(func() {
+		err := container.Terminate(ctx)
+		if err != nil {
+			t.Logf("cannot terminate container: %v", err)
+		}
+	})
+	config := rabbitmqSupport.GetConfigForContainer(ctx, t, container, "test")
+
+	routingKey := setupMq(t, config)
+
+	router, _, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
+		Queues: map[string]queue.DestinationConfig{
+			"sub-pin1": {
+				Exchange:   config.ExchangeName,
+				QueueName:  "test1",
+				Attributes: []string{"subscribe", "test", "unique"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func(manager io.Closer) {
+		err := manager.Close()
+		if err != nil {
+			t.Logf("cannot close manager connection: %v", err)
+		}
+	}(manager)
+
+	channel := make(chan []byte, 1)
+	monitor, err := router.SubscribeRawAll(rabbitmqSupport.TestRawListener{
+		Channel: channel,
+	})
+	if err != nil {
+		t.Fatal("cannot subscribe message:", err)
+	}
+	defer func(monitor queue.Monitor) {
+		_ = monitor.Unsubscribe()
+	}(monitor)
+	rawConn, err := rabbitmqSupport.RawAmqp(t, config, false)
+	if err != nil {
+		t.Fatal("cannot get raw connection", err)
+	}
+	firstBytes := []byte("hello")
+	rawConn.Publish(config, routingKey, firstBytes)
+	actual := <-channel
+	assert.Equal(t, firstBytes, actual)
+
+	err = container.Terminate(ctx)
+	if err != nil {
+		t.Fatal("cannot stop container:", err)
+	}
+
+	// create new container with same port
+	// cannot Stop and Start container because of wait strategy
+	recovered := make(chan struct{})
+	go func() {
+		container = rabbitmqSupport.CreateMqContainer(ctx, t, containerName, port)
+		err = container.Start(ctx)
+		if err != nil {
+			t.Error("cannot start container:", err)
+			return
+		}
+		_ = setupMq(t, config)
+		t.Log("rabbitmq container restarted")
+		recovered <- struct{}{}
+		close(recovered)
+	}()
+	<-recovered
+	rawConn, err = rabbitmqSupport.RawAmqp(t, config, false)
+	if err != nil {
+		t.Fatal("cannot get raw connection", err)
+	}
+	secondBytes := []byte("hello2")
+	rawConn.Publish(config, routingKey, secondBytes)
+	actual = <-channel
+	assert.Equal(t, secondBytes, actual)
 }
 
 func setupMq(t *testing.T, config connection.Config) string {

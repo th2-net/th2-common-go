@@ -51,7 +51,7 @@ func NewConnectionManager(connConfiguration connection.Config, logger zerolog.Lo
 		return Manager{}, err
 	}
 	go publisher.runConnectionRoutine()
-	// TODO: run consumer connection routine
+	go consumer.runConnectionRoutine()
 	return Manager{
 		Publisher: &publisher,
 		Consumer:  &consumer,

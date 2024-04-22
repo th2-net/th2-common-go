@@ -200,6 +200,19 @@ func (h RawAmqpHolder) Consume(queue amqp.Queue) <-chan amqp.Delivery {
 	return deliveries
 }
 
+type TestRawListener struct {
+	Channel chan []byte
+}
+
+func (t TestRawListener) OnClose() error {
+	return nil
+}
+
+func (t TestRawListener) Handle(delivery queue.Delivery, data []byte) error {
+	t.Channel <- data
+	return nil
+}
+
 type GenericListener[T any] struct {
 	Channel chan *T
 }

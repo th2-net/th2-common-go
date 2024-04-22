@@ -84,7 +84,3 @@ func (pb *Publisher) Publish(body []byte, routingKey string, exchange string, th
 
 	return nil
 }
-
-func (pb *Publisher) Close() error {
-	return pb.connectionHolder.Close()
-}
