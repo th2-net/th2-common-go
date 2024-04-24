@@ -50,7 +50,7 @@ type Consumer struct {
 	maxMissingQueueRecoveryAttempts int
 }
 
-func NewConsumer(url string, configuration connection.Config, logger zerolog.Logger) (Consumer, error) {
+func NewConsumer(url string, configuration connection.Config, componentName string, logger zerolog.Logger) (Consumer, error) {
 	if url == "" {
 		return Consumer{}, errors.New("url is empty")
 	}
@@ -62,7 +62,8 @@ func NewConsumer(url string, configuration connection.Config, logger zerolog.Log
 		Logger:                          logger,
 		maxMissingQueueRecoveryAttempts: maxMissingQueueRecoveryAttempts,
 	}
-	conn, err := newConnection(url, "consumer", logger, configuration, nil, nil)
+	conn, err := newConnection(url, fmt.Sprintf("%s_consumer", componentName),
+		logger, configuration, nil, nil)
 	if err != nil {
 		return consumer, err
 	}

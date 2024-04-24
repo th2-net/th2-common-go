@@ -18,6 +18,7 @@ package connection
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -47,14 +48,15 @@ type Publisher struct {
 	Logger zerolog.Logger
 }
 
-func NewPublisher(url string, configuration connCfg.Config, logger zerolog.Logger) (Publisher, error) {
+func NewPublisher(url string, configuration connCfg.Config, componentName string, logger zerolog.Logger) (Publisher, error) {
 	if url == "" {
 		return Publisher{}, errors.New("url is not set")
 	}
 	publisher := Publisher{
 		Logger: logger,
 	}
-	c, err := newConnection(url, "publisher", logger, configuration, nil, nil)
+	c, err := newConnection(url, fmt.Sprintf("%s_publisher", componentName),
+		logger, configuration, nil, nil)
 	if err != nil {
 		return publisher, err
 	}

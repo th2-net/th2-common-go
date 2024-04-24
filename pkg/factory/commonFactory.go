@@ -75,14 +75,10 @@ func NewFromConfig(config Config) (common.Factory, error) {
 		config.FileExtension,
 		log.ForComponent("file_provider"),
 	)
-	var boxConfig common.BoxConfig
-	if err := provider.GetConfig("box", &boxConfig); err != nil {
-		log.Global().Warn().Err(err).Msg("cannot read box configuration")
-	}
 	cf := &commonFactory{
 		modules:     make(map[common.ModuleKey]common.Module),
 		cfgProvider: provider,
-		boxConfig:   boxConfig,
+		boxConfig:   provider.GetBoxConfig(),
 	}
 	err := cf.Register(prometheus.NewModule)
 	if err != nil {

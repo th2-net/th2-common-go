@@ -33,7 +33,7 @@ func TestPublisher(t *testing.T) {
 	}
 	config := rabbitmq.StartMq(t, "test")
 
-	manager, err := NewConnectionManager(config, publisherLogger)
+	manager, err := NewConnectionManager(config, "test", publisherLogger)
 	if err != nil {
 		t.Fatal(err)
 	}

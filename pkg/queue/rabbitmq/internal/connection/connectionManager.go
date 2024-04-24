@@ -31,18 +31,18 @@ type Manager struct {
 	closed chan struct{}
 }
 
-func NewConnectionManager(connConfiguration connection.Config, logger zerolog.Logger) (Manager, error) {
+func NewConnectionManager(connConfiguration connection.Config, componentName string, logger zerolog.Logger) (Manager, error) {
 	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s",
 		connConfiguration.Username,
 		connConfiguration.Password,
 		connConfiguration.Host,
 		connConfiguration.Port,
 		connConfiguration.VHost)
-	publisher, err := NewPublisher(url, connConfiguration, log.ForComponent("publisher"))
+	publisher, err := NewPublisher(url, connConfiguration, componentName, log.ForComponent("publisher"))
 	if err != nil {
 		return Manager{}, err
 	}
-	consumer, err := NewConsumer(url, connConfiguration, log.ForComponent("consumer"))
+	consumer, err := NewConsumer(url, connConfiguration, componentName, log.ForComponent("consumer"))
 	if err != nil {
 		if pubErr := publisher.Close(); pubErr != nil {
 			logger.Err(pubErr).

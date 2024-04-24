@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/th2-net/th2-common-go/pkg/common"
 	"github.com/th2-net/th2-common-go/pkg/queue"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/connection"
@@ -51,7 +52,7 @@ func TestPublisherReconnects(t *testing.T) {
 
 	routingKey := setupMq(t, config)
 
-	router, _, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
+	router, _, manager, err := rabbitmq.NewRouters(common.BoxConfig{}, config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"publish-pin1": {
 				Exchange:   config.ExchangeName,
@@ -132,7 +133,7 @@ func TestConsumerReconnects(t *testing.T) {
 
 	routingKey := setupMq(t, config)
 
-	router, _, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
+	router, _, manager, err := rabbitmq.NewRouters(common.BoxConfig{}, config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"sub-pin1": {
 				Exchange:   config.ExchangeName,

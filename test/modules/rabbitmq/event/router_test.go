@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/th2-net/th2-common-go/pkg/common"
 	grpcCommon "github.com/th2-net/th2-common-go/pkg/common/grpc/th2_grpc_common"
 	"github.com/th2-net/th2-common-go/pkg/queue"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq"
@@ -48,7 +49,7 @@ func TestEventRouterSendAll(t *testing.T) {
 	conn.BindQueue(config, queue1, routingKey1)
 	conn.BindQueue(config, queue2, routingKey2)
 
-	_, router, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
+	_, router, manager, err := rabbitmq.NewRouters(common.BoxConfig{}, config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"publish-pin1": {
 				Exchange:   config.ExchangeName,
@@ -96,7 +97,7 @@ func TestEventRouterSendAllReportErrorInNoPinMatch(t *testing.T) {
 	}
 	config := rabbitmqSupport.StartMq(t, "test")
 
-	_, router, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
+	_, router, manager, err := rabbitmq.NewRouters(common.BoxConfig{}, config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"publish-pin1": {
 				Exchange:   config.ExchangeName,
@@ -170,7 +171,7 @@ func TestEventRouterSubscribeAll(t *testing.T) {
 	conn.BindQueue(config, queue2, key2)
 	conn.BindQueue(config, queue3, key3)
 
-	_, router, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
+	_, router, manager, err := rabbitmq.NewRouters(common.BoxConfig{}, config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"sub-pin1": {
 				Exchange:   config.ExchangeName,
@@ -250,7 +251,7 @@ func TestEventRouterSubscribeAllWithManualAck(t *testing.T) {
 	conn.BindQueue(config, queue2, key2)
 	conn.BindQueue(config, queue3, key3)
 
-	_, router, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
+	_, router, manager, err := rabbitmq.NewRouters(common.BoxConfig{}, config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"sub-pin1": {
 				Exchange:   config.ExchangeName,
@@ -316,7 +317,7 @@ func TestEventRouterSubscribeAllReportErrorInNoPinMatch(t *testing.T) {
 	}
 	config := rabbitmqSupport.StartMq(t, "test")
 
-	_, router, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
+	_, router, manager, err := rabbitmq.NewRouters(common.BoxConfig{}, config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"sub-pin": {
 				Exchange:   config.ExchangeName,
@@ -372,7 +373,7 @@ func TestEventRouterSubscribeAllWithManualAckReportErrorInNoPinMatch(t *testing.
 	}
 	config := rabbitmqSupport.StartMq(t, "test")
 
-	_, router, manager, err := rabbitmq.NewRouters(config, &queue.RouterConfig{
+	_, router, manager, err := rabbitmq.NewRouters(common.BoxConfig{}, config, &queue.RouterConfig{
 		Queues: map[string]queue.DestinationConfig{
 			"sub-pin": {
 				Exchange:   config.ExchangeName,

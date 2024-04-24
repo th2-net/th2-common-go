@@ -35,6 +35,13 @@ type testProvider struct {
 	fs fs.FS
 }
 
+func (p testProvider) GetBoxConfig() common.BoxConfig {
+	return common.BoxConfig{
+		Name: "test",
+		Book: "test_book",
+	}
+}
+
 func (p testProvider) GetConfig(resource string, target any) error {
 	data, err := fs.ReadFile(p.fs, resource)
 	if err != nil {

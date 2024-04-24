@@ -42,19 +42,21 @@ func newRabbitMq(
 	provider common.ConfigProvider,
 	queueConfiguration queue.RouterConfig,
 ) (Module, error) {
+	boxConfig := provider.GetBoxConfig()
 	connConfiguration := connection.Config{}
 	configErr := provider.GetConfig(connectionConfigFilename, &connConfiguration)
 	if configErr != nil {
 		return nil, configErr
 	}
-	return NewRabbitMq(connConfiguration, queueConfiguration)
+	return NewRabbitMq(boxConfig, connConfiguration, queueConfiguration)
 }
 
 func NewRabbitMq(
+	boxConfig common.BoxConfig,
 	connConfiguration connection.Config,
 	queueConfiguration queue.RouterConfig,
 ) (Module, error) {
-	messageRouter, eventRouter, manager, err := rabbitmq.NewRouters(connConfiguration, &queueConfiguration)
+	messageRouter, eventRouter, manager, err := rabbitmq.NewRouters(boxConfig, connConfiguration, &queueConfiguration)
 	if err != nil {
 		return nil, err
 	}

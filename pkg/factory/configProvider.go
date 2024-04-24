@@ -20,6 +20,7 @@ import (
 	"errors"
 	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/pkg/common"
+	"github.com/th2-net/th2-common-go/pkg/log"
 	"io/fs"
 	"os"
 )
@@ -37,17 +38,28 @@ func NewFileProvider(configPath string, extension string, logger zerolog.Logger)
 }
 
 func NewFileProviderForFS(fs fs.FS, extension string, logger zerolog.Logger) common.ConfigProvider {
-	return &fileConfigProvider{
+	provider := fileConfigProvider{
 		configFS:      fs,
 		fileExtension: extension,
 		zLogger:       &logger,
 	}
+	boxConfig := common.BoxConfig{}
+	if err := provider.GetConfig("box", &boxConfig); err != nil {
+		log.Global().Warn().Err(err).Msg("cannot read box configuration. user default values")
+	}
+	provider.boxConfig = boxConfig
+	return &provider
 }
 
 type fileConfigProvider struct {
 	configFS      fs.FS
 	fileExtension string
 	zLogger       *zerolog.Logger
+	boxConfig     common.BoxConfig
+}
+
+func (cfd *fileConfigProvider) GetBoxConfig() common.BoxConfig {
+	return cfd.boxConfig
 }
 
 func (cfd *fileConfigProvider) GetConfig(resourceName string, target any) error {

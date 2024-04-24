@@ -17,6 +17,7 @@ package rabbitmq
 
 import (
 	"github.com/rs/zerolog"
+	"github.com/th2-net/th2-common-go/pkg/common"
 	"github.com/th2-net/th2-common-go/pkg/log"
 	"github.com/th2-net/th2-common-go/pkg/queue"
 	"github.com/th2-net/th2-common-go/pkg/queue/event"
@@ -29,10 +30,11 @@ import (
 )
 
 func NewRouters(
+	boxConfig common.BoxConfig,
 	connection connection.Config,
 	config *queue.RouterConfig,
 ) (messageRouter message.Router, eventRouter event.Router, closer io.Closer, err error) {
-	manager, err := internal.NewConnectionManager(connection, log.ForComponent("connection_manager"))
+	manager, err := internal.NewConnectionManager(connection, boxConfig.Name, log.ForComponent("connection_manager"))
 	if err != nil {
 		return
 	}

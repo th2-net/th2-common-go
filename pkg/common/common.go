@@ -36,6 +36,7 @@ type Module interface {
 type ModuleKey string
 
 type ConfigProvider interface {
+	GetBoxConfig() BoxConfig
 	GetConfig(resourceName string, target any) error
 }
 
