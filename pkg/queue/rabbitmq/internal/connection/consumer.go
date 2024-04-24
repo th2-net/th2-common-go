@@ -24,6 +24,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/th2-net/th2-common-go/pkg/metrics"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/connection"
+	"time"
 )
 
 var th2RabbitmqMessageSizeSubscribeBytes = promauto.NewCounterVec(
@@ -45,17 +46,23 @@ var th2RabbitmqMessageProcessDurationSeconds = promauto.NewHistogramVec(
 
 type Consumer struct {
 	*connectionHolder
-	Logger zerolog.Logger
+	Logger                          zerolog.Logger
+	maxMissingQueueRecoveryAttempts int
 }
 
 func NewConsumer(url string, configuration connection.Config, logger zerolog.Logger) (Consumer, error) {
 	if url == "" {
 		return Consumer{}, errors.New("url is empty")
 	}
-	consumer := Consumer{
-		Logger: logger,
+	maxMissingQueueRecoveryAttempts := defaultMaxRecoveryAttempts
+	if configuration.MaxRecoveryAttempts > 0 {
+		maxMissingQueueRecoveryAttempts = configuration.MaxRecoveryAttempts
 	}
-	conn, err := newConnection(url, "consumer", logger, nil, nil)
+	consumer := Consumer{
+		Logger:                          logger,
+		maxMissingQueueRecoveryAttempts: maxMissingQueueRecoveryAttempts,
+	}
+	conn, err := newConnection(url, "consumer", logger, configuration, nil, nil)
 	if err != nil {
 		return consumer, err
 	}
@@ -140,7 +147,7 @@ func (cns *Consumer) consume(queueName string, th2Pin string, th2Type string,
 				}
 				ch, deliveries, err = subscriptionProducer(queueName, methodName)
 				if err != nil {
-					if !errors.Is(err, amqp.ErrClosed) {
+					if errors.Is(err, amqp.ErrClosed) {
 						break
 					}
 					// TODO: decide what to do in this case
@@ -175,19 +182,48 @@ func (cns *Consumer) consumeWithAutoAck(queueName string, methodName string) (*a
 }
 
 func (cns *Consumer) consumeFromQueue(queueName string, methodName string, autoAck bool) (*amqp.Channel, <-chan amqp.Delivery, error) {
-	ch, err := cns.getChannel(queueName)
-	if err != nil {
-		return nil, nil, err
-	}
+	attempts := 0
+	timeout := cns.minRecoveryTimeout
+	for {
+		ch, err := cns.getChannel(queueName)
+		if err != nil {
+			return nil, nil, err
+		}
 
-	msgs, err := cns.startConsuming(ch, queueName, autoAck, methodName)
-	if err != nil {
-		return nil, nil, err
+		msgs, err := cns.startConsuming(ch, queueName, autoAck)
+		if err != nil {
+			var amqpErr *amqp.Error
+			isAmqpErr := errors.As(err, &amqpErr)
+			if !isAmqpErr || amqpErr.Code != amqp.NotFound {
+				cns.Logger.Error().
+					Err(err).
+					Str("method", methodName).
+					Str("queue", queueName).
+					Msg("consuming error")
+				return nil, nil, err
+			}
+			if attempts >= cns.maxMissingQueueRecoveryAttempts {
+				return nil, nil, err
+			}
+			cns.Logger.Warn().
+				Str("method", methodName).
+				Str("queue", queueName).
+				Int("attempts", attempts).
+				Dur("timeout", timeout).
+				Msg("queue is not found. Retry after timeout")
+			time.Sleep(timeout)
+			timeout *= 2
+			if timeout > cns.maxRecoveryTimeout {
+				timeout = cns.maxRecoveryTimeout
+			}
+			attempts += 1
+			continue
+		}
+		return ch, msgs, nil
 	}
-	return ch, msgs, nil
 }
 
-func (cns *Consumer) startConsuming(ch *amqp.Channel, queueName string, autoAck bool, methodName string) (<-chan amqp.Delivery, error) {
+func (cns *Consumer) startConsuming(ch *amqp.Channel, queueName string, autoAck bool) (<-chan amqp.Delivery, error) {
 	msgs, err := ch.Consume(
 		queueName, // queue
 		// TODO: we need to provide a name that will help to identify the component
@@ -199,11 +235,6 @@ func (cns *Consumer) startConsuming(ch *amqp.Channel, queueName string, autoAck 
 		nil,     // args
 	)
 	if err != nil {
-		cns.Logger.Error().
-			Err(err).
-			Str("method", methodName).
-			Str("queue", queueName).
-			Msg("consuming error")
 		return nil, err
 	}
 	return msgs, nil

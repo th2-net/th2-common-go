@@ -16,10 +16,19 @@
 package connection
 
 import (
+	"errors"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/rs/zerolog"
+	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/connection"
 	"sync"
 	"time"
+)
+
+const (
+	defaultMinRecoveryTimeout = 1 * time.Second
+	defaultMaxRecoveryTimeout = 60 * time.Second
+	// defaultMaxRecoveryAttempts used in case an error with status NOT_FOUND is returned from channel
+	defaultMaxRecoveryAttempts = 5
 )
 
 type connectionHolder struct {
@@ -33,10 +42,28 @@ type connectionHolder struct {
 	logger                zerolog.Logger
 	notifyMutex           sync.Mutex
 	notifyRecovered       []chan struct{}
+	minRecoveryTimeout    time.Duration
+	maxRecoveryTimeout    time.Duration
 }
 
 func newConnection(url string, name string, logger zerolog.Logger,
+	configuration connection.Config,
 	onConnectionRecovered func(), onChannelRecovered func(channelKey string)) (*connectionHolder, error) {
+	if configuration.MinConnectionRecoveryTimeout > configuration.MaxConnectionRecoveryTimeout {
+		return nil, errors.New("min connection recovery timeout is greater than max connection recovery timeout")
+	}
+	var minRecoveryTimeout time.Duration
+	var maxRecoveryTimeout time.Duration
+	if configuration.MinConnectionRecoveryTimeout > 0 {
+		minRecoveryTimeout = time.Duration(configuration.MinConnectionRecoveryTimeout) * time.Millisecond
+	} else {
+		minRecoveryTimeout = defaultMinRecoveryTimeout
+	}
+	if configuration.MaxConnectionRecoveryTimeout > 0 {
+		maxRecoveryTimeout = time.Duration(configuration.MaxConnectionRecoveryTimeout) * time.Millisecond
+	} else {
+		maxRecoveryTimeout = defaultMaxRecoveryTimeout
+	}
 	conn, err := dial(url, name)
 	if err != nil {
 		return nil, err
@@ -54,6 +81,8 @@ func newConnection(url string, name string, logger zerolog.Logger,
 		logger:                logger,
 		notifyMutex:           sync.Mutex{},
 		notifyRecovered:       make([]chan struct{}, 0),
+		minRecoveryTimeout:    minRecoveryTimeout,
+		maxRecoveryTimeout:    maxRecoveryTimeout,
 	}, nil
 }
 
@@ -99,6 +128,7 @@ func (c *connectionHolder) runConnectionRoutine() {
 }
 
 func (c *connectionHolder) tryToReconnect() {
+	var delay = c.minRecoveryTimeout
 	for {
 		err := c.reconnect()
 		if err == nil {
@@ -108,8 +138,13 @@ func (c *connectionHolder) tryToReconnect() {
 		}
 		c.logger.Error().
 			Err(err).
-			Msg("reconnect failed. Retrying in 5 seconds")
-		time.Sleep(5 * time.Second)
+			Dur("timeout", delay).
+			Msg("reconnect failed. retrying after timeout")
+		time.Sleep(delay)
+		delay *= 2
+		if delay > c.maxRecoveryTimeout {
+			delay = c.maxRecoveryTimeout
+		}
 	}
 }
 

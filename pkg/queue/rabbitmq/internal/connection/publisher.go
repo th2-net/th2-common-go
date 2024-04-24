@@ -54,7 +54,7 @@ func NewPublisher(url string, configuration connCfg.Config, logger zerolog.Logge
 	publisher := Publisher{
 		Logger: logger,
 	}
-	c, err := newConnection(url, "publisher", logger, nil, nil)
+	c, err := newConnection(url, "publisher", logger, configuration, nil, nil)
 	if err != nil {
 		return publisher, err
 	}

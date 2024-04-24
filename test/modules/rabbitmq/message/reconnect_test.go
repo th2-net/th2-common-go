@@ -185,6 +185,8 @@ func TestConsumerReconnects(t *testing.T) {
 			t.Error("cannot start container:", err)
 			return
 		}
+		// delay is added to check that consumer will be recovered even if queue does not yet exist
+		time.Sleep(5 * time.Second)
 		_ = setupMq(t, config)
 		t.Log("rabbitmq container restarted")
 		recovered <- struct{}{}
