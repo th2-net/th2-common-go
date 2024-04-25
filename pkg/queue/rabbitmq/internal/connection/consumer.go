@@ -105,8 +105,10 @@ func (cns *Consumer) consume(queueName string, th2Pin string, th2Type string,
 			Str("queue", queueName).
 			Msg("start handling messages")
 		running := true
+		durationObserver := th2RabbitmqMessageProcessDurationSeconds.WithLabelValues(th2Pin, th2Type, queueName)
+		messageSizeObserver := th2RabbitmqMessageSizeSubscribeBytes.WithLabelValues(th2Pin, th2Type, queueName)
 		handleDelivery := func(d amqp.Delivery) {
-			timer := prometheus.NewTimer(th2RabbitmqMessageProcessDurationSeconds.WithLabelValues(th2Pin, th2Type, queueName))
+			timer := prometheus.NewTimer(durationObserver)
 			cns.Logger.Trace().
 				Str("exchange", d.Exchange).
 				Str("routing", d.RoutingKey).
@@ -120,7 +122,7 @@ func (cns *Consumer) consume(queueName string, th2Pin string, th2Type string,
 					Int("bodySize", len(d.Body)).
 					Msg("Cannot handle delivery")
 			}
-			th2RabbitmqMessageSizeSubscribeBytes.WithLabelValues(th2Pin, th2Type, queueName).Add(float64(len(d.Body)))
+			messageSizeObserver.Add(float64(len(d.Body)))
 		}
 		deliveries := msgs
 		chErrors := ch.NotifyClose(make(chan *amqp.Error))
