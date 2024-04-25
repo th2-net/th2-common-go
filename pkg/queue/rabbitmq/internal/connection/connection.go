@@ -64,6 +64,10 @@ func newConnection(url string, name string, logger zerolog.Logger,
 	} else {
 		maxRecoveryTimeout = defaultMaxRecoveryTimeout
 	}
+	logger.Info().
+		Dur("minRecoveryTimeout", minRecoveryTimeout).
+		Dur("maxRecoveryTimeout", maxRecoveryTimeout).
+		Msg("recovery timeouts configured")
 	conn, err := dial(url, name)
 	if err != nil {
 		return nil, err
