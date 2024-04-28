@@ -34,10 +34,11 @@ func TestConsumer_Consume(t *testing.T) {
 	}
 	config := rabbitmq.StartMq(t, "test")
 
-	manager, err := NewConnectionManager(config, consumerLogger)
+	manager, err := NewConnectionManager(config, "test", consumerLogger)
 	if err != nil {
 		t.Fatal(err)
 	}
+	go manager.ListenForBlockingNotifications()
 	defer manager.Close()
 	conn, err := rabbitmq.RawAmqp(t, config, true)
 	if err != nil {
