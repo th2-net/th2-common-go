@@ -27,6 +27,7 @@ import (
 	"github.com/th2-net/th2-common-go/pkg/queue/message"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
+	"sync"
 )
 
 type CommonMessageRouter struct {
@@ -36,6 +37,7 @@ type CommonMessageRouter struct {
 	filterStrategy filter.Strategy
 	config         *queue.RouterConfig
 	Logger         zerolog.Logger
+	mutex          *sync.RWMutex
 }
 
 func NewRouter(
@@ -50,6 +52,7 @@ func NewRouter(
 		filterStrategy: filter.Default,
 		Logger:         logger,
 		config:         config,
+		mutex:          &sync.RWMutex{},
 	}
 }
 
@@ -248,10 +251,18 @@ func (cmr *CommonMessageRouter) getSubscriber(pin string, subscriberType interna
 	// TODO: probably, we should use lock here to make subscriber creation atomic
 	queueConfig := cmr.config.Queues[pin] // get queue by pin
 	var result internal.Subscriber
-	if _, ok := cmr.subscribers[pin]; ok {
-		result = cmr.subscribers[pin]
+	result = cmr.findSubscriber(pin)
+	if result != nil {
 		return result, nil
 	}
+	cmr.mutex.Lock()
+	defer cmr.mutex.Unlock()
+
+	// check if someone already created the subscriber in a different goroutine
+	if existing, ok := cmr.subscribers[pin]; ok {
+		return existing, nil
+	}
+
 	result, err := newSubscriber(cmr.connManager, &queueConfig, pin, subscriberType, contentType)
 	if err != nil {
 		return nil, err
@@ -262,16 +273,46 @@ func (cmr *CommonMessageRouter) getSubscriber(pin string, subscriberType interna
 	return result, nil
 }
 
+func (cmr *CommonMessageRouter) findSubscriber(pin string) internal.Subscriber {
+	cmr.mutex.RLock()
+	defer cmr.mutex.RUnlock()
+
+	if existing, ok := cmr.subscribers[pin]; ok {
+		return existing
+	}
+	return nil
+}
+
 func (cmr *CommonMessageRouter) getSender(pin string) *CommonMessageSender {
 	queueConfig := cmr.config.Queues[pin] // get queue by pin
 	var result *CommonMessageSender
-	if _, ok := cmr.senders[pin]; ok {
-		result = cmr.senders[pin]
+
+	result = cmr.findSender(pin)
+	if result != nil {
 		return result
 	}
+
+	cmr.mutex.Lock()
+	defer cmr.mutex.Unlock()
+
+	// check if someone already created the sender in a different goroutine
+	if existing, ok := cmr.senders[pin]; ok {
+		return existing
+	}
+
 	result = &CommonMessageSender{ConnManager: cmr.connManager, exchangeName: queueConfig.Exchange,
 		sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: log.ForComponent("rabbitmq_message_sender")}
 	cmr.senders[pin] = result
 	cmr.Logger.Trace().Str("Pin", pin).Msg("Created sender")
 	return result
+}
+
+func (cmr *CommonMessageRouter) findSender(pin string) *CommonMessageSender {
+	cmr.mutex.RLock()
+	defer cmr.mutex.RUnlock()
+
+	if existing, ok := cmr.senders[pin]; ok {
+		return existing
+	}
+	return nil
 }

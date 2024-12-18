@@ -26,6 +26,7 @@ import (
 	"github.com/th2-net/th2-common-go/pkg/queue/event"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal"
 	"github.com/th2-net/th2-common-go/pkg/queue/rabbitmq/internal/connection"
+	"sync"
 )
 
 type CommonEventRouter struct {
@@ -34,6 +35,7 @@ type CommonEventRouter struct {
 	senders     map[string]*CommonEventSender
 	config      *queue.RouterConfig
 	Logger      zerolog.Logger
+	mutex       *sync.RWMutex
 }
 
 func NewRouter(
@@ -47,6 +49,7 @@ func NewRouter(
 		senders:     make(map[string]*CommonEventSender),
 		config:      config,
 		Logger:      logger,
+		mutex:       &sync.RWMutex{},
 	}
 }
 
@@ -158,9 +161,16 @@ func (cer *CommonEventRouter) subByPinWithAck(listener event.ConformationListene
 func (cer *CommonEventRouter) getSubscriber(pin string, subscriberType internal.SubscriberType) (internal.Subscriber, error) {
 	queueConfig := cer.config.Queues[pin] // get queue by pin
 	var result internal.Subscriber
-	if _, ok := cer.subscribers[pin]; ok {
-		result = cer.subscribers[pin]
+	result = cer.findSubscriber(pin)
+	if result != nil {
 		return result, nil
+	}
+	cer.mutex.Lock()
+	defer cer.mutex.Unlock()
+
+	// check if someone already created the subscriber in a different goroutine
+	if existing, ok := cer.subscribers[pin]; ok {
+		return existing, nil
 	}
 	result, err := newSubscriber(cer.connManager, &queueConfig, pin, subscriberType)
 	if err != nil {
@@ -171,16 +181,44 @@ func (cer *CommonEventRouter) getSubscriber(pin string, subscriberType internal.
 	return result, nil
 }
 
+func (cer *CommonEventRouter) findSubscriber(pin string) internal.Subscriber {
+	cer.mutex.RLock()
+	defer cer.mutex.RUnlock()
+
+	if existing, ok := cer.subscribers[pin]; ok {
+		return existing
+	}
+	return nil
+}
+
 func (cer *CommonEventRouter) getSender(pin string) *CommonEventSender {
 	queueConfig := cer.config.Queues[pin] // get queue by pin
 	var result *CommonEventSender
-	if _, ok := cer.senders[pin]; ok {
-		result = cer.senders[pin]
+	result = cer.findSender(pin)
+	if result != nil {
 		return result
+	}
+
+	cer.mutex.Lock()
+	defer cer.mutex.Unlock()
+
+	// check if someone already created the sender in a different goroutine
+	if existing, ok := cer.senders[pin]; ok {
+		return existing
 	}
 	result = &CommonEventSender{ConnManager: cer.connManager, exchangeName: queueConfig.Exchange,
 		sendQueue: queueConfig.RoutingKey, th2Pin: pin, Logger: log.ForComponent("event_sender")}
 	cer.senders[pin] = result
 	cer.Logger.Trace().Str("Pin", pin).Msg("Created sender")
 	return result
+}
+
+func (cer *CommonEventRouter) findSender(pin string) *CommonEventSender {
+	cer.mutex.RLock()
+	defer cer.mutex.RUnlock()
+
+	if existing, ok := cer.senders[pin]; ok {
+		return existing
+	}
+	return nil
 }
