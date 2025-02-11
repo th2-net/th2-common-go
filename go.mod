@@ -1,6 +1,6 @@
 module github.com/th2-net/th2-common-go
 
-go 1.19
+go 1.21.0
 
 require (
 	github.com/IGLOU-EU/go-wildcard v1.0.3
@@ -10,8 +10,9 @@ require (
 	github.com/rs/zerolog v1.29.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.23.0
+	github.com/th2-net/th2-grpc-common-go v0.0.0-20250211065133-fdc34a4035b7
 	google.golang.org/grpc v1.58.0
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.36.5
 )
 
 require (
