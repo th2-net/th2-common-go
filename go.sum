@@ -114,8 +114,8 @@ github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcU
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/testcontainers/testcontainers-go v0.23.0 h1:ERYTSikX01QczBLPZpqsETTBO7lInqEP349phDOVJVs=
 github.com/testcontainers/testcontainers-go v0.23.0/go.mod h1:3gzuZfb7T9qfcH2pHpV4RLlWrPjeWNQah6XlYQ32c4I=
-github.com/th2-net/th2-grpc-common-go v0.0.0-20250211065133-fdc34a4035b7 h1:4FaHci0HDHSwIbaU4RUZ/sZfEHeDwLMQQpwyn7t5S2I=
-github.com/th2-net/th2-grpc-common-go v0.0.0-20250211065133-fdc34a4035b7/go.mod h1:AxAlnF81zC/Xbct1eqDnF+ED+Jxrl4IzDxVp1UalTGA=
+github.com/th2-net/th2-grpc-common-go v0.0.1 h1:Wx/u8yb6UinTNVVT4XoTr1dOM0nUP3Rop4KlF+IZE9U=
+github.com/th2-net/th2-grpc-common-go v0.0.1/go.mod h1:MmWGanS+urhYgXFuPA6j/NvAcnpxUQepzkDV5Vh+96g=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.uber.org/goleak v1.2.1 h1:NBol2c7O1ZokfZ0LEU9K6Whx/KnwvepVetCUhtKja4A=
