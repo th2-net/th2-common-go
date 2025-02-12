@@ -1,4 +1,4 @@
-# th2 common library GO (1.2.0)
+# th2 common library GO (1.3.0)
 
 ## Usage
 
@@ -89,6 +89,10 @@ The `CommonFactory` reads a message's router configuration from the `mq.json` fi
 ```
 
 ## Release notes
+
+### 1.3.0
+
++ Migrated to github.com/th2-net/th2-grpc-common-go
 
 ### 1.2.0
 
