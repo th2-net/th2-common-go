@@ -96,6 +96,11 @@ The `CommonFactory` reads a message's router configuration from the `mq.json` fi
 
 ## Release notes
 
+### 0.3.1
+
+* Use int type for Prometheus Port config option
+* Refactored gRPC module logging
+
 ### 0.3.0
 
 + Migrated to github.com/th2-net/th2-grpc-common-go
@@ -115,12 +120,15 @@ The `CommonFactory` reads a message's router configuration from the `mq.json` fi
 + Zerolog configuration on CommonFactory creation
 + Read and resolve environment variables during configuration reading
 + Base version of gRPC module
+
    + Start server / Start service features
 
 + Base version of MQ module
+
    + EventBatch / MessageGroupBatch router
    + SendAll / SubscribeAll / SubscribeAllWithManualAck features
 
 + Prometheus module
+
    + Liveness / Readiness probe
    + MQ module metrics
