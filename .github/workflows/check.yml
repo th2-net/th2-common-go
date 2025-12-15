@@ -10,4 +10,4 @@ jobs:
       version: 0.0.0
   check-vulnerabilities:
     name: Check vulnerabilities
-    uses: th2-net/.github/.github/workflows/go-vulnerabilities-scan.yml@migrated-osv-scanner-for-go
+    uses: th2-net/.github/.github/workflows/go-vulnerabilities-scan.yml@main
