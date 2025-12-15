@@ -1,17 +1,13 @@
-name: Check library state
+name: Check vulnerabilities and licenses
 
-on: push
+on: [push, workflow_dispatch]
 
 jobs:
-  check:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-      - name: Build sources
-        run: make build
-      - name: Check sources
-        run: make run-test
+  check-licenses:
+    name: Check licenses
+    uses: th2-net/.github/.github/workflows/go-license-check.yml@main
+    with:
+      version: 0.0.0
+  check-vulnerabilities:
+    name: Check vulnerabilities
+    uses: th2-net/.github/.github/workflows/go-vulnerabilities-scan.yml@main
