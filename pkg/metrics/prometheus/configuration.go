@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2023-2025 Exactpro (Exactpro Systems Limited)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,19 +23,17 @@ import (
 
 type Configuration struct {
 	Host    string `json:"host"`
-	Port    int    `json:"port,string"`
+	Port    int    `json:"port"`
 	Enabled bool   `json:"enabled"`
 }
 
 func (promConfig *Configuration) Init(path string) error {
 	content, err := os.ReadFile(path) // Read json file
 	if err != nil {
-		fmt.Println("Error happened when reading")
-		return err
+		return fmt.Errorf("error happened when reading: %v", err)
 	}
 	if err := json.Unmarshal(content, promConfig); err != nil {
-		fmt.Println("Error when unmarshaling")
-		return err
+		return fmt.Errorf("error when unmarshaling: %v", err)
 	}
 	return nil
 }
