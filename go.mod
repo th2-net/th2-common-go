@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/IGLOU-EU/go-wildcard v1.0.3
-	github.com/magiconair/properties v1.8.7
+	github.com/magiconair/properties v1.8.10
 	github.com/prometheus/client_golang v1.23.2
 	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/rs/zerolog v1.34.0
