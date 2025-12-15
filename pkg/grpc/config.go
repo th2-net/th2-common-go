@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2022-2025 Exactpro (Exactpro Systems Limited)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -63,15 +63,14 @@ type Config struct {
 func (gc *Config) ValidatePins() error {
 	for pinName, service := range gc.ServicesMap {
 		if len(service.Endpoints) > 1 {
-			return errors.New(fmt.Sprintf(
-				`config is invalid. pin "%s" has more than 1 endpoint`, pinName))
+			return fmt.Errorf("config is invalid. pin '%s' has more than 1 endpoint", pinName)
 		}
 		gc.ZLogger.Info().Msg("Pins validated.")
 	}
 	return nil
 }
 
-func (gc *Config) findEndpointAddrViaServiceName(srvcName string) (Address, error) {
+func (gc *Config) findEndpointAddrViaServiceName(srvName string) (Address, error) {
 	for _, service := range gc.ServicesMap {
 		serviceName := service.ServiceClass
 		if strings.Contains(serviceName, ".") {
@@ -79,7 +78,7 @@ func (gc *Config) findEndpointAddrViaServiceName(srvcName string) (Address, erro
 			index := len(serviceNameList)
 			serviceName = serviceNameList[index-1]
 		}
-		if serviceName == srvcName {
+		if serviceName == srvName {
 			if len(service.Endpoints) > 1 {
 				return Address{}, fmt.Errorf("number of endpoints should equal to 1")
 			} else {
@@ -90,7 +89,7 @@ func (gc *Config) findEndpointAddrViaServiceName(srvcName string) (Address, erro
 			}
 		}
 	}
-	gc.ZLogger.Error().Str("service", srvcName).Msg("No endpoint exists")
+	gc.ZLogger.Error().Str("service", srvName).Msg("No endpoint exists")
 	return Address{}, errors.New("endpoint with provided service name does not exist")
 }
 

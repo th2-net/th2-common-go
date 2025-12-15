@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 Exactpro (Exactpro Systems Limited)
+ * Copyright 2022-2025 Exactpro (Exactpro Systems Limited)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,7 +29,7 @@ func NewRouter(config Config, logger zerolog.Logger) Router {
 	return &commonGrpcRouter{
 		Config:    config,
 		connCache: newConnectionCache(),
-		ZLogger:   logger,
+		logger:    logger,
 	}
 }
 
@@ -40,7 +40,7 @@ mainly intended for first release
 type commonGrpcRouter struct {
 	Config    Config
 	connCache connectionCache
-	ZLogger   zerolog.Logger
+	logger    zerolog.Logger
 }
 
 func (gr *commonGrpcRouter) createListener() (net.Listener, error) {
@@ -48,10 +48,14 @@ func (gr *commonGrpcRouter) createListener() (net.Listener, error) {
 
 	listener, netErr := net.Listen("tcp", address)
 	if netErr != nil {
-		gr.ZLogger.Error().Err(netErr).Msgf("could not start listening to the network: %s", netErr.Error())
+		gr.logger.Error().
+			Err(netErr).
+			Msg("could not start listening to the network")
 		return nil, netErr
 	}
-	gr.ZLogger.Debug().Msgf("listening on address: %v", address)
+	gr.logger.Info().
+		Any("address", address).
+		Msg("listening on the address")
 
 	return listener, nil
 }
@@ -59,7 +63,7 @@ func (gr *commonGrpcRouter) createListener() (net.Listener, error) {
 func (gr *commonGrpcRouter) createServerWithRegisteredService(registrar func(grpc.ServiceRegistrar)) *grpc.Server {
 	s := grpc.NewServer()
 	registrar(s)
-	gr.ZLogger.Debug().Msgf("Created server")
+	gr.logger.Info().Msg("created server")
 	return s
 }
 
@@ -69,19 +73,20 @@ func (gr *commonGrpcRouter) Close() error {
 			con, exists := gr.connCache.Get(endpoint.Address)
 			if exists {
 				if err := con.Close(); err != nil {
-					gr.ZLogger.Error().
+					gr.logger.Error().
 						Err(err).
-						Str("serviceName", name).
-						Str("endpointName", endpointName).
-						Msg("cannot close connection")
+						Str("service-name", name).
+						Str("endpoint-name", endpointName).
+						Msg("close connection failure")
 
 				}
 			}
 		}
-		gr.ZLogger.Debug().Str("serviceName", name).
+		gr.logger.Debug().
+			Str("service-name", name).
 			Msg("connections for service closed")
 	}
-	gr.ZLogger.Info().Msg("grpc router closed")
+	gr.logger.Info().Msg("grpc router closed")
 	return nil
 }
 
@@ -92,11 +97,13 @@ func (gr *commonGrpcRouter) StartServer(registrar func(grpc.ServiceRegistrar)) e
 	}
 
 	s := gr.createServerWithRegisteredService(registrar)
-	if serveErr := s.Serve(listener); serveErr != nil {
-		gr.ZLogger.Error().Err(serveErr).Msgf("error reading gRPC requests: %s", serveErr.Error())
-		return serveErr
+	if err := s.Serve(listener); err != nil {
+		gr.logger.Error().
+			Err(err).
+			Msg("register listener to accept incoming requests failure")
+		return err
 	}
-	gr.ZLogger.Debug().Msg("server started")
+	gr.logger.Debug().Msg("server started")
 	return nil
 }
 
@@ -109,8 +116,10 @@ func (gr *commonGrpcRouter) StartServerAsync(registrar func(grpc.ServiceRegistra
 	s := gr.createServerWithRegisteredService(registrar)
 
 	go func() {
-		if serveErr := s.Serve(listener); serveErr != nil {
-			gr.ZLogger.Panic().Err(serveErr).Msgf("error reading gRPC requests: %s", serveErr.Error())
+		if err := s.Serve(listener); err != nil {
+			gr.logger.Panic().
+				Err(err).
+				Msg("error reading requests")
 		}
 	}()
 
@@ -135,10 +144,14 @@ func (gr *commonGrpcRouter) GetConnection(ServiceName string) (grpc.ClientConnIn
 		return nil, connError{specificErr: findErr}.make()
 	}
 	if conn, exists := gr.findConnection(addr); exists {
-		gr.ZLogger.Debug().Msgf("connection for address %v was found", addr)
+		gr.logger.Debug().
+			Any("address", addr).
+			Msg("connection for the address was found")
 		return conn, nil
 	}
-	gr.ZLogger.Error().Msgf("couldn't found connection for address %v ", addr)
+	gr.logger.Debug().
+		Any("address", addr).
+		Msg("couldn't found connection for the address, a new one will be establish")
 
 	return gr.newConnection(addr)
 }
@@ -159,7 +172,9 @@ func (gr *commonGrpcRouter) newConnection(addr Address) (grpc.ClientConnInterfac
 	}
 
 	gr.connCache.Put(addr, conn)
-	gr.ZLogger.Debug().Msgf("Created new connection for address : %v", addr)
+	gr.logger.Info().
+		Any("address", addr).
+		Msg("created new connection for the address")
 
 	return conn, nil
 
