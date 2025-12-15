@@ -96,6 +96,19 @@ The `CommonFactory` reads a message's router configuration from the `mq.json` fi
 
 ## Release notes
 
+### 0.4.0
+
+* Updated:
+    * go: `1.25.5`
+    * github.com/magiconair/properties: `v1.8.10`
+	* github.com/prometheus/client_golang: `v1.23.2`
+	* github.com/rabbitmq/amqp091-go: `v1.10.0`
+	* github.com/rs/zerolog: `v1.34.0`
+	* github.com/stretchr/testify: `v1.11.1`
+	* github.com/testcontainers/testcontainers-go: `v0.40.0`
+    * google.golang.org/grpc: `v1.77.0`
+	* google.golang.org/protobuf: `v1.36.10`
+
 ### 0.3.1
 
 * Use int type for Prometheus Port config option
