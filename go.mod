@@ -12,7 +12,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/th2-net/th2-grpc-common-go v0.0.1
 	google.golang.org/grpc v1.77.0
-	google.golang.org/protobuf v1.36.10
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
