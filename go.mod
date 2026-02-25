@@ -1,6 +1,6 @@
 module github.com/th2-net/th2-common-go
 
-go 1.25.5
+go 1.26.0
 
 require (
 	github.com/IGLOU-EU/go-wildcard v1.0.3
